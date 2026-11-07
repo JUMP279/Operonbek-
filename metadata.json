@@ -1,0 +1,6 @@
+{
+  "name": "Operon Analytics",
+  "description": "Operon modern mobile e-commerce analytics dashboard with real-time profit tracking, customer segmentation, retention insights, and AI assistance.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
