@@ -15,7 +15,7 @@ import {
   Sparkles,
   MessageSquare
 } from 'lucide-react';
-import { availableWidgets } from '../data/mockData';
+import { availableWidgets } from '../data/widgets';
 import { useLanguage } from '../context/LanguageContext';
 
 interface AddWidgetModalProps {

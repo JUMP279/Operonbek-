@@ -6,6 +6,7 @@ import { api, PlanUsage } from '../lib/api';
 // Tarif — REAL (2026-11-08): joriy tarif va shu oydagi foydalanish backend'dan.
 // Avval o'ylab topilgan imkoniyatlar (bank integratsiyasi, VIP menejer, raqobatchi radari...)
 // va hech narsa saqlamaydigan "faollashtirish" bor edi. Onlayn to'lov hali ulanmagan.
+// 2026-11-13: "Подключить" → POST /auth/plan (so'rov) → Operon admini Telegram'da tasdiqlaydi.
 export interface SubscriptionPlanViewProps {
   onBack: () => void;
   storeContext?: { businessId?: string };
@@ -20,7 +21,11 @@ const T = {
   ru: {
     title: 'Тариф', current: 'Ваш тариф', trial: 'Пробный период', until: 'до',
     usage: 'Использовано в этом месяце', videos: 'AI-видео', posts: 'Опубликованные посты',
-    perMonth: '/ мес', active: 'Текущий', soon: 'Онлайн-оплата скоро будет доступна',
+    perMonth: '/ мес', active: 'Текущий',
+    soon: 'Онлайн-оплата скоро. Сейчас: нажмите «Подключить» — мы свяжемся, примем оплату и включим тариф.',
+    connect: 'Подключить', pending: 'Заявка отправлена', pendingNote: (p: string) => `Заявка на тариф ${p} отправлена. Мы свяжемся с вами для оплаты.`,
+    expired: 'Срок действия закончился — видео и посты не создаются. Выберите тариф.',
+    daysLeft: (n: number) => `осталось ${n} дн.`, reqError: 'Не удалось отправить заявку, попробуйте ещё раз',
     cadence: { starter: 'каждые 2 дня', growth: 'каждый день', business: '2 в день' } as Record<PlanId, string>,
     features: (p: PlanId) => [
       `${VIDEOS[p]} AI-видео в месяц (${T.ru.cadence[p]}) — Reels + Stories`,
@@ -33,7 +38,11 @@ const T = {
   kk: {
     title: 'Тариф', current: 'Сіздің тарифіңіз', trial: 'Сынақ кезеңі', until: 'дейін',
     usage: 'Осы айда қолданылды', videos: 'AI-бейне', posts: 'Жарияланған посттар',
-    perMonth: '/ ай', active: 'Ағымдағы', soon: 'Онлайн төлем жақында қосылады',
+    perMonth: '/ ай', active: 'Ағымдағы',
+    soon: 'Онлайн төлем жақында. Қазір: «Қосу» батырмасын басыңыз — біз хабарласып, төлемді қабылдап, тарифті қосамыз.',
+    connect: 'Қосу', pending: 'Өтінім жіберілді', pendingNote: (p: string) => `${p} тарифіне өтінім жіберілді. Төлем үшін сізбен хабарласамыз.`,
+    expired: 'Мерзім аяқталды — бейне мен посттар жасалмайды. Тариф таңдаңыз.',
+    daysLeft: (n: number) => `${n} күн қалды`, reqError: 'Өтінім жіберілмеді, қайта көріңіз',
     cadence: { starter: '2 күнде 1', growth: 'күн сайын', business: 'күніне 2' } as Record<PlanId, string>,
     features: (p: PlanId) => [
       `Айына ${VIDEOS[p]} AI-бейне (${T.kk.cadence[p]}) — Reels + Stories`,
@@ -54,6 +63,20 @@ export const SubscriptionPlanView: React.FC<SubscriptionPlanViewProps> = ({ onBa
   const businessId = storeContext?.businessId;
   const [usage, setUsage] = useState<PlanUsage | null>(null);
   const [error, setError] = useState('');
+  const [sending, setSending] = useState<PlanId | null>(null);
+
+  const requestPlan = async (p: PlanId) => {
+    setSending(p);
+    setError('');
+    try {
+      await api.requestPlan(p);
+      setUsage((u) => (u ? { ...u, pending_plan: p } : u));
+    } catch {
+      setError(L.reqError);
+    } finally {
+      setSending(null);
+    }
+  };
 
   useEffect(() => {
     if (!businessId) return;
@@ -63,6 +86,8 @@ export const SubscriptionPlanView: React.FC<SubscriptionPlanViewProps> = ({ onBa
 
   const currentId: PlanId | null = usage && (['starter', 'growth', 'business'] as string[]).includes(usage.plan)
     ? (usage.plan as PlanId) : null;
+  const expired = usage?.state === 'expired';
+  const pending = (usage?.pending_plan || null) as PlanId | null;
 
   const bar = (used: number, limit: number) => (
     <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
@@ -86,6 +111,15 @@ export const SubscriptionPlanView: React.FC<SubscriptionPlanViewProps> = ({ onBa
         {error && <p className="text-xs text-rose-600 font-semibold">{error}</p>}
         {!usage && !error && <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 text-purple-600 animate-spin" /></div>}
 
+        {expired && (
+          <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl p-3 text-[12px] font-semibold">{L.expired}</div>
+        )}
+        {pending && (
+          <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl p-3 text-[12px] font-semibold">
+            {L.pendingNote(NAMES[pending] || pending)}
+          </div>
+        )}
+
         {usage && (
           <div className="bg-white border border-slate-200/90 rounded-2xl p-3.5 space-y-3">
             <div>
@@ -95,6 +129,7 @@ export const SubscriptionPlanView: React.FC<SubscriptionPlanViewProps> = ({ onBa
                 {usage.trial_end && (
                   <span className="text-[12px] font-semibold text-slate-500">
                     {' '}· {L.until} {new Date(usage.trial_end).toLocaleDateString(lang === 'kk' ? 'kk-KZ' : 'ru-RU')}
+                    {!expired && usage.days_left != null && ` (${L.daysLeft(usage.days_left)})`}
                   </span>
                 )}
               </p>
@@ -123,6 +158,16 @@ export const SubscriptionPlanView: React.FC<SubscriptionPlanViewProps> = ({ onBa
                 <li key={f} className="text-[12px] text-slate-600 flex gap-1.5"><Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />{f}</li>
               ))}
             </ul>
+            {!(currentId === p && !expired) && (
+              <button
+                onClick={() => requestPlan(p)}
+                disabled={!!sending || pending === p}
+                className={`w-full h-10 rounded-xl text-[13px] font-bold flex items-center justify-center gap-1.5 active:scale-[0.98] transition ${
+                  pending === p ? 'bg-amber-100 text-amber-800' : 'bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-60'}`}>
+                {sending === p && <Loader2 className="w-4 h-4 animate-spin" />}
+                {pending === p ? L.pending : L.connect}
+              </button>
+            )}
           </div>
         ))}
 

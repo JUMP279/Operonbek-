@@ -407,12 +407,6 @@ export const api = {
       body: JSON.stringify({ status }),
     }),
 
-  ask: (businessId: string, question: string, history: { role: 'user' | 'ai'; text: string }[] = []) =>
-    request<{ answer: string; provider: string }>('/assistant/ask', {
-      method: 'POST',
-      body: JSON.stringify({ business_id: businessId, question, history }),
-    }),
-
   // Biznes xotirasi (business_memory_core / _dynamic / _experience) — AI shu yerdan o'qiydi
   memoryContext: (businessId: string) => request<MemoryContext>(`/memory/${encodeURIComponent(businessId)}/context`),
 
@@ -438,37 +432,7 @@ export const api = {
       method: 'DELETE',
     }),
 
-  // Video (RunPod Serverless: LTX-2.5 + kk/ru ovoz + subtitr). Render fonda, job so'raladi.
-  videoIdeas: (businessId: string) =>
-    request<{ ai_suggestions: string; trends: string[] }>('/videos/research', {
-      method: 'POST',
-      body: JSON.stringify({ business_id: businessId }),
-    }),
-
-  videoScenario: (businessId: string, topic: string, notes?: string) =>
-    request<{ scenario: string }>('/videos/scenario', {
-      method: 'POST',
-      body: JSON.stringify({ business_id: businessId, topic, notes: notes || null }),
-    }),
-
-  videoGenerate: (businessId: string, topic: string, scenario?: string, duration?: 10 | 15 | 20) =>
-    request<VideoJob>('/videos/generate', {
-      method: 'POST',
-      body: JSON.stringify({ business_id: businessId, topic, scenario: scenario || null, duration }),
-    }),
-
-  // Paket: 2-4 ta video bitta GPU job'da (~2x arzon, hammasi ~8-12 daqiqada)
-  videoGenerateBatch: (businessId: string, topics: string[], duration?: 10 | 15 | 20) =>
-    request<VideoJob>('/videos/generate-batch', {
-      method: 'POST',
-      body: JSON.stringify({ business_id: businessId, items: topics.map((topic) => ({ topic })), duration }),
-    }),
-
-  videoJob: (jobId: string) => request<VideoJob>(`/videos/jobs/${encodeURIComponent(jobId)}`),
-
-  videoActiveJob: (businessId: string) =>
-    request<{ job: VideoJob | null }>(`/videos/active/${encodeURIComponent(businessId)}`),
-
+  // Video tarixi (yaratish — videoPlan* orqali, services/video_plan.py)
   videos: (businessId: string) => request<{ videos: VideoItem[] }>(`/videos/${encodeURIComponent(businessId)}`),
 
   // Instagram (Meta Unified login): imzolangan ulash havolasi va holat
@@ -632,6 +596,10 @@ export const api = {
 
   planUsage: (businessId: string) => request<PlanUsage>(`/brand/${encodeURIComponent(businessId)}/usage`),
 
+  // Tarif so'rovi: tarifni O'ZI yoqmaydi — Operon to'lovni qabul qilib tasdiqlaydi (services/billing.py)
+  requestPlan: (plan: 'starter' | 'growth' | 'business') =>
+    request<{ status: 'pending'; plan: string }>('/auth/plan', { method: 'POST', body: JSON.stringify({ plan }) }),
+
   // Brend: kontent yo'nalishi + logotip
   brand: (businessId: string) => request<BrandStatus>(`/brand/${encodeURIComponent(businessId)}`),
 
@@ -764,23 +732,6 @@ export interface PostRow {
   created_at: string;
   published_at: string | null;
   scheduled_at: string | null;
-}
-
-export interface VideoJob {
-  job_id: string;
-  kind?: 'single' | 'batch';
-  progress?: string | null;
-  items?: { topic: string; status: 'pending' | 'done' | 'error'; video_url: string | null; voice_text: string; error: string | null }[] | null;
-  status: 'queued' | 'preparing' | 'rendering' | 'done' | 'error';
-  stage: string;
-  error: string | null;
-  post_id: string | null;
-  video_url: string | null;
-  voice_text: string;
-  topic: string;
-  platform: string | null;
-  created_at: string;
-  limit?: { used: number; limit: number; plan: string };
 }
 
 export interface VideoItem {
@@ -1034,7 +985,13 @@ export interface MarketState {
 
 export interface PlanUsage {
   plan: string;
+  /** Sinov yoki to'langan davr tugash sanasi */
   trial_end: string | null;
+  /** trial | paid | expired (expired — video/post yaratish to'xtaydi) */
+  state?: 'trial' | 'paid' | 'expired';
+  days_left?: number | null;
+  /** Tadbirkor so'ragan, admin hali tasdiqlamagan tarif */
+  pending_plan?: string | null;
   videos_used: number;
   videos_limit: number;
   posts_used: number;

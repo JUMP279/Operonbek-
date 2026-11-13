@@ -26,6 +26,7 @@ import { api, ApiError, tokens, MeResponse, BusinessProfile, consumeOAuthReturn 
 // Google'dan qaytilgan bo'lsa — tokenlarni URL hash'idan oladi (komponentdan OLDIN, bir marta).
 const OAUTH_RESULT = consumeOAuthReturn();
 import { ToolDemoModal } from './components/ToolDemoModal';
+import { ProductsNudge } from './components/ProductsNudge';
 import { AvatarQuickMenuModal } from './components/AvatarQuickMenuModal';
 
 // Language Context
@@ -396,6 +397,10 @@ function DashboardApp() {
 
               {dash && (
                 <div className={`space-y-3.5 transition-opacity ${dashLoading ? 'opacity-60' : ''}`}>
+                  {/* Katalog kichik bo'lsa — mahsulot qo'shishga eslatma (AI aniq mahsulotni sotishi uchun) */}
+                  <ProductsNudge count={dash.products.length} lang={language === 'ru' ? 'ru' : 'kk'}
+                    onAdd={() => setActivePhoneTool('add-product')} />
+
                   {/* 4 ta asosiy ko'rsatkich — Supabase'dan */}
                   <MetricCards metrics={metrics} onSelectMetric={() => setActivePhoneTool('orders-manager')} />
 
