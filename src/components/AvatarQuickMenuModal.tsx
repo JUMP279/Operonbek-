@@ -85,16 +85,16 @@ export const AvatarQuickMenuModal: React.FC<AvatarQuickMenuModalProps> = ({
 
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <h3 className="text-sm font-black text-white truncate">
-                  {userProfile?.name || 'Shohjahon Uralbayev'}
+                <h3 className="text-[17px] font-black text-white truncate flex items-center gap-1.5">
+                  <Store className="w-4 h-4 shrink-0" />
+                  {userProfile?.storeName || 'Operon'}
                 </h3>
                 <ShieldCheck className="w-4 h-4 text-emerald-300 shrink-0" />
               </div>
 
-              <div className="text-[11.5px] text-blue-100 font-medium truncate flex items-center gap-1 mt-0.5">
-                <Store className="w-3 h-3 shrink-0" />
-                <span>{userProfile?.storeName || 'Operon Flagship Global'}</span>
-              </div>
+              {userProfile?.email && (
+                <div className="text-[11px] text-blue-100 font-medium truncate mt-0.5">{userProfile.email}</div>
+              )}
 
               {/* ID Badge with copy */}
               <div className="flex items-center gap-1.5 mt-1.5">

@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, Eye, EyeOff, KeyRound, Lock, Rocket, Store } fro
 import confetti from 'canvas-confetti';
 import { useLanguage } from '../context/LanguageContext';
 import { api, ApiError, MeResponse, OnboardingMode } from '../lib/api';
+import { OperonMark } from './HeaderNav';
 
 // Oqim (2026-11-08):
 //   Kirish ekrani: [Biznes nomi] [Parol] (Parolni unutdingizmi?) [Kirish]  ── yoki ──  [Google]
@@ -116,13 +117,8 @@ const TEXT = {
 };
 
 const Logo = ({ size = 40 }: { size?: number }) => (
-  <div
-    className="rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-md"
-    style={{ width: size, height: size }}
-  >
-    <svg width={size * 0.5} height={size * 0.5} viewBox="0 0 28 28" fill="none">
-      <path d="M14 2L24.3923 8V20L14 26L3.6077 20V8L14 2Z" fill="#FFFFFF" />
-    </svg>
+  <div className="shadow-md rounded-[22%]" style={{ width: size, height: size }}>
+    <OperonMark size={size} />
   </div>
 );
 

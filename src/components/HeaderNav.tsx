@@ -14,37 +14,24 @@ interface HeaderNavProps {
   userProfile?: UserProfile | null;
 }
 
+// Operon belgisi — HAMMA joyda bir xil (2026-11-13): ko'k gradient fon, o'rtasi oq olti burchak.
+// Telefon ikonkasi, web/icon.svg, Telegram bot rasmi bilan aynan bir xil.
+export const OperonMark: React.FC<{ size?: number }> = ({ size = 26 }) => (
+  <svg width={size} height={size} viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" className="shrink-0" aria-hidden="true">
+    <defs>
+      <linearGradient id="operon-mark-g" x1="0" y1="1" x2="1" y2="0">
+        <stop offset="0" stopColor="#2563EB" /><stop offset="1" stopColor="#4F46E5" />
+      </linearGradient>
+    </defs>
+    <rect width="512" height="512" rx="112" fill="url(#operon-mark-g)" />
+    <path d="M256 96L394.6 176V336L256 416L117.4 336V176Z" fill="#fff" />
+  </svg>
+);
+
 export const OperonLogo: React.FC<{ size?: number; className?: string }> = ({ size = 26, className = '' }) => {
   return (
     <div className={`flex items-center gap-2.5 ${className}`}>
-      {/* Hexagonal Faceted Gem Logo */}
-      <svg width={size} height={size} viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0 drop-shadow-xs">
-        {/* Hexagonal Base */}
-        <path
-          d="M14 2L24.3923 8V20L14 26L3.6077 20V8L14 2Z"
-          fill="#2563EB"
-        />
-        {/* Inner geometric facets */}
-        <path
-          d="M14 2L24.3923 8L14 14L3.6077 8L14 2Z"
-          fill="#3B82F6"
-          opacity="0.9"
-        />
-        <path
-          d="M14 14L24.3923 8V20L14 26V14Z"
-          fill="#1D4ED8"
-        />
-        <path
-          d="M14 14L3.6077 8V20L14 26V14Z"
-          fill="#2563EB"
-        />
-        {/* Center highlight gem facet */}
-        <polygon
-          points="14,7 19,10 19,18 14,21 9,18 9,10"
-          fill="#FFFFFF"
-          opacity="0.25"
-        />
-      </svg>
+      <OperonMark size={size} />
       <span className="text-[20px] font-bold tracking-tight text-slate-900 font-sans">Operon</span>
     </div>
   );
