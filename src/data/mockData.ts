@@ -1,5 +1,20 @@
 import { MetricItem, CustomerSegment, DayActiveData, ProfitDataPoint, NotificationItem } from '../types';
 
+// Single source of truth for the headline store figures.
+// These were previously hardcoded (and inconsistent) in App.tsx,
+// ThreeScreenShowcase.tsx, ExportModal.tsx and server.ts.
+export const STORE_TOTALS = {
+  totalProfit: '$446.7K',
+  profitChange: '▲ 24,4%',
+  profitChangeRaw: '+24.4%',
+  activeProducts: 142,
+  repeatCustomerRate: 68,
+  repeatCustomerTarget: 80
+};
+
+// Matches the 2025 dates used by profitHistory and the DateRangeModal presets.
+export const DEFAULT_DATE_RANGE = '01 - 30 Jan, 2025';
+
 export const initialMetrics: MetricItem[] = [
   {
     id: 'page-views',

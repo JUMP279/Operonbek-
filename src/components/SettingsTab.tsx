@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { User, Bell, Globe, Shield, ChevronRight, UserPlus, Check, Sparkles, Store } from 'lucide-react';
 import { UserProfile, Language } from '../types';
-import { UserAvatarIcon } from './AuthModal';
+import { UserAvatarIcon } from './UserAvatar';
 import { useLanguage } from '../context/LanguageContext';
 import { AvatarQuickMenuModal } from './AvatarQuickMenuModal';
 
@@ -40,7 +40,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             <div
               id="btn-settings-avatar-trigger"
               className="relative cursor-pointer group/avatar shrink-0 active:scale-95 transition-transform"
-              title="Til va ro'yxatdan o'tish (Bosing)"
+              title={language === 'ru' ? 'Язык и настройки входа' : 'Тіл және кіру баптаулары'}
             >
               <UserAvatarIcon avatarId={userProfile?.avatarId || 1} size={42} />
               <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-blue-600 text-white rounded-full flex items-center justify-center ring-2 ring-white shadow-2xs">
@@ -58,7 +58,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
               <div className="text-[10px] text-blue-600 font-semibold flex items-center gap-1 mt-0.5">
                 <Globe className="w-2.5 h-2.5" />
                 <span className="uppercase">{language}</span>
-                <span>• Til va ro'yxatdan o'tish sozlamalari</span>
+                <span>• {language === 'ru' ? 'Язык и настройки входа' : 'Тіл және кіру баптаулары'}</span>
               </div>
             </div>
           </div>

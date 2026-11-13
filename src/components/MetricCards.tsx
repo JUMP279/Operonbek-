@@ -39,7 +39,9 @@ export const MetricCards: React.FC<MetricCardsProps> = ({ metrics, onSelectMetri
   };
 
   const getLocalizedComparisonText = (metric: MetricItem) => {
-    const numMatch = metric.comparisonText?.match(/[\d,.]+/);
+    // Must start on a digit: /[\d,.]+/ matched the "." in "vs. 14,653 last period"
+    // and rendered "vs. . өткен кезеңге қарағанда".
+    const numMatch = metric.comparisonText?.match(/\d[\d,.]*/);
     const num = numMatch ? numMatch[0] : '';
     if (language === 'ru') {
       return num ? `vs. ${num} за прошлый период` : 'по сравнению с прошлым периодом';
@@ -75,7 +77,8 @@ export const MetricCards: React.FC<MetricCardsProps> = ({ metrics, onSelectMetri
 
           {/* Change Badge & Comparison text */}
           <div className="flex flex-col gap-1">
-            <div className="flex items-center">
+            <div className="flex items-center min-h-[20px]">
+              {metric.change ? (
               <span
                 className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[11px] font-semibold leading-tight ${
                   metric.isPositive
@@ -86,9 +89,12 @@ export const MetricCards: React.FC<MetricCardsProps> = ({ metrics, onSelectMetri
                 <span className="text-[9px]">{metric.isPositive ? '▲' : '▼'}</span>
                 <span>{metric.change.replace('▲', '').replace('▼', '').trim()}</span>
               </span>
+              ) : (
+                <span className="text-[11px] font-semibold text-slate-300">—</span>
+              )}
             </div>
             <span className="text-[10px] text-slate-400 font-normal leading-tight truncate">
-              {getLocalizedComparisonText(metric)}
+              {metric.comparisonText || getLocalizedComparisonText(metric)}
             </span>
           </div>
         </div>

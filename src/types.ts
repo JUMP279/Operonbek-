@@ -74,7 +74,7 @@ export type OnboardingStep = 'select_catalog' | 'connect_business' | 'create_sta
 
 export type Language = 'kk' | 'ru';
 
-export type ActiveTab = 'overview' | 'messages' | 'inventory' | 'profile';
+export type ActiveTab = 'overview' | 'video' | 'analytics' | 'profile';
 export type ViewMode = 'single' | 'showcase' | 'full';
 
 export interface BusinessWidget {

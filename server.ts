@@ -73,7 +73,9 @@ async function startServer() {
         : 'Reply in natural, fluent and grammatically correct Kazakh (Қазақ тілінде).';
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3.7-flash',
+        // 'gemini-3.7-flash' does not exist, so every live call 404'd and the
+        // endpoint silently served the hardcoded fallback text instead.
+        model: 'gemini-3.6-flash',
         contents: [
           {
             role: 'user',

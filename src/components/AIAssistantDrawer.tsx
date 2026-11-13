@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { api } from '../lib/api';
 import {
   X,
   Sparkles,
@@ -92,6 +93,10 @@ export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({
   }, [language, t.aiOnline, orbState]);
 
   const recognitionRef = useRef<any>(null);
+  // Holds the live transcript. `recognition.onend` runs long after the closure
+  // that created it, so reading `input` there always saw a stale (usually empty)
+  // value and the dictated question was silently dropped.
+  const transcriptRef = useRef<string>('');
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const micStreamRef = useRef<MediaStream | null>(null);
@@ -103,46 +108,46 @@ export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({
       return [
         {
           icon: <BarChart3 className="w-3.5 h-3.5 text-blue-500" />,
-          label: "Пик во вторник (8,162)",
-          query: "Почему во вторник был зафиксирован пик активности (8,162) и как это использовать?"
+          label: 'Итоги периода',
+          query: 'Кратко подведи итоги моего бизнеса за последний месяц по реальным данным.'
         },
         {
           icon: <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />,
-          label: "Стратегия роста прибыли",
-          query: "Как увеличить общую чистую прибыль с $446.7K до $500K?"
+          label: 'Как поднять продажи',
+          query: 'Что мне сделать на этой неделе, чтобы увеличить продажи?'
         },
         {
           icon: <Users className="w-3.5 h-3.5 text-purple-500" />,
-          label: "Удержание до 80%",
-          query: "Какие шаги предпринять, чтобы повысить удержание клиентов с 68% до 80%?"
+          label: 'Запросы без продаж',
+          query: 'Почему часть клиентов интересуется, но не покупает, и как это исправить?'
         },
         {
           icon: <Zap className="w-3.5 h-3.5 text-amber-500" />,
-          label: "Анализ кликов и заказов",
-          query: "Клики упали на 10.5%, но заказы выросли на 4.4%. В чем причина?"
+          label: 'Идеи для Instagram',
+          query: 'Предложи 3 идеи постов для Instagram под мой бизнес.'
         }
       ];
     }
     return [
       {
         icon: <BarChart3 className="w-3.5 h-3.5 text-blue-500" />,
-        label: "Сейсенбі күнгі шың (8,162)",
-        query: "Неге сейсенбі күні 8,162 белсенділікпен ең жоғары күн болды және оны қалай тиімді пайдалануға болады?"
+        label: 'Кезең қорытындысы',
+        query: 'Нақты деректер бойынша соңғы айдағы бизнесімнің қорытындысын қысқаша айт.'
       },
       {
         icon: <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />,
-        label: "Пайданы өсіру стратегиясы",
-        query: "Жалпы таза пайданы $446.7K-дан $500K-ға дейін қалай көтеруге болады?"
+        label: 'Сатылымды қалай өсіру',
+        query: 'Осы аптада сатылымды көбейту үшін не істеуім керек?'
       },
       {
         icon: <Users className="w-3.5 h-3.5 text-purple-500" />,
-        label: "80% retention-ге жету",
-        query: "Қайта оралатын тұтынушылар үлесін 68%-дан 80%-ға арттыру үшін қандай қадамдар қажет?"
+        label: 'Сатылмаған сұраулар',
+        query: 'Неге кейбір клиенттер қызығады, бірақ сатып алмайды және оны қалай түзетуге болады?'
       },
       {
         icon: <Zap className="w-3.5 h-3.5 text-amber-500" />,
-        label: "Шертулер мен тапсырыстар",
-        query: "Шертулер 10.5%-ға азайса да, тапсырыстар неге 4.4%-ға өсті?"
+        label: 'Instagram идеялары',
+        query: 'Менің бизнесіме арналған Instagram үшін 3 пост идеясын ұсын.'
       }
     ];
   };
@@ -231,22 +236,14 @@ export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({
     setStatusMessage(t.aiTyping);
 
     try {
-      const res = await fetch('/api/ai/query', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: query,
-          storeContext,
-          language
-        })
-      });
-
-      const data = await res.json();
-      const defaultAiReply = language === 'ru'
-        ? "Operon AI: Данные проанализированы. Рекомендуется усилить маркетинг во вторник и повысить долю постоянных клиентов до 80%."
-        : "Operon AI: Деректер талданды. Сейсенбі күнгі маркетинг науқанын күшейту және тұрақты клиенттер үлесін 80%-ға дейін арттыру ұсынылады.";
-
-      const aiReply = data.reply || defaultAiReply;
+      if (!storeContext?.businessId) throw new Error('no-business');
+      // Oxirgi 10 ta xabar — AI oldingi savolga ishorani tushunishi uchun
+      const history = messages
+        .filter((m) => m.id !== 'welcome')
+        .slice(-10)
+        .map((m) => ({ role: (m.sender === 'user' ? 'user' : 'ai') as 'user' | 'ai', text: m.text }));
+      const data = await api.ask(storeContext.businessId, query, history);
+      const aiReply = data.answer;
 
       const aiMsg: Message = {
         id: (Date.now() + 1).toString(),
@@ -263,8 +260,8 @@ export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({
         id: (Date.now() + 1).toString(),
         sender: 'ai',
         text: language === 'ru'
-          ? "Operon AI: Розничные продавцы (2,884) приносят наибольшую прибыль ($446.7K). Удержание клиентов достигло 68%."
-          : "Operon AI: Бөлшек саудагерлер (2,884 аккаунт) ең көп пайда әкелуде ($446.7K). Тұрақты клиенттер үлесі қазіргі уақытта 68% құрайды.",
+          ? 'Не удалось получить ответ от Operon AI. Проверьте подключение и попробуйте ещё раз.'
+          : 'Operon AI жауап бере алмады. Байланысты тексеріп, қайталап көріңіз.',
         timestamp: language === 'ru' ? 'Сейчас' : 'Қазір'
       };
       setMessages((prev) => [...prev, fallbackMsg]);
@@ -272,7 +269,7 @@ export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({
     } finally {
       setLoading(false);
     }
-  }, [input, isListening, loading, speakText, stopListening, storeContext, language, t.aiTyping]);
+  }, [input, isListening, loading, speakText, stopListening, storeContext, language, t.aiTyping, messages]);
 
   // Microphone Voice Input handling
   const startListening = useCallback(async () => {
@@ -281,6 +278,7 @@ export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({
         window.speechSynthesis.cancel();
       }
 
+      transcriptRef.current = '';
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       micStreamRef.current = stream;
 
@@ -327,18 +325,22 @@ export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({
           const transcript = Array.from(event.results)
             .map((result: any) => result[0].transcript)
             .join('');
+          transcriptRef.current = transcript;
           setInput(transcript);
         };
 
         recognition.onerror = (event: any) => {
           console.warn('Speech recognition error:', event.error);
+          transcriptRef.current = '';
           stopListening();
         };
 
         recognition.onend = () => {
           stopListening();
-          if (input.trim()) {
-            handleSend(input);
+          const finalTranscript = transcriptRef.current.trim();
+          transcriptRef.current = '';
+          if (finalTranscript) {
+            handleSend(finalTranscript);
           }
         };
 
@@ -355,12 +357,15 @@ export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({
       setOrbState('idle');
       setStatusMessage(language === 'ru' ? 'Доступ к микрофону отклонен' : 'Микрофонға рұқсат берілмеді');
     }
-  }, [handleSend, input, language, stopListening]);
+  }, [handleSend, language, stopListening]);
 
   const toggleMic = useCallback(() => {
     if (isListening) {
+      // When SpeechRecognition is driving, `onend` performs the send. Sending
+      // here as well produced the same question twice.
+      const hadRecognition = !!recognitionRef.current;
       stopListening();
-      if (input.trim()) {
+      if (!hadRecognition && input.trim()) {
         handleSend(input);
       }
     } else {
@@ -404,7 +409,7 @@ export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({
             <button
               onClick={onClose}
               className="w-8 h-8 rounded-full bg-white/70 hover:bg-white text-slate-800 backdrop-blur-md shadow-xs flex items-center justify-center border border-white/60 mr-1 active:scale-95 transition-transform"
-              title="Orqaga"
+              title={language === 'ru' ? 'Назад' : 'Артқа'}
             >
               <ArrowLeft className="w-4 h-4 text-slate-800" />
             </button>

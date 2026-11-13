@@ -24,6 +24,9 @@ import {
 import { UserProfile, Language } from '../types';
 import { UserAvatarIcon } from './UserAvatar';
 import { useLanguage } from '../context/LanguageContext';
+import { InstagramConnectCard } from './InstagramConnectCard';
+import { TelegramConnectCard } from './TelegramConnectCard';
+import { LogoCard } from './LogoCard';
 import { ToolDetailView } from './ToolDetailView';
 import { AvatarQuickMenuModal } from './AvatarQuickMenuModal';
 
@@ -51,12 +54,16 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
   const [internalActiveTool, setInternalActiveTool] = useState<string | null>(null);
   const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
 
-  const uniqueId = userProfile?.uniqueCode || userProfile?.id || 'OPR-84920';
+  const uniqueId = userProfile?.uniqueCode || userProfile?.id || '';
 
-  const copyId = () => {
-    navigator.clipboard.writeText(uniqueId);
-    setCopiedId(true);
-    setTimeout(() => setCopiedId(false), 2000);
+  const copyId = async () => {
+    try {
+      await navigator.clipboard.writeText(uniqueId);
+      setCopiedId(true);
+      setTimeout(() => setCopiedId(false), 2000);
+    } catch (err) {
+      console.warn('Clipboard write failed:', err);
+    }
   };
 
   const handleToolClick = (toolId: string) => {
@@ -83,7 +90,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
     { code: 'ru', title: 'Русский', native: 'Русский', flag: '🇷🇺' }
   ];
 
-  const toolsList = [
+  const allTools = [
     {
       id: 'customer-response',
       titleKk: 'Клиенттерге жауап',
@@ -145,16 +152,16 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
       icon: <BarChart3 className="w-4 h-4 text-cyan-600" />,
       bg: 'bg-cyan-50/80',
       border: 'border-cyan-100',
-      badgeKk: '16.4K Live',
-      badgeRu: '16.4K Live',
+      badgeKk: 'Нақты',
+      badgeRu: 'Реальные',
       badgeColor: 'bg-cyan-100 text-cyan-700'
     },
     {
       id: 'business-analyze',
       titleKk: 'Бизнес талдауы',
       titleRu: 'Анализ бизнеса (ИИ)',
-      subtitleKk: 'Инсайттар, бәсекелестер және стратегия',
-      subtitleRu: 'Инсайты, конкуренты и стратегия',
+      subtitleKk: 'Kaspi, WB, Instagram, Telegram бәсекелестері',
+      subtitleRu: 'Конкуренты: Kaspi, WB, Instagram, Telegram',
       icon: <Sparkles className="w-4 h-4 text-purple-600" />,
       bg: 'bg-purple-50/80',
       border: 'border-purple-100',
@@ -166,8 +173,8 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
       id: 'orders-manager',
       titleKk: 'Тапсырыстар',
       titleRu: 'Заказы',
-      subtitleKk: '1,224 белсенді жеткізілім',
-      subtitleRu: '1,224 активных доставок',
+      subtitleKk: 'Сұраулар мен сатылымдар',
+      subtitleRu: 'Запросы и продажи',
       icon: <ShoppingBag className="w-4 h-4 text-violet-600" />,
       bg: 'bg-violet-50/80',
       border: 'border-violet-100',
@@ -202,6 +209,8 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
       badgeColor: 'bg-purple-100 text-purple-700'
     }
   ];
+  // 'business-analyze' qaytarildi (2026-11-09): endi REAL — BusinessAnalyzeView (raqobatchilar + biznes sog'lig'i).
+  const toolsList = allTools;
 
   return (
     <div className="space-y-3 pt-1 select-none pb-3">
@@ -247,14 +256,12 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
             </div>
 
             <div className="min-w-0 flex-1">
+              {/* Faqat do'kon nomi (kirgan biznes) — gmail ko'rsatilmaydi */}
               <div className="flex items-center gap-1.5">
-                <span className="text-xs font-extrabold text-slate-900 group-hover:text-blue-600 transition-colors truncate">
-                  {userProfile?.name || 'Shohjahon Uralbayev'}
+                <span className="text-[19px] leading-tight font-black text-slate-900 group-hover:text-blue-600 transition-colors truncate tracking-tight">
+                  {userProfile?.storeName || 'Operon'}
                 </span>
-                <ShieldCheck className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-              </div>
-              <div className="text-[11px] font-medium text-slate-500 truncate">
-                {userProfile?.storeName || 'Operon Flagship Global'}
+                <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
               </div>
               <button
                 onClick={(e) => {
@@ -296,6 +303,13 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
         </div>
       </div>
 
+      {/* Instagram ulash (real) */}
+      <InstagramConnectCard businessId={storeContext?.businessId} />
+      <TelegramConnectCard businessId={storeContext?.businessId} />
+
+      {/* Logotip — post rasmlarida chiqadi */}
+      <LogoCard businessId={storeContext?.businessId} />
+
       {/* Subscription Plan Active Status Banner (Interactive) */}
       <div
         onClick={() => handleToolClick('subscription')}
@@ -311,7 +325,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="text-xs font-black tracking-tight">Starter Plan</span>
-                <span className="text-[9px] bg-white/25 text-white font-bold px-1.5 py-0.2 rounded-full border border-white/20">
+                <span className="text-[9px] bg-white/25 text-white font-bold px-1.5 py-0.5 rounded-full border border-white/20">
                   {t.activePlan}
                 </span>
               </div>

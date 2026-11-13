@@ -9,6 +9,7 @@ interface ExportModalProps {
   dateRange: string;
   metrics: any[];
   totalProfit: string;
+  retention?: number;
 }
 
 export const ExportModal: React.FC<ExportModalProps> = ({
@@ -16,7 +17,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   onClose,
   dateRange,
   metrics,
-  totalProfit
+  totalProfit,
+  retention
 }) => {
   const { t, language } = useLanguage();
   const [exporting, setExporting] = useState(false);
@@ -33,42 +35,113 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     });
   };
 
+  // RFC 4180 quoting. Several values contain commas ("vs. 14,653 last period"),
+  // which previously shifted every following column in the generated CSV.
+  const toCsvCell = (value: string) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+
+  const buildReport = () => {
+    const header = ['Metric', 'Value', 'Change', 'Period'];
+    const rows = [
+      ...metrics.map((m) => [m.label, m.value, m.change, m.comparisonText]),
+      ['Revenue', totalProfit, '', dateRange],
+      ['Repeat Customer Rate', `${retention ?? 0}%`, '', dateRange]
+    ];
+    return { header, rows };
+  };
+
   const handleDownload = () => {
     setExporting(true);
     setTimeout(() => {
       triggerConfetti();
 
-      // Generate downloadable data
-      const dataRows = [
-        ['Metric', 'Value', 'Change', 'Period'],
-        ...metrics.map((m) => [m.label, m.value, m.change, m.comparisonText]),
-        ['Total Profit', totalProfit, '+24.4%', 'vs. last period'],
-        ['Repeat Customer Rate', '68%', 'On track', '80% target'],
-        ['Peak Day', 'Tuesday', '8,162 active', 'Highest activity']
-      ];
+      const { header, rows } = buildReport();
+      const safeRange = dateRange.replace(/[^\w-]+/g, '_');
+      let blob: Blob;
+      let extension: string;
 
-      const csvContent = 'data:text/csv;charset=utf-8,' + dataRows.map((e) => e.join(',')).join('\n');
-      const encodedUri = encodeURI(csvContent);
+      // Previously the picker was cosmetic: every format downloaded a .csv file.
+      if (format === 'json') {
+        const payload = {
+          report: 'Operon Analytics',
+          dateRange,
+          generatedAt: new Date().toISOString(),
+          rows: rows.map((r) => ({
+            metric: r[0],
+            value: r[1],
+            change: r[2],
+            period: r[3]
+          }))
+        };
+        blob = new Blob([JSON.stringify(payload, null, 2)], {
+          type: 'application/json;charset=utf-8'
+        });
+        extension = 'json';
+      } else if (format === 'pdf') {
+        // No PDF engine is bundled, so emit a printable HTML report the browser
+        // can save as PDF instead of silently handing back a CSV.
+        const tableRows = rows
+          .map(
+            (r) =>
+              `<tr>${r
+                .map((cell) => `<td>${String(cell ?? '').replace(/[<>&]/g, '')}</td>`)
+                .join('')}</tr>`
+          )
+          .join('');
+        const html = `<!doctype html><html><head><meta charset="utf-8">
+<title>Operon Analytics — ${dateRange}</title>
+<style>
+body{font-family:system-ui,sans-serif;padding:32px;color:#0f172a}
+h1{font-size:20px;margin:0 0 4px}p{color:#64748b;margin:0 0 20px;font-size:13px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{border:1px solid #e2e8f0;padding:8px 10px;text-align:left}
+th{background:#f1f5f9}
+@media print{@page{margin:16mm}}
+</style></head><body>
+<h1>Operon Analytics Report</h1><p>${dateRange}</p>
+<table><thead><tr>${header.map((h) => `<th>${h}</th>`).join('')}</tr></thead>
+<tbody>${tableRows}</tbody></table>
+<script>window.onload=function(){window.print()}</script>
+</body></html>`;
+        blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+        extension = 'html';
+      } else {
+        // Leading BOM so Excel opens the Cyrillic labels in UTF-8.
+        const csv =
+          '﻿' +
+          [header, ...rows].map((row) => row.map(toCsvCell).join(',')).join('\r\n');
+        blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+        extension = 'csv';
+      }
+
+      // Blob + object URL: encodeURI() on a data: URI mangles '#' and the ▲/▼ glyphs.
+      const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.setAttribute('href', encodedUri);
-      link.setAttribute('download', `Operon_Analytics_${dateRange.replace(/\s+/g, '_')}.csv`);
+      link.href = url;
+      link.download = `Operon_Analytics_${safeRange}.${extension}`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      URL.revokeObjectURL(url);
 
       setExporting(false);
     }, 600);
   };
 
-  const handleCopy = () => {
+  const handleCopy = async () => {
     const summary = `📊 Operon Analytics Report (${dateRange})\n` +
-      `• Total Profit: ${totalProfit} (+24.4%)\n` +
+      `• Revenue: ${totalProfit}\n` +
       metrics.map((m) => `• ${m.label}: ${m.value} (${m.change})`).join('\n') +
-      `\n• Repeat Customer Rate: 68%\n• Peak Day Active: Tuesday (8,162 sessions)`;
+      `\n• Repeat Customer Rate: ${retention ?? 0}%`;
 
-    navigator.clipboard.writeText(summary);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(summary);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      // clipboard API is unavailable outside secure contexts — don't leave an
+      // unhandled rejection and don't flash a false "copied" confirmation.
+      console.warn('Clipboard write failed:', err);
+    }
   };
 
   return (

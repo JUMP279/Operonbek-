@@ -89,7 +89,7 @@ export const CustomerBreakdown: React.FC<CustomerBreakdownProps> = ({
             </div>
 
             {/* Progress Bar */}
-            <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden ml-8">
+            <div className="w-[calc(100%-2rem)] h-1.5 bg-slate-100 rounded-full overflow-hidden ml-8">
               <div
                 className="h-full rounded-full transition-all duration-500"
                 style={{

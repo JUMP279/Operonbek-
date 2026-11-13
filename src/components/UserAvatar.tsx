@@ -21,7 +21,7 @@ export const AVATAR_LIST: AvatarMeta[] = [
     id: 1,
     gender: 'male',
     name: 'Shohjahon',
-    label: 'Erkak (Ko‘zoynakli & Klassik)',
+    label: 'Мужчина (в очках, классика)',
     bg: '#DBEAFE', // Soft Blue
     shirt: '#1E3A8A', // Navy Blue
     skin: '#FED7AA',
@@ -35,7 +35,7 @@ export const AVATAR_LIST: AvatarMeta[] = [
     id: 2,
     gender: 'male',
     name: 'Jasur',
-    label: 'Erkak (Zamonaviy Tadbirkor)',
+    label: 'Мужчина (современный предприниматель)',
     bg: '#DCFCE7', // Soft Emerald
     shirt: '#065F46', // Dark Emerald
     skin: '#FDBA74',
@@ -49,7 +49,7 @@ export const AVATAR_LIST: AvatarMeta[] = [
     id: 3,
     gender: 'female',
     name: 'Madina',
-    label: 'Qiz bola (Nafis & To‘lqinsimon)',
+    label: 'Женщина (волнистые волосы)',
     bg: '#FCE7F3', // Soft Pink
     shirt: '#BE185D', // Rose Pink
     skin: '#FED7AA',
@@ -63,7 +63,7 @@ export const AVATAR_LIST: AvatarMeta[] = [
     id: 4,
     gender: 'female',
     name: 'Laylo',
-    label: 'Qiz bola (Kare & Zamonaviy)',
+    label: 'Женщина (каре, современный стиль)',
     bg: '#EDE9FE', // Soft Purple
     shirt: '#6D28D9', // Deep Purple
     skin: '#FDE68A',

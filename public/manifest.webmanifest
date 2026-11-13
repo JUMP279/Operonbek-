@@ -1,0 +1,14 @@
+{
+  "name": "Operon",
+  "short_name": "Operon",
+  "description": "AI-оператор для вашего бизнеса",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FAFAFC",
+  "theme_color": "#FAFAFC",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

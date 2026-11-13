@@ -53,7 +53,7 @@ export const ToolDemoModal: React.FC<ToolDemoModalProps> = ({
             <button
               onClick={() => setIsFullscreen(!isFullscreen)}
               className="p-1 hover:bg-slate-800 rounded-md text-slate-300 hover:text-white transition-colors"
-              title={isFullscreen ? "Kichraytirish" : "To'liq ekranga yoyish"}
+              title={isFullscreen ? 'Свернуть' : 'Развернуть'}
             >
               {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
             </button>

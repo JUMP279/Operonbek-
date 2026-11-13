@@ -1,37 +1,42 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { X, Calendar as CalendarIcon, Check } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+
+export const RANGE_OPTIONS = [1, 7, 30, 90, 365] as const;
+
+export function rangeLabel(days: number, language: string): string {
+  const ru = language !== 'kk';
+  if (days === 1) return ru ? 'Сегодня' : 'Бүгін';
+  if (days === 365) return ru ? 'Последний год' : 'Соңғы жыл';
+  return ru ? `Последние ${days} дней` : `Соңғы ${days} күн`;
+}
 
 interface DateRangeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  currentRange: string;
-  onSelectRange: (range: string) => void;
+  currentDays: number;
+  onSelectDays: (days: number) => void;
 }
 
 export const DateRangeModal: React.FC<DateRangeModalProps> = ({
   isOpen,
   onClose,
-  currentRange,
-  onSelectRange
+  currentDays,
+  onSelectDays
 }) => {
   const { t, language } = useLanguage();
-  const [selected, setSelected] = useState(currentRange);
 
   if (!isOpen) return null;
 
-  const presets = [
-    { label: 'Jan 1, 2025 - Feb 1, 2025', sub: language === 'ru' ? 'Стандартный период' : 'Таңдалған кезең' },
-    { label: language === 'ru' ? 'Сегодня (1 Фев 2025)' : 'Бүгін (1 Ақп 2025)', sub: language === 'ru' ? 'В реальном времени' : 'Тікелей трафик' },
-    { label: language === 'ru' ? 'Последние 7 дней' : 'Соңғы 7 күн', sub: 'Jan 25, 2025 - Jan 31, 2025' },
-    { label: language === 'ru' ? 'Последние 30 дней' : 'Соңғы 30 күн', sub: 'Jan 2, 2025 - Jan 31, 2025' },
-    { label: language === 'ru' ? 'Текущий квартал (Q1 2025)' : 'Ағымдағы тоқсан (Q1 2025)', sub: 'Jan 1, 2025 - Mar 31, 2025' },
-    { label: language === 'ru' ? 'С начала 2025 года' : '2025 жылдың басынан бері', sub: 'Jan 1, 2025 - Today' }
-  ];
+  const fmt = (d: Date) => d.toLocaleDateString(language === 'kk' ? 'kk-KZ' : 'ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
+  const presets = RANGE_OPTIONS.map((days) => {
+    const from = new Date();
+    from.setDate(from.getDate() - (days - 1));
+    return { days, label: rangeLabel(days, language), sub: days === 1 ? fmt(new Date()) : `${fmt(from)} — ${fmt(new Date())}` };
+  });
 
-  const handleApply = (range: string) => {
-    setSelected(range);
-    onSelectRange(range);
+  const handleApply = (days: number) => {
+    onSelectDays(days);
     onClose();
   };
 
@@ -55,11 +60,11 @@ export const DateRangeModal: React.FC<DateRangeModalProps> = ({
 
         <div className="my-3 space-y-1.5">
           {presets.map((item) => {
-            const isMatch = selected === item.label;
+            const isMatch = currentDays === item.days;
             return (
               <button
-                key={item.label}
-                onClick={() => handleApply(item.label)}
+                key={item.days}
+                onClick={() => handleApply(item.days)}
                 className={`w-full p-3 rounded-2xl text-left border flex items-center justify-between transition-all ${
                   isMatch
                     ? 'border-blue-600 bg-blue-50/60 ring-1 ring-blue-600'

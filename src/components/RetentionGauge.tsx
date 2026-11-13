@@ -1,18 +1,29 @@
 import React from 'react';
 import { useLanguage } from '../context/LanguageContext';
+import { RetentionDetail } from '../lib/api';
 
 interface RetentionGaugeProps {
   percentage?: number;
   target?: number;
+  /** Real tafsilot (routers/dashboard.py) — qaysi asosda hisoblangani va sonlar */
+  detail?: RetentionDetail | null;
   onShowDetails?: () => void;
 }
 
 export const RetentionGauge: React.FC<RetentionGaugeProps> = ({
-  percentage = 68,
-  target = 80,
+  percentage = 0,
+  target = 40,
+  detail,
   onShowDetails
 }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const ru = language !== 'kk';
+  const basis = detail?.basis || 'none';
+  const sub = basis === 'sales'
+    ? (ru ? `${detail!.returning_buyers} из ${detail!.buyers} покупателей вернулись` : `${detail!.buyers} сатып алушының ${detail!.returning_buyers}-і қайта келді`)
+    : basis === 'chats'
+      ? (ru ? `${detail!.chat_returning} из ${detail!.chat_customers} клиентов написали снова` : `${detail!.chat_customers} клиенттің ${detail!.chat_returning}-і қайта жазды`)
+      : (ru ? 'Пока нет покупок и переписок' : 'Сатып алу мен хат алмасу әзірге жоқ');
 
   // Generate radial dash segments around a semi-circle arch
   const totalTicks = 34;
@@ -81,7 +92,7 @@ export const RetentionGauge: React.FC<RetentionGaugeProps> = ({
             {percentage}%
           </span>
           <span className="text-[11px] text-slate-400 font-normal mt-1">
-            {t.retentionTarget}
+            {sub} · {ru ? 'цель' : 'мақсат'} {target}%
           </span>
         </div>
       </div>

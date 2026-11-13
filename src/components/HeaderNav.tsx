@@ -1,6 +1,6 @@
 import React from 'react';
 import { Bell, Globe } from 'lucide-react';
-import { UserAvatarIcon } from './AuthModal';
+import { UserAvatarIcon } from './UserAvatar';
 import { UserProfile, Language } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -8,11 +8,10 @@ interface HeaderNavProps {
   onOpenNotifications?: () => void;
   onOpenFilter?: () => void;
   onOpenProfile?: () => void;
-  onOpenAuth?: () => void;
+  onOpenAuth?: (mode?: 'login' | 'register') => void;
   onOpenAvatarMenu?: () => void;
   unreadCount?: number;
   userProfile?: UserProfile | null;
-  showLanguageToggle?: boolean;
 }
 
 export const OperonLogo: React.FC<{ size?: number; className?: string }> = ({ size = 26, className = '' }) => {
@@ -89,8 +88,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
   onOpenAuth,
   onOpenAvatarMenu,
   unreadCount = 2,
-  userProfile,
-  showLanguageToggle = true
+  userProfile
 }) => {
   const { t, language, setLanguage } = useLanguage();
   const avatarId = userProfile?.avatarId || 1;
@@ -145,7 +143,12 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
         {/* User Profile Avatar - Opens Avatar Quick Menu (Language, Registration & Account) */}
         <button
           id="btn-user-avatar"
-          onClick={onOpenAvatarMenu || onOpenProfile || onOpenAuth}
+          onClick={() => {
+            // Wrapped so the click event is never forwarded as the `mode` argument.
+            if (onOpenAvatarMenu) onOpenAvatarMenu();
+            else if (onOpenProfile) onOpenProfile();
+            else if (onOpenAuth) onOpenAuth('login');
+          }}
           className="w-9 h-9 rounded-full overflow-hidden border-2 border-white ring-1 ring-slate-200/80 hover:ring-blue-400 active:scale-95 transition-all shrink-0 shadow-xs flex items-center justify-center cursor-pointer"
           title={userProfile ? userProfile.name : t.profileAccount}
         >

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Compass, Mail, Package, User } from 'lucide-react';
+import { Compass, Clapperboard, BarChart3, User } from 'lucide-react';
 import { ActiveTab } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -9,10 +9,10 @@ interface BottomNavBarProps {
 }
 
 export const BottomNavBar: React.FC<BottomNavBarProps> = ({ activeTab, onChangeTab }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   return (
-    <div className="w-full bg-white border-t border-slate-100/90 px-7 pt-2.5 pb-4 flex flex-col items-center select-none shrink-0 z-20">
+    <div className="w-full bg-white border-t border-slate-100/90 px-7 pt-2.5 pb-[max(1rem,env(safe-area-inset-bottom))] flex flex-col items-center select-none shrink-0 z-20">
       <div className="w-full flex items-center justify-between py-0.5">
         {/* Tab 1: Overview / Compass */}
         <button
@@ -32,38 +32,38 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ activeTab, onChangeT
           )}
         </button>
 
-        {/* Tab 2: Messages / Mail / Orders */}
+        {/* Tab 2: Video yaratish */}
         <button
-          id="tab-messages"
-          onClick={() => onChangeTab('messages')}
+          id="tab-video"
+          onClick={() => onChangeTab('video')}
           className="relative flex flex-col items-center justify-center p-2 text-slate-700 hover:text-blue-600 transition-all active:scale-95"
-          title={t.navOrders}
+          title={language === 'ru' ? 'Видео' : 'Бейне'}
         >
-          <Mail
+          <Clapperboard
             className={`w-[22px] h-[22px] transition-colors ${
-              activeTab === 'messages' ? 'text-blue-600' : 'text-slate-400'
+              activeTab === 'video' ? 'text-blue-600' : 'text-slate-400'
             }`}
-            strokeWidth={activeTab === 'messages' ? 2.3 : 1.8}
+            strokeWidth={activeTab === 'video' ? 2.3 : 1.8}
           />
-          {activeTab === 'messages' && (
+          {activeTab === 'video' && (
             <div className="absolute -bottom-1 w-5 h-[2.5px] bg-blue-600 rounded-full transition-all" />
           )}
         </button>
 
-        {/* Tab 3: Package / Inventory */}
+        {/* Tab 3: Analitika */}
         <button
-          id="tab-inventory"
-          onClick={() => onChangeTab('inventory')}
+          id="tab-analytics"
+          onClick={() => onChangeTab('analytics')}
           className="relative flex flex-col items-center justify-center p-2 text-slate-700 hover:text-blue-600 transition-all active:scale-95"
-          title={t.navInventory}
+          title={language === 'ru' ? 'Аналитика' : 'Аналитика'}
         >
-          <Package
+          <BarChart3
             className={`w-[22px] h-[22px] transition-colors ${
-              activeTab === 'inventory' ? 'text-blue-600' : 'text-slate-400'
+              activeTab === 'analytics' ? 'text-blue-600' : 'text-slate-400'
             }`}
-            strokeWidth={activeTab === 'inventory' ? 2.3 : 1.8}
+            strokeWidth={activeTab === 'analytics' ? 2.3 : 1.8}
           />
-          {activeTab === 'inventory' && (
+          {activeTab === 'analytics' && (
             <div className="absolute -bottom-1 w-5 h-[2.5px] bg-blue-600 rounded-full transition-all" />
           )}
         </button>

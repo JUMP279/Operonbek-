@@ -69,7 +69,10 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
             </div>
             <div>
               <h3 className="text-base font-extrabold text-slate-900">{t.addWidgets}</h3>
-              <p className="text-xs text-slate-400">{availableWidgets.length} ta asosiy biznes vidjetlari</p>
+              <p className="text-xs text-slate-400">
+                {availableWidgets.length}{' '}
+                {language === 'ru' ? 'основных бизнес-виджетов' : 'негізгі бизнес виджеттері'}
+              </p>
             </div>
           </div>
           <button
@@ -103,7 +106,7 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold text-slate-900">{displayName}</span>
-                      <span className="text-[9.5px] px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-600 font-bold">
+                      <span className="text-[9.5px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-bold">
                         {w.badge || w.category}
                       </span>
                     </div>
@@ -133,7 +136,8 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
             onClick={onClose}
             className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-98 text-white rounded-xl font-bold text-xs transition-all shadow-xs"
           >
-            {t.done} ({activeWidgetIds.length} / 8 {language === 'ru' ? 'активно' : 'белсенді'})
+            {t.done} ({activeWidgetIds.length} / {availableWidgets.length}{' '}
+            {language === 'ru' ? 'активно' : 'белсенді'})
           </button>
         </div>
       </div>

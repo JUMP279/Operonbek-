@@ -1,1177 +1,869 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ArrowLeft,
-  Video,
-  Sparkles,
-  RefreshCw,
-  Upload,
-  Calendar,
-  Clock,
-  Instagram,
-  Send,
-  Sliders,
-  CheckCircle2,
-  Play,
-  Pause,
   Film,
-  Flame,
-  Search,
+  Library,
+  RefreshCw,
+  Loader2,
+  AlertCircle,
+  CalendarClock,
+  Wand2,
   Check,
-  ChevronRight,
-  Plus,
-  Trash2,
-  Copy,
-  Bot,
-  BrainCircuit,
-  Music,
-  FileVideo,
-  Wand2
+  ChevronDown,
+  ChevronUp,
+  Upload,
+  Pencil,
+  X,
+  Clock,
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { api, ApiError, CharacterCandidate, VideoItem, VideoPlan, VideoPlanItem, VideoProfile } from '../lib/api';
+import { formatDay } from '../lib/format';
+import { NicheGate } from './NicheGate';
 
 export interface AIVideoGeneratorViewProps {
   onBack: () => void;
+  storeContext?: { businessId?: string };
 }
 
-type TabType = 'ai-video' | 'ideas' | 'order-upload' | 'settings' | 'schedule';
+type Tab = 'plan' | 'library';
 
-interface VideoIdea {
-  id: string;
-  title: string;
-  category: string;
-  viralScore: number;
-  hook: string;
-  duration: string;
-  platform: 'Instagram' | 'Telegram' | 'TikTok' | 'Barchasi';
-  description: string;
+const DIRECTIONS = {
+  ru: ['Показ товаров', 'Акции и скидки', 'Как мы работаем (закулисье)', 'Отзывы и доверие', 'Полезные советы'],
+  kk: ['Тауарларды көрсету', 'Акциялар мен жеңілдіктер', 'Қалай жұмыс істейміз', 'Пікірлер мен сенім', 'Пайдалы кеңестер'],
+};
+const GENRES = {
+  ru: ['Реклама (динамично)', 'Эстетика / уютно', 'Юмор', 'Новости / факты', 'Эмоциональная история'],
+  kk: ['Жарнама (серпінді)', 'Эстетика / жайлы', 'Әзіл', 'Жаңалық / факт', 'Эмоциялық әңгіме'],
+};
+
+const T = {
+  ru: {
+    title: 'AI видео', back: 'Назад', plan: 'План', library: 'Мои видео',
+    wizTitle: 'Настроим ваши видео (один раз)',
+    wizHint: 'Operon будет делать каждое видео по этим правилам.',
+    q1: 'О чём должны быть видео?', q2: 'В каком жанре?', q3: 'Кто будет героем видео? Видео снимаются в стиле UGC — как будто настоящий покупатель снял на телефон.',
+    q4: 'Максимальная длина видео', sec: (n: number) => `${n} сек`,
+    secHint: 'Длину Operon подбирает сам под тип видео: без слов с музыкой — 5 сек, показ товара — 10, совет — 15, три шага — до 20. Здесь вы задаёте только максимум.',
+    styleSilent: 'Без слов · музыка', styleCloseup: 'Крупный план', styleWide: 'В полный рост',
+    own: 'Свой вариант…', yes: 'Выберу сам', no: 'Пусть AI подберёт',
+    photo: 'Фото героя', photoHint: 'Загрузите фото — AI опишет героя и будет показывать его в видео.',
+    note: 'Какой герой нужен?', notePh: 'Например: пожилой добрый бариста / весёлая девушка / смешной кот',
+    oneHero: 'Во всех видео будет ОДИН и тот же герой.',
+    findPin: 'Найти в Pinterest', pinLink: 'Ссылка Pinterest', upload: 'Своё фото', noPhoto: 'Создать по описанию (AI)',
+    aiHint: 'Operon сам подберёт героя под ваш магазин и покажет его. Не нравится — нажмите «Ещё вариант».',
+    aiAnother: 'Ещё вариант', aiMaking: 'AI создаёт героя (до 1 минуты)…',
+    pinLinkPh: 'https://pin.it/… или pinterest.com/pin/…', usePin: 'Взять',
+    searching: 'Ищем героев в Pinterest…', pickOne: 'Выберите героя:', nothing: 'Ничего не нашлось — уточните описание.',
+    more: 'Ещё варианты',
+    analyzing: 'AI изучает героя (до 2 минут)…', heroReady: 'Герой сохранён — он будет в каждом видео',
+    heroText: 'Герой создан по описанию', heroFail: 'Не удалось изучить фото — опишите героя словами и нажмите «Создать по описанию».',
+    change: 'Сменить героя',
+    pinErr: { not_pinterest: 'Нужна ссылка именно с Pinterest. Другое фото — загрузите через «Своё фото».', no_image: 'По ссылке нет картинки.', generic: 'Не удалось взять фото — попробуйте ещё раз.' },
+    extra: 'Ещё правила (необязательно)', extraPh: 'Например: всегда показывать вывеску магазина',
+    save: 'Сохранить', saving: 'Сохраняем…',
+    timesTitle: 'Когда публиковать?',
+    cadence: (c: VideoPlan['cadence']) =>
+      `Ваш тариф: ${c.monthly} видео в месяц — ${c.per_day === 2 ? '2 в день' : c.every_days === 2 ? 'каждые 2 дня' : 'каждый день'}.`,
+    timesHint: 'Видео создаётся заранее и выходит в Instagram (Reels + Stories) в выбранное время.',
+    time: 'Время', start: 'Запустить план', starting: 'Создаём план…',
+    upcoming: 'Ближайшие видео', editStyle: 'Изменить стиль', stop: 'Остановить план',
+    stopConfirm: 'Точно остановить? Будущие видео удалятся.',
+    pendingScript: 'Сценарий появится после выхода предыдущего видео',
+    preparing: 'AI пишет сценарий…',
+    ready: 'Видео готово — выйдет по расписанию', published: 'Опубликовано', failed: 'Не получилось',
+    scenario: 'Сценарий', other: 'Другой вариант',
+    askTitle: 'Как мне сделать это видео?',
+    askPh: 'Напишите своё пожелание… (можно оставить пустым)',
+    byWish: 'Сделать по-моему', byAi: 'Придумай сам', cancel: 'Отмена', writing: 'Пишем новый сценарий…',
+    empty: 'Пока нет видео.',
+    errors: { network: 'Нет связи с сервером.', generic: 'Ошибка — попробуйте ещё раз.', busy: 'Это видео уже готовится — изменить нельзя.' },
+  },
+  kk: {
+    title: 'AI бейне', back: 'Артқа', plan: 'Жоспар', library: 'Бейнелерім',
+    wizTitle: 'Бейнелеріңізді баптайық (бір рет)',
+    wizHint: 'Operon әр бейнені осы ережелер бойынша жасайды.',
+    q1: 'Бейнелер не туралы болсын?', q2: 'Қандай жанрда?', q3: 'Бейне кейіпкері кім болады? Бейнелер UGC стилінде — нағыз сатып алушы телефонға түсіргендей.',
+    q4: 'Бейненің ең ұзақ уақыты', sec: (n: number) => `${n} сек`,
+    secHint: 'Ұзақтықты Operon бейне түріне қарай өзі таңдайды: сөзсіз, музыкамен — 5 сек, тауарды көрсету — 10, кеңес — 15, үш қадам — 20-ға дейін. Мұнда тек ең ұзақ шекті белгілейсіз.',
+    styleSilent: 'Сөзсіз · музыка', styleCloseup: 'Жақын план', styleWide: 'Толық бойымен',
+    own: 'Өз нұсқаңыз…', yes: 'Өзім таңдаймын', no: 'AI таңдасын',
+    photo: 'Кейіпкер суреті', photoHint: 'Сурет жүктеңіз — AI кейіпкерді сипаттап, бейнеде көрсетеді.',
+    note: 'Қандай кейіпкер керек?', notePh: 'Мысалы: қарт мейірімді бариста / көңілді қыз / күлкілі мысық',
+    oneHero: 'Барлық бейнеде БІР ғана кейіпкер болады.',
+    findPin: 'Pinterest-тен табу', pinLink: 'Pinterest сілтемесі', upload: 'Өз суретім', noPhoto: 'Сипаттама бойынша жасау (AI)',
+    aiHint: 'Operon дүкеніңізге сай кейіпкерді өзі таңдап, көрсетеді. Ұнамаса — «Басқа нұсқа» басыңыз.',
+    aiAnother: 'Басқа нұсқа', aiMaking: 'AI кейіпкер жасап жатыр (1 минутқа дейін)…',
+    pinLinkPh: 'https://pin.it/… немесе pinterest.com/pin/…', usePin: 'Алу',
+    searching: 'Pinterest-тен кейіпкер іздеп жатырмыз…', pickOne: 'Кейіпкерді таңдаңыз:', nothing: 'Ештеңе табылмады — сипаттаманы нақтылаңыз.',
+    more: 'Басқа нұсқалар',
+    analyzing: 'AI кейіпкерді зерттеп жатыр (2 минутқа дейін)…', heroReady: 'Кейіпкер сақталды — ол әр бейнеде болады',
+    heroText: 'Кейіпкер сипаттама бойынша жасалды', heroFail: 'Суретті зерттеу мүмкін болмады — кейіпкерді сөзбен сипаттап, «Сипаттама бойынша жасау» басыңыз.',
+    change: 'Кейіпкерді ауыстыру',
+    pinErr: { not_pinterest: 'Тек Pinterest сілтемесі керек. Басқа суретті «Өз суретім» арқылы жүктеңіз.', no_image: 'Сілтемеде сурет жоқ.', generic: 'Суретті алу мүмкін болмады — қайталаңыз.' },
+    extra: 'Қосымша ереже (міндетті емес)', extraPh: 'Мысалы: дүкен маңдайшасын әрдайым көрсету',
+    save: 'Сақтау', saving: 'Сақталуда…',
+    timesTitle: 'Қашан жариялау керек?',
+    cadence: (c: VideoPlan['cadence']) =>
+      `Тарифіңіз: айына ${c.monthly} бейне — ${c.per_day === 2 ? 'күніне 2' : c.every_days === 2 ? '2 күнде 1' : 'күн сайын'}.`,
+    timesHint: 'Бейне алдын ала жасалып, таңдалған уақытта Instagram-ға (Reels + Stories) шығады.',
+    time: 'Уақыт', start: 'Жоспарды бастау', starting: 'Жоспар жасалуда…',
+    upcoming: 'Жақын бейнелер', editStyle: 'Стильді өзгерту', stop: 'Жоспарды тоқтату',
+    stopConfirm: 'Шынымен тоқтатасыз ба? Болашақ бейнелер өшеді.',
+    pendingScript: 'Сценарий алдыңғы бейне шыққаннан кейін дайын болады',
+    preparing: 'AI сценарий жазуда…',
+    ready: 'Бейне дайын — кесте бойынша шығады', published: 'Жарияланды', failed: 'Шықпады',
+    scenario: 'Сценарий', other: 'Басқа нұсқа',
+    askTitle: 'Бұл бейнені қалай жасайын?',
+    askPh: 'Тілегіңізді жазыңыз… (бос қалдыруға болады)',
+    byWish: 'Менің айтқанымдай', byAi: 'Өзің ойлап тап', cancel: 'Бас тарту', writing: 'Жаңа сценарий жазылуда…',
+    empty: 'Әзірге бейне жоқ.',
+    errors: { network: 'Серверге қосылу жоқ.', generic: 'Қате — қайталап көріңіз.', busy: 'Бұл бейне дайындалуда — өзгерту мүмкін емес.' },
+  },
+};
+
+const pad = (n: number) => String(n).padStart(2, '0');
+function localWhen(iso: string, lang: string): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  return `${formatDay(iso, lang)}, ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-interface ScheduledVideo {
-  id: string;
-  title: string;
-  thumbnail: string;
-  platform: 'Instagram' | 'Telegram' | 'TikTok';
-  scheduledTime: string;
-  status: 'Kutilmoqda' | 'Nashr etildi' | 'Qoralama' | 'Jarayonda';
-  viewsForecast: string;
-}
-
-export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBack }) => {
-  const { language } = useLanguage();
-  const [activeTab, setActiveTab] = useState<TabType>('ai-video');
-
-  // Channels connection state
-  const [instagramConnected, setInstagramConnected] = useState(true);
-  const [telegramConnected, setTelegramConnected] = useState(true);
-  const [tiktokConnected, setTiktokConnected] = useState(false);
-
-  // Trend search modal
-  const [showTrendSearch, setShowTrendSearch] = useState(false);
-  const [trendSearching, setTrendSearching] = useState(false);
-  const [trendResults, setTrendResults] = useState<any[]>([]);
-
-  // Tab 1: AI Video state
-  const [topic, setTopic] = useState('Yangi mavsumiy kolleksiya va mijozlar uchun maxsus 20% chegirma');
-  const [additionalNote, setAdditionalNote] = useState("Do'kon ichida, xaridorlar gavjum paytida suratga olinsin, quvnoq va baquvvat ritmda bo'lsin");
-  const [isGeneratingScript, setIsGeneratingScript] = useState(false);
-  const [copiedNotice, setCopiedNotice] = useState(false);
-  const [generatedScript, setGeneratedScript] = useState<any | null>({
-    title: "Mavsumiy yangi kolleksiya — 3 soniyalik viral hook",
-    hook: "«Agar do'koningizga hali kirmagan bo'lsangiz, bugungi trendlarni o'tkazib yubordingiz!»",
-    scenes: [
-      { sec: "0-3s", visual: "Kameraga yaqinlashib eng chiroyli kiyim kadrga tutiladi, savol bilan boshlanadi.", audio: "Trend phonk beat / Bass drop" },
-      { sec: "4-9s", visual: "Kassadagi va rastadagi xursand mijozlar, qulay narx belgilari va sifat detallari.", audio: "Dinamik musiqa + Ovozli hikoya" },
-      { sec: "10-15s", visual: "Do'kon manzili, bio dagi havola va chegirma kuponi ekranda chaqnaydi.", audio: "Outro + Call-to-action" }
-    ],
-    hashtags: "#trend #yangi_kolleksiya #shopping #uzbekistan #toshkent #chegirma",
-    recommendedAudio: "Asap Rocky - Praise The Lord (Remix Viral)",
-    agentReviews: [
-      { agent: "1-Agent: Ssenarist AI", role: "Hook & Dialog", verdict: "98% e'tibor ushlash kuchi. Birinchi 3 soniya judayam kuchli." },
-      { agent: "2-Agent: Vizual Direktor", role: "Ritm & Montaj", verdict: "9:16 vertikal format, 12 ta tezkor kesish tavsiya etildi." },
-      { agent: "3-Agent: SMM Operator", role: "Nashr & SEO", verdict: "Instagram Reels uchun eng qulay vaqt: Bugun soat 18:45." }
-    ]
+function fileToBase64(f: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result || ''));
+    r.onerror = reject;
+    r.readAsDataURL(f);
   });
+}
 
-  // Tab 2: Ideas state
-  const [ideas, setIdeas] = useState<VideoIdea[]>([
-    {
-      id: 'idea-1',
-      title: "«Do'kondagi eng ko'p sotilgan 3 ta mahsulot siri»",
-      category: 'Mahsulot taqdimoti',
-      viralScore: 94,
-      hook: "«Nega bu 3 ta kiyim 2 kunda tugab qoldi? Sababini bilmoqchimisiz?»",
-      duration: '15 soniya',
-      platform: 'Instagram',
-      description: "Xaridorlarning eng sevimli tanlovlarini ko'rsatib, ijtimoiy isbot orqali ishonch uyg'otish."
-    },
-    {
-      id: 'idea-2',
-      title: "«Sifatni tekshirish: Yuvish va cho'zilish testi»",
-      category: 'Mijoz ishonchi',
-      viralScore: 97,
-      hook: "«Kiyimlarimiz 50 marta yuvilgandan keyin rangi o'chadimi? Keling tekshiramiz!»",
-      duration: '22 soniya',
-      platform: 'TikTok',
-      description: "Haqiqiy tajriba va sifat kafolatini ko'rsatuvchi virusli video formati."
-    },
-    {
-      id: 'idea-3',
-      title: "«Kassirning bir kuni: Eng g'alati xaridorlar savollari»",
-      category: 'Komediya & Lifestyle',
-      viralScore: 89,
-      hook: "«— Aka, bu kiyimni kiyib to'yga borsam hamma qaraydimi? 😂»",
-      duration: '18 soniya',
-      platform: 'Barchasi',
-      description: "Samimiy, kulgili va do'kon xodimlari bilan bog'langan iliq atmosferadagi rolik."
+export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBack, storeContext }) => {
+  const { language } = useLanguage();
+  const lang: 'ru' | 'kk' = language === 'ru' ? 'ru' : 'kk';
+  const L = T[lang];
+  const businessId = storeContext?.businessId;
+
+  const [tab, setTab] = useState<Tab>('plan');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [profile, setProfile] = useState<VideoProfile | null>(null);
+  const [profileDone, setProfileDone] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [plan, setPlan] = useState<VideoPlan | null>(null);
+  const [videos, setVideos] = useState<VideoItem[]>([]);
+
+  // so'rovnoma
+  const [direction, setDirection] = useState('');
+  const [genre, setGenre] = useState('');
+  const [hasChar, setHasChar] = useState<boolean | null>(null);
+  const [charNote, setCharNote] = useState('');
+  const [extra, setExtra] = useState('');
+  const [seconds, setSeconds] = useState<10 | 15 | 20>(10);
+  const [saving, setSaving] = useState(false);
+
+  // qahramon (bitta, doimiy): Pinterest qidiruv / havola / o'z rasmi / matn
+  const [charMode, setCharMode] = useState<'search' | 'link' | null>(null);
+  const [candidates, setCandidates] = useState<CharacterCandidate[] | null>(null);
+  const [charBusy, setCharBusy] = useState<'search' | 'pick' | 'text' | null>(null);
+  const [pinLink, setPinLink] = useState('');
+  const [charErr, setCharErr] = useState('');
+
+  // vaqtlar
+  const [times, setTimes] = useState<string[]>(['18:00', '11:00']);
+  const [starting, setStarting] = useState(false);
+
+  // "boshqa tuz"
+  const [open, setOpen] = useState<string | null>(null);
+  const [askFor, setAskFor] = useState<VideoPlanItem | null>(null);
+  const [wish, setWish] = useState('');
+  const [regenerating, setRegenerating] = useState(false);
+  const refreshUntil = useRef(0);
+  const waitingScript = useRef(false);
+  const [needsNiche, setNeedsNiche] = useState(false);
+  const [langBusy, setLangBusy] = useState<string | null>(null);  // eng yaqin video ssenariysi hali yozilmagan
+
+  const errText = (e: unknown) => {
+    if (e instanceof ApiError) {
+      if (e.status === 0) return L.errors.network;
+      if (e.status === 409) return L.errors.busy;
     }
-  ]);
-  const [isRefreshingIdeas, setIsRefreshingIdeas] = useState(false);
+    return L.errors.generic;
+  };
 
-  // Tab 3: Order & Upload state
-  const [orderTopic, setOrderTopic] = useState('Kiyimlarimizni uzoq vaqt rangini saqlab qolishi bo‘yicha amaliy yuvish testi...');
-  const [orderStyle, setOrderStyle] = useState<'elegant' | 'viral' | 'minimal'>('viral');
-  const [orderDuration, setOrderDuration] = useState('15 s');
-  const [publishMode, setPublishMode] = useState<'semi' | 'auto'>('semi');
-  const [scheduleDate, setScheduleDate] = useState<'today' | 'tomorrow' | 'custom'>('today');
-  const [scheduleTime, setScheduleTime] = useState('14:30');
-  const [targetPlatform, setTargetPlatform] = useState<'Instagram' | 'Telegram' | 'TikTok'>('Instagram');
-  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
-  const [isPlayingPreview, setIsPlayingPreview] = useState(false);
-
-  // Tab 4: Settings state
-  const [selectedGenres, setSelectedGenres] = useState<string[]>(['Mahsulot taqdimoti', 'Trend videolar', 'Aksiya va chegirma']);
-  const [selectedStyle, setSelectedStyle] = useState('Professional');
-  const [customPromptInstruction, setCustomPromptInstruction] = useState("Kiyimlarimiz sifatini ko'rsatadigan dinamik uslubda bo'lsin, narxlarni aniq aytilsin va har doim do'kon manzilini ko'rsatilsin.");
-  const [musicMood, setMusicMood] = useState('Zamonaviy');
-  const [savedSettingsNotice, setSavedSettingsNotice] = useState(false);
-
-  // Tab 5: Schedule state
-  const [schedules, setSchedules] = useState<ScheduledVideo[]>([
-    {
-      id: 'sch-1',
-      title: "Yangi kolleksiya premyerasi (Reels #1)",
-      thumbnail: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=300&auto=format&fit=crop&q=80',
-      platform: 'Instagram',
-      scheduledTime: 'Bugun, 18:45',
-      status: 'Kutilmoqda',
-      viewsForecast: '18.4K - 25K'
-    },
-    {
-      id: 'sch-2',
-      title: "Chegirmalar haftaligi boshlandi!",
-      thumbnail: 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=300&auto=format&fit=crop&q=80',
-      platform: 'Telegram',
-      scheduledTime: 'Ertaga, 11:00',
-      status: 'Kutilmoqda',
-      viewsForecast: '4.2K ko‘rish'
-    },
-    {
-      id: 'sch-3',
-      title: "Mijozlarimizdan real fikrlar va obzor",
-      thumbnail: 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=300&auto=format&fit=crop&q=80',
-      platform: 'Instagram',
-      scheduledTime: '26-Avgust, 20:00',
-      status: 'Nashr etildi',
-      viewsForecast: '32.1K'
+  const load = async () => {
+    if (!businessId) { setLoading(false); return; }
+    setLoading(true);
+    setError('');
+    api.brand(businessId).then((b) => setNeedsNiche(b.needs_niche)).catch(() => {});
+    try {
+      const [pr, pl] = await Promise.all([api.videoProfile(businessId), api.videoPlan(businessId)]);
+      setProfile(pr.profile);
+      setProfileDone(pr.done);
+      setPlan(pl);
+      if (pr.profile) {
+        setDirection(pr.profile.direction || '');
+        setGenre(pr.profile.genre || '');
+        setHasChar(pr.profile.has_character);
+        setCharNote(pr.profile.character_note || '');
+        setExtra(pr.profile.extra || '');
+        setSeconds(([10, 15, 20] as const).includes(pr.profile.seconds as 10) ? (pr.profile.seconds as 10 | 15 | 20) : 10);
+      }
+      if (pl.settings?.times?.length) setTimes((t) => pl.settings!.times!.concat(t).slice(0, 2));
+    } catch (e) {
+      setError(errText(e));
+    } finally {
+      setLoading(false);
     }
-  ]);
+  };
 
-  const handleGenerateScript = () => {
-    setIsGeneratingScript(true);
-    setTimeout(() => {
-      setGeneratedScript({
-        title: `${topic.slice(0, 35)}...`,
-        hook: `«${topic.includes('chegirma') ? "Do'konimizdagi eng katta chegirma boshlandi!" : "Buni ko'rmasangiz afsuslanasiz!"}»`,
-        scenes: [
-          { sec: "0-3s", visual: `Kamerada tezkor harakat: ${additionalNote.slice(0, 45) || 'Asosiy mahsulot ko‘tariladi.'}`, audio: "Effektli boshlanish (Whoosh + Drop)" },
-          { sec: "4-10s", visual: "Narx, sifat va assortiment detallari yirik planda.", audio: "Dinamik ritm va ovozli sharh" },
-          { sec: "11-15s", visual: "Maxsus taklif, do‘kon manzili va profildagi havola.", audio: "Yakuniy chaqiriq (CTA)" }
-        ],
-        hashtags: "#operon #trend #uzbekistan #toshkent #reels",
-        recommendedAudio: "Viral TikTok Audio - Trending Beats #4",
-        agentReviews: [
-          { agent: "1-Agent: Ssenarist", role: "Hook & Dialog", verdict: "Kuchli emotsional tutqich bilan tayyorlandi." },
-          { agent: "2-Agent: Vizual Direktor", role: "Kamera & Ritm", verdict: "9:16 vertikal format, 15 soniyalik ideal montaj." },
-          { agent: "3-Agent: SMM Operator", role: "SEO & Hashtag", verdict: "Instagram & Telegram avto-nashriga mos." }
-        ]
+  const loadVideos = async () => {
+    if (!businessId) return;
+    try {
+      setVideos((await api.videos(businessId)).videos);
+    } catch {
+      /* keyin */
+    }
+  };
+
+  useEffect(() => {
+    load();
+    loadVideos();
+    // Reja yaratilgandan keyin dastlabki ssenariylar fonda yoziladi — bir muddat yangilab turamiz
+    const t = window.setInterval(() => {
+      if ((Date.now() < refreshUntil.current || waitingScript.current) && businessId) {
+        api.videoPlan(businessId).then(setPlan).catch(() => {});
+      }
+    }, 10000);
+    return () => window.clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [businessId]);
+
+  // Qahramon JSON fonda tayyorlanayotganda profilni yangilab turamiz
+  const analyzing = profile?.character_status === 'analyzing';
+  useEffect(() => {
+    if (!analyzing || !businessId) return;
+    const t = window.setInterval(() => {
+      api.videoProfile(businessId).then((pr) => setProfile(pr.profile)).catch(() => {});
+    }, 5000);
+    return () => window.clearInterval(t);
+  }, [analyzing, businessId]);
+
+  const pinErrText = (e: unknown) => {
+    if (e instanceof ApiError) {
+      if (e.status === 0) return L.errors.network;
+      if (e.message === 'not_pinterest') return L.pinErr.not_pinterest;
+      if (e.message === 'no_image') return L.pinErr.no_image;
+    }
+    return L.pinErr.generic;
+  };
+
+  const searchHeroes = async () => {
+    if (!businessId || charBusy) return;
+    setCharMode('search');
+    setCharBusy('search');
+    setCharErr('');
+    setCandidates(null);
+    try {
+      setCandidates((await api.characterSearch(businessId, charNote.trim())).items);
+    } catch (e) {
+      setCharErr(errText(e));
+    } finally {
+      setCharBusy(null);
+    }
+  };
+
+  const pickHero = async (src: { image_url?: string; link?: string }) => {
+    if (!businessId || charBusy) return;
+    setCharBusy('pick');
+    setCharErr('');
+    try {
+      await api.characterPick(businessId, src, charNote.trim());
+      setCandidates(null);
+      setCharMode(null);
+      setPinLink('');
+      setProfile((await api.videoProfile(businessId)).profile);
+    } catch (e) {
+      setCharErr(pinErrText(e));
+    } finally {
+      setCharBusy(null);
+    }
+  };
+
+  const uploadHero = async (f: File) => {
+    if (!businessId || charBusy || f.size > 5_000_000) return;
+    setCharBusy('pick');
+    setCharErr('');
+    try {
+      await api.uploadCharacter(businessId, await fileToBase64(f), f.type || 'image/jpeg');
+      setCandidates(null);
+      setCharMode(null);
+      setProfile((await api.videoProfile(businessId)).profile);
+    } catch (e) {
+      setCharErr(errText(e));
+    } finally {
+      setCharBusy(null);
+    }
+  };
+
+  const textHero = async () => {
+    if (!businessId || charBusy) return;
+    setCharBusy('text');
+    setCharErr('');
+    try {
+      await api.characterGenerate(businessId, charNote.trim());
+      setCandidates(null);
+      setCharMode(null);
+      setProfile((await api.videoProfile(businessId)).profile);
+    } catch (e) {
+      setCharErr(errText(e));
+    } finally {
+      setCharBusy(null);
+    }
+  };
+
+  // "Пусть AI подберёт" — Operon qahramonni o'zi tanlab, rasmini chizib ko'rsatadi
+  const autoHero = async () => {
+    if (!businessId || charBusy) return;
+    setCharBusy('text');
+    setCharErr('');
+    try {
+      await api.characterGenerate(businessId, '');
+      setProfile((await api.videoProfile(businessId)).profile);
+    } catch (e) {
+      setCharErr(errText(e));
+    } finally {
+      setCharBusy(null);
+    }
+  };
+
+  const heroChosen = !!(profile?.character_json || profile?.character_image_url);
+  const heroCard = (
+                    <div className="flex items-start gap-2.5 bg-white rounded-xl border border-slate-200 p-2">
+                      {profile?.character_image_url ? (
+                        <img src={profile.character_image_url} alt="" className="w-20 h-24 rounded-lg object-cover border border-slate-100 shrink-0" />
+                      ) : (
+                        <div className="w-16 h-16 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+                          <Wand2 className="w-6 h-6" />
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        {analyzing ? (
+                          <p className="text-[11px] font-semibold text-slate-600 flex items-center gap-1.5">
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-600" />{L.analyzing}
+                          </p>
+                        ) : profile?.character_status === 'failed' ? (
+                          <p className="text-[11px] font-semibold text-rose-600">{L.heroFail}</p>
+                        ) : (
+                          <p className="text-[11px] font-bold text-emerald-700 flex items-center gap-1">
+                            <Check className="w-3.5 h-3.5" />
+                            {profile?.character_status === 'ready_text' && !profile?.character_image_url ? L.heroText : L.heroReady}
+                          </p>
+                        )}
+                        {profile?.character_json && (
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {(['style', 'age', 'outfit', 'distinctive'] as const)
+                              .map((k) => profile.character_json?.[k])
+                              .filter((v): v is string => typeof v === 'string' && !!v)
+                              .map((v) => (
+                                <span key={v} className="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-600 line-clamp-1 max-w-full">
+                                  {v}
+                                </span>
+                              ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+  );
+  const canSave =
+    !!direction.trim() && !!genre.trim() && hasChar !== null && (hasChar === false || heroChosen || !!charNote.trim());
+
+  const saveProfile = async () => {
+    if (!businessId || !canSave || saving) return;
+    setSaving(true);
+    setError('');
+    try {
+      await api.saveVideoProfile(businessId, {
+        direction: direction.trim(), genre: genre.trim(), has_character: !!hasChar,
+        character_note: charNote.trim() || null, extra: extra.trim() || null, seconds,
       });
-      setIsGeneratingScript(false);
-    }, 1200);
-  };
-
-  const handleRefreshIdeas = () => {
-    setIsRefreshingIdeas(true);
-    setTimeout(() => {
-      setIdeas([
-        {
-          id: 'idea-' + Date.now(),
-          title: "«Eng arzon va eng qimmat tovarimiz taqqoslashi»",
-          category: 'Trend & Solishtirish',
-          viralScore: 98,
-          hook: "«100 ming so'mlik bilan 600 ming so'mlik tovar farqi!»",
-          duration: '19 soniya',
-          platform: 'Barchasi',
-          description: "Mijozlarda yuqori qiziqish uyg'otuvchi va bahs boshlaydigan viral ssenariy."
-        },
-        {
-          id: 'idea-' + (Date.now() + 1),
-          title: "«Ertalabki qabul: Yangi tovarlarni qutidan ochish»",
-          category: 'ASMR & Lifestyle',
-          viralScore: 92,
-          hook: "«Bugun ertalab kelgan yangi to'plamni birga ochamiz!»",
-          duration: '15 soniya',
-          platform: 'Instagram',
-          description: "Estetik qadoqlash, toza ovozlar va yangilik hissini uyg'otish."
-        },
-        {
-          id: 'idea-' + (Date.now() + 2),
-          title: "«To'g'ri o'lcham tanlash bo'yicha master-klass»",
-          category: "Foydali qo'llanma",
-          viralScore: 88,
-          hook: "«O'lchamingiz to'g'ri kelmay qolishidan qo'rqasizmi?»",
-          duration: '25 soniya',
-          platform: 'Telegram',
-          description: "Mijozlarning xavotirlarini yechib, xaridga olib boruvchi video."
+      // Qahramon tanlanmagan, faqat so'z bilan aytilgan — matndan JSON tuzamiz
+      if (hasChar && !heroChosen && charNote.trim()) {
+        try {
+          await api.characterGenerate(businessId, charNote.trim());
+        } catch {
+          /* profil saqlandi; qahramon matni keyin ham ishlaydi */
         }
-      ]);
-      setIsRefreshingIdeas(false);
-    }, 1000);
+      }
+      setEditing(false);
+      await load();
+    } catch (e) {
+      setError(errText(e));
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleSaveSettings = () => {
-    setSavedSettingsNotice(true);
-    setTimeout(() => {
-      setSavedSettingsNotice(false);
-    }, 3000);
+  const startPlan = async () => {
+    if (!businessId || !plan || starting) return;
+    setStarting(true);
+    setError('');
+    try {
+      await api.createVideoPlan(businessId, times.slice(0, plan.cadence.per_day));
+      refreshUntil.current = Date.now() + 3 * 60 * 1000;
+      setPlan(await api.videoPlan(businessId));
+    } catch (e) {
+      setError(errText(e));
+    } finally {
+      setStarting(false);
+    }
   };
 
-  const handleScheduleOrder = () => {
-    const newSch: ScheduledVideo = {
-      id: 'sch-' + Date.now(),
-      title: orderTopic ? orderTopic.slice(0, 30) + '...' : 'Yangi AI Reels',
-      thumbnail: 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=300&auto=format&fit=crop&q=80',
-      platform: targetPlatform,
-      scheduledTime: `${scheduleDate === 'today' ? 'Bugun' : scheduleDate === 'tomorrow' ? 'Ertaga' : 'Kelasi hafta'}, ${scheduleTime}`,
-      status: 'Kutilmoqda',
-      viewsForecast: '15K - 22K kutilmoqda'
-    };
-    setSchedules([newSch, ...schedules]);
-    setActiveTab('schedule');
+  const stopPlan = async () => {
+    if (!businessId || !window.confirm(L.stopConfirm)) return;
+    try {
+      await api.stopVideoPlan(businessId);
+      setPlan(await api.videoPlan(businessId));
+    } catch (e) {
+      setError(errText(e));
+    }
   };
+
+  // Ssenariy tili: QAZ/RUS — bosilganda ssenariy o'sha tilga o'giriladi, video ham shu tilda bo'ladi
+  const switchLang = async (it: VideoPlanItem, to: 'kk' | 'ru') => {
+    if ((it.lang || 'kk') === to || langBusy) return;
+    setLangBusy(it.id);
+    setError('');
+    try {
+      const r = await api.switchVideoItemLang(it.id, to);
+      setPlan((p) =>
+        p ? { ...p, items: p.items.map((x) => (x.id === r.id ? { ...x, topic: r.topic, scenario: r.scenario, caption: r.caption, lang: r.lang, seconds: r.seconds ?? x.seconds, style: r.style ?? x.style } : x)) } : p,
+      );
+    } catch (e) {
+      setError(errText(e));
+    } finally {
+      setLangBusy(null);
+    }
+  };
+
+  const regenerate = async (useWish: boolean) => {
+    if (!askFor || regenerating) return;
+    setRegenerating(true);
+    setError('');
+    try {
+      const r = await api.regenerateVideoItem(askFor.id, useWish ? wish.trim() : undefined);
+      setPlan((p) =>
+        p ? { ...p, items: p.items.map((it) => (it.id === r.id ? { ...it, topic: r.topic, scenario: r.scenario, caption: r.caption, lang: r.lang ?? it.lang, seconds: r.seconds ?? null, style: r.style ?? null } : it)) } : p,
+      );
+      setOpen(r.id);
+      setAskFor(null);
+      setWish('');
+    } catch (e) {
+      setError(errText(e));
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
+  const upcoming = (plan?.items || []).filter((i) => !i.past || i.status === 'draft' || i.status === 'scheduled');
+  // Ekranda faqat bugungi va kelgusi rejalar; eski kunlar ko'rinmaydi, eng yaqini doim tepada (2026-11-13)
+  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+  const visiblePlan = upcoming
+    .filter((i) => !i.past || new Date(i.scheduled_at).getTime() >= todayStart.getTime())
+    .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime());
+  // Ssenariy faqat eng yaqin draft uchun yoziladi — spinner ham faqat unda
+  const nextDraft = upcoming.find((i) => i.status === 'draft');
+  const nextDraftId = nextDraft?.id;
+  waitingScript.current = !!nextDraft && !nextDraft.topic;
+  const planActive = upcoming.length > 0;
+  const showWizard = !profileDone || editing;
+
+  const chip = (active: boolean) =>
+    `px-2.5 py-1.5 rounded-xl text-[11.5px] font-semibold border transition-all ${
+      active ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+    }`;
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#FAFBFD] overflow-x-hidden select-none font-sans text-slate-900 w-full max-w-full">
-      {/* 1. TOP MOBILE-OPTIMIZED HEADER */}
-      <div className="bg-white border-b border-slate-200/80 px-3 py-2.5 shrink-0 shadow-2xs w-full">
-        {/* Title row */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <button
-              onClick={onBack}
-              className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-colors shrink-0 active:scale-95"
-              title={language === 'ru' ? 'Назад' : 'Артқа'}
-            >
-              <ArrowLeft className="w-4 h-4" />
+    <div className="flex-1 flex flex-col h-full bg-[#FAFBFD] overflow-x-hidden font-sans text-slate-900 w-full max-w-full">
+      <div className="bg-white border-b border-slate-200/80 px-3 py-2.5 shrink-0 w-full">
+        <div className="flex items-center gap-2">
+          <button onClick={onBack} title={L.back}
+            className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center shrink-0 active:scale-95">
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+          <h1 className="text-sm sm:text-base font-black tracking-tight flex items-center gap-1.5 truncate">
+            <Film className="w-4 h-4 text-purple-600 shrink-0" />
+            <span>{L.title}</span>
+          </h1>
+        </div>
+        <div className="flex items-center gap-1.5 mt-2.5">
+          {([
+            { id: 'plan' as const, label: L.plan, icon: <CalendarClock className="w-3.5 h-3.5" /> },
+            { id: 'library' as const, label: L.library, icon: <Library className="w-3.5 h-3.5" /> },
+          ]).map((t) => (
+            <button key={t.id} onClick={() => setTab(t.id)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 active:scale-95 ${
+                tab === t.id ? 'bg-purple-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
+              {t.icon}<span>{t.label}</span>
             </button>
-
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <h1 className="text-sm sm:text-base font-black text-slate-900 tracking-tight flex items-center gap-1.5 truncate">
-                  <Film className="w-4 h-4 text-purple-600 shrink-0" />
-                  <span>{language === 'ru' ? 'Создание видео (AI)' : 'Видео жасау (AI)'}</span>
-                </h1>
-                <span className="text-[9px] bg-purple-100 text-purple-700 font-extrabold px-1.5 py-0.5 rounded-md border border-purple-200 shrink-0">
-                  {language === 'ru' ? '3 AI Агента' : '3 AI Агент'}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Trend Radar Button */}
-          <button
-            onClick={() => {
-              setShowTrendSearch(true);
-              setTrendSearching(true);
-              setTimeout(() => {
-                setTrendResults(
-                  language === 'ru'
-                    ? [
-                        { keyword: "#ТрендыКазахстан", count: "482K просмотров", growth: "+42%", niche: "Мода & Продажи" },
-                        { keyword: "#СезонныеСкидки", count: "310K просмотров", growth: "+88%", niche: "Акции" },
-                        { keyword: "#АлматыШопинг", count: "620K просмотров", growth: "+29%", niche: "Магазины" },
-                        { keyword: "#РаспаковкаКЗ", count: "190K просмотров", growth: "+64%", niche: "Видеообзор" }
-                      ]
-                    : [
-                        { keyword: "#ҚазақстанТренд", count: "482K қаралым", growth: "+42%", niche: "Сән & Сауда" },
-                        { keyword: "#МаусымдықЖеңілдік", count: "310K қаралым", growth: "+88%", niche: "Акция" },
-                        { keyword: "#АлматыШопинг", count: "620K қаралым", growth: "+29%", niche: "Дүкендер" },
-                        { keyword: "#ОбзорКЗ", count: "190K қаралым", growth: "+64%", niche: "Бейне шолу" }
-                      ]
-                );
-                setTrendSearching(false);
-              }, 800);
-            }}
-            className="px-2.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-[11px] font-bold flex items-center gap-1 shadow-xs transition-all active:scale-95 shrink-0"
-          >
-            <Flame className="w-3.5 h-3.5 text-amber-300 shrink-0" />
-            <span className="hidden xs:inline">Trend Radar</span>
-            <span className="xs:hidden">Trend</span>
-          </button>
-        </div>
-
-        {/* Social channels badges row */}
-        <div className="flex items-center gap-1.5 mt-2 overflow-x-auto no-scrollbar py-0.5 text-[11px]">
-          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider shrink-0">
-            {language === 'ru' ? 'Каналы:' : 'Арналар:'}
-          </span>
-          
-          <button
-            onClick={() => setInstagramConnected(!instagramConnected)}
-            className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10.5px] font-bold shrink-0 transition-all ${
-              instagramConnected ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-500'
-            }`}
-          >
-            <Instagram className="w-3 h-3 text-pink-600" />
-            <span>Insta {instagramConnected ? '✓' : ''}</span>
-          </button>
-
-          <button
-            onClick={() => setTelegramConnected(!telegramConnected)}
-            className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10.5px] font-bold shrink-0 transition-all ${
-              telegramConnected ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-500'
-            }`}
-          >
-            <Send className="w-3 h-3 text-sky-600" />
-            <span>TG {telegramConnected ? '✓' : ''}</span>
-          </button>
-
-          <button
-            onClick={() => setTiktokConnected(!tiktokConnected)}
-            className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10.5px] font-bold shrink-0 transition-all ${
-              tiktokConnected ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-purple-50 text-purple-700 border border-purple-200'
-            }`}
-          >
-            <span>{tiktokConnected ? 'TikTok ✓' : '+ TikTok'}</span>
-          </button>
-        </div>
-
-        {/* 2. NAVIGATION TABS (Mobile Scrollable with clear touch targets) */}
-        <div className="flex items-center gap-1.5 mt-2.5 overflow-x-auto no-scrollbar pb-0.5">
-          {[
-            { id: 'ai-video' as const, label: 'AI Video', icon: <Wand2 className="w-3.5 h-3.5" /> },
-            { id: 'ideas' as const, label: language === 'ru' ? 'Идеи' : 'Идеялар', icon: <Sparkles className="w-3.5 h-3.5" /> },
-            { id: 'order-upload' as const, label: language === 'ru' ? 'Загрузка' : 'Жүктеу', icon: <Upload className="w-3.5 h-3.5" /> },
-            { id: 'settings' as const, label: language === 'ru' ? 'Настройки' : 'Баптаулар', icon: <Sliders className="w-3.5 h-3.5" /> },
-            { id: 'schedule' as const, label: language === 'ru' ? 'Расписание' : 'Кесте', icon: <Calendar className="w-3.5 h-3.5" />, badge: schedules.length }
-          ].map((tab) => {
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shrink-0 whitespace-nowrap active:scale-95 ${
-                  isActive
-                    ? 'bg-purple-600 text-white shadow-xs'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200/70 hover:text-slate-900'
-                }`}
-              >
-                {tab.icon}
-                <span>{tab.label}</span>
-                {tab.badge !== undefined && (
-                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
-                    isActive ? 'bg-white/25 text-white' : 'bg-slate-200 text-slate-700'
-                  }`}>
-                    {tab.badge}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+          ))}
         </div>
       </div>
 
-      {/* 3. MAIN CONTENT CONTAINER (100% Mobile Responsive) */}
-      <div className="flex-1 overflow-y-auto p-3 sm:p-4 w-full max-w-full space-y-3.5 pb-16">
-        {/* ========================================================================= */}
-        {/* TAB 1: AI Video (Seedance & 3 AI Agents) */}
-        {/* ========================================================================= */}
-        {activeTab === 'ai-video' && (
-          <div className="space-y-3.5 w-full max-w-full">
-            {/* Input Card */}
-            <div className="bg-white border border-slate-200/90 rounded-2xl p-3.5 sm:p-4 shadow-2xs space-y-3 w-full">
-              <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-8 h-8 rounded-xl bg-purple-50 border border-purple-100 text-purple-600 flex items-center justify-center shrink-0">
-                    <Wand2 className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <h2 className="text-xs sm:text-sm font-bold text-slate-900 truncate">
-                      AI Video Ssenariy Generatori
-                    </h2>
-                    <p className="text-[10.5px] text-slate-500 truncate">3 ta AI agent tahlili bilan</p>
-                  </div>
-                </div>
-
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
-                  ⚡ Tezkor AI
-                </span>
-              </div>
-
-              <div className="space-y-2.5">
-                <div>
-                  <label className="text-[10.5px] font-bold text-slate-700 block mb-1 uppercase tracking-wider">
-                    Video Mavzusi *
-                  </label>
-                  <input
-                    type="text"
-                    value={topic}
-                    onChange={(e) => setTopic(e.target.value)}
-                    placeholder="Masalan: Yangi kolleksiya tanishtiruvi"
-                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:bg-white focus:border-purple-500 font-medium transition-all shadow-2xs"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-[10.5px] font-bold text-slate-700 block mb-1 uppercase tracking-wider">
-                    Qo'shimcha Fikringiz
-                  </label>
-                  <input
-                    type="text"
-                    value={additionalNote}
-                    onChange={(e) => setAdditionalNote(e.target.value)}
-                    placeholder="Masalan: 'do'kon ichida', 'quvnoq musiqa'"
-                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:bg-white focus:border-purple-500 font-medium transition-all shadow-2xs"
-                  />
-                </div>
-
-                <button
-                  onClick={handleGenerateScript}
-                  disabled={isGeneratingScript || !topic.trim()}
-                  className="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-all active:scale-95 disabled:opacity-50"
-                >
-                  {isGeneratingScript ? (
-                    <>
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                      <span>AI Agentlar yozmoqda...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>AI Ssenariy Yaratish</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* Generated Script */}
-            {generatedScript && (
-              <div className="bg-white border border-purple-200/90 rounded-2xl p-3.5 sm:p-4 shadow-2xs space-y-3 w-full">
-                {/* Script Header & Actions */}
-                <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="w-2 h-2 rounded-full bg-purple-600 animate-pulse shrink-0" />
-                    <h3 className="text-xs sm:text-sm font-bold text-slate-900 truncate">
-                      {generatedScript.title}
-                    </h3>
-                  </div>
-
-                  <div className="flex items-center gap-1.5 self-end xs:self-auto shrink-0">
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(JSON.stringify(generatedScript, null, 2));
-                        setCopiedNotice(true);
-                        setTimeout(() => setCopiedNotice(false), 2000);
-                      }}
-                      className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold flex items-center gap-1 transition-colors"
-                    >
-                      {copiedNotice ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
-                      <span>{copiedNotice ? 'Nusxalandi!' : 'Nusxa'}</span>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setOrderTopic(generatedScript.title);
-                        setActiveTab('order-upload');
-                      }}
-                      className="px-3 py-1 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-[11px] font-bold flex items-center gap-1 transition-colors shadow-2xs"
-                    >
-                      <Video className="w-3 h-3" />
-                      <span>Yuklashga o'tish</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Viral Hook */}
-                <div className="p-3 bg-purple-50/80 border border-purple-100 rounded-xl space-y-1">
-                  <div className="text-[10px] font-bold text-purple-700 uppercase tracking-wider flex items-center gap-1">
-                    <Flame className="w-3 h-3 text-amber-500 shrink-0" />
-                    <span>Viral Hook (Birinchi 3 soniya)</span>
-                  </div>
-                  <div className="text-xs font-semibold text-slate-800 italic leading-relaxed">
-                    {generatedScript.hook}
-                  </div>
-                </div>
-
-                {/* Scenes timeline */}
-                <div className="space-y-1.5">
-                  <div className="text-[10.5px] font-bold text-slate-700 uppercase tracking-wider">
-                    Sahnama-sahna montaj rejasi (15 soniya):
-                  </div>
-                  <div className="space-y-1.5">
-                    {generatedScript.scenes.map((scene: any, idx: number) => (
-                      <div key={idx} className="flex items-start gap-2 p-2.5 bg-slate-50 border border-slate-200/70 rounded-xl text-xs">
-                        <span className="px-1.5 py-0.5 rounded bg-purple-600 text-white text-[10px] font-black shrink-0">
-                          {scene.sec}
-                        </span>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-slate-800 leading-snug">{scene.visual}</p>
-                          <p className="text-[10.5px] text-purple-700 font-medium mt-0.5 flex items-center gap-1">
-                            <Music className="w-3 h-3 shrink-0" /> <span className="truncate">{scene.audio}</span>
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 3 AI AGENTS EVALUATION - MOBILE STACKED CLEAN CARDS */}
-                <div className="pt-2 border-t border-slate-100 space-y-2">
-                  <div className="text-[10.5px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                    <BrainCircuit className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                    <span>3 ta AI Agent Ekspertiza Xulosasi</span>
-                  </div>
-
-                  <div className="flex flex-col gap-2 w-full">
-                    {generatedScript.agentReviews.map((rev: any, idx: number) => (
-                      <div key={idx} className="p-2.5 bg-slate-50 border border-slate-200/80 rounded-xl text-xs space-y-1">
-                        <div className="flex items-center justify-between gap-1 flex-wrap">
-                          <span className="font-bold text-slate-900 text-[11px]">{rev.agent}</span>
-                          <span className="text-[9.5px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-bold">
-                            {rev.role}
-                          </span>
-                        </div>
-                        <p className="text-[10.5px] text-slate-600 leading-relaxed">{rev.verdict}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Hashtags and audio */}
-                <div className="pt-2 border-t border-slate-100 text-[11px] space-y-1">
-                  <div>
-                    <span className="font-bold text-slate-700">Hashtaglar: </span>
-                    <span className="text-purple-600 font-semibold">{generatedScript.hashtags}</span>
-                  </div>
-                  <div>
-                    <span className="font-bold text-slate-700">Tavsiya musiqa: </span>
-                    <span className="text-slate-700">{generatedScript.recommendedAudio}</span>
-                  </div>
-                </div>
-              </div>
+      <div className="flex-1 overflow-y-auto p-3 sm:p-4 w-full space-y-3.5 pb-16">
+        {error && (
+          <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl px-3.5 py-2.5 text-xs font-semibold flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" /><span className="flex-1">{error}</span>
+            {!plan && !loading && (
+              <button onClick={load} className="shrink-0 px-2.5 py-1 rounded-lg bg-rose-600 text-white text-[11px] font-bold active:scale-95">
+                {lang === 'kk' ? 'Қайталау' : 'Повторить'}
+              </button>
             )}
           </div>
         )}
 
-        {/* ========================================================================= */}
-        {/* TAB 2: G'oyalar (AI Content Ideas) */}
-        {/* ========================================================================= */}
-        {activeTab === 'ideas' && (
-          <div className="space-y-3 w-full max-w-full">
-            {/* Header banner */}
-            <div className="bg-white border border-slate-200/90 rounded-2xl p-3.5 flex items-center justify-between gap-2 shadow-2xs">
-              <div className="flex items-center gap-2 min-w-0">
-                <div className="w-8 h-8 rounded-xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center shrink-0">
-                  <Sparkles className="w-4 h-4" />
-                </div>
-                <div className="min-w-0">
-                  <h2 className="text-xs sm:text-sm font-bold text-slate-900 truncate">AI Kontent G'oyalari</h2>
-                  <p className="text-[10.5px] text-slate-500 truncate">Do'koningizga mos viral takliflar</p>
-                </div>
-              </div>
+        {tab === 'plan' && !loading && needsNiche && businessId && (
+          <NicheGate businessId={businessId} lang={lang} onDone={() => setNeedsNiche(false)} />
+        )}
 
-              <button
-                onClick={handleRefreshIdeas}
-                disabled={isRefreshingIdeas}
-                className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl flex items-center gap-1 shadow-2xs transition-all active:scale-95 shrink-0"
-              >
-                <RefreshCw className={`w-3 h-3 ${isRefreshingIdeas ? 'animate-spin' : ''}`} />
-                <span>Yangilash</span>
-              </button>
+        {tab === 'plan' && loading && (
+          <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 text-purple-600 animate-spin" /></div>
+        )}
+
+        {/* ── 1. Bir martalik so'rovnoma ── */}
+        {tab === 'plan' && !loading && !needsNiche && showWizard && (
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-3.5 space-y-4">
+            <div>
+              <h2 className="text-sm font-black flex items-center gap-1.5"><Wand2 className="w-4 h-4 text-purple-600" />{L.wizTitle}</h2>
+              <p className="text-[11px] text-slate-500 mt-0.5">{L.wizHint}</p>
             </div>
 
-            {/* Ideas List (Mobile Vertical Stack) */}
-            <div className="flex flex-col gap-2.5 w-full">
-              {ideas.map((idea) => (
-                <div
-                  key={idea.id}
-                  className="bg-white border border-slate-200/90 hover:border-purple-300 rounded-2xl p-3.5 flex flex-col justify-between shadow-2xs space-y-2.5 w-full"
-                >
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <span className="text-[9.5px] px-2 py-0.5 rounded-full font-bold bg-slate-100 text-slate-700">
-                        {idea.category}
-                      </span>
+            <div className="space-y-2">
+              <p className="text-xs font-bold">1. {L.q1}</p>
+              <div className="flex flex-wrap gap-1.5">
+                {DIRECTIONS[lang].map((d) => (
+                  <button key={d} onClick={() => setDirection(d)} className={chip(direction === d)}>{d}</button>
+                ))}
+              </div>
+              <input value={DIRECTIONS[lang].includes(direction) ? '' : direction} onChange={(e) => setDirection(e.target.value)}
+                maxLength={500} placeholder={L.own}
+                className="w-full text-sm rounded-xl border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-200" />
+            </div>
 
-                      <span className="text-[9.5px] px-2 py-0.5 rounded-full font-black bg-purple-50 text-purple-700 border border-purple-200 flex items-center gap-1">
-                        <Flame className="w-2.5 h-2.5 text-amber-500" />
-                        {idea.viralScore}% Viral
-                      </span>
-                    </div>
+            <div className="space-y-2">
+              <p className="text-xs font-bold">2. {L.q2}</p>
+              <div className="flex flex-wrap gap-1.5">
+                {GENRES[lang].map((g) => (
+                  <button key={g} onClick={() => setGenre(g)} className={chip(genre === g)}>{g}</button>
+                ))}
+              </div>
+              <input value={GENRES[lang].includes(genre) ? '' : genre} onChange={(e) => setGenre(e.target.value)}
+                maxLength={200} placeholder={L.own}
+                className="w-full text-sm rounded-xl border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-200" />
+            </div>
 
-                    <h3 className="text-xs sm:text-sm font-bold text-slate-900 leading-snug">
-                      {idea.title}
-                    </h3>
+            <div className="space-y-2">
+              <p className="text-xs font-bold">3. {L.q3}</p>
+              <div className="flex gap-1.5">
+                <button onClick={() => setHasChar(true)} className={chip(hasChar === true)}>{L.yes}</button>
+                <button onClick={() => { setHasChar(false); if (!heroChosen) autoHero(); }} className={chip(hasChar === false)}>{L.no}</button>
+              </div>
+              {hasChar === false && (
+                <div className="space-y-2 rounded-xl bg-slate-50 border border-slate-100 p-2.5">
+                  <p className="text-[10.5px] text-slate-600">{L.aiHint}</p>
+                  {charBusy === 'text' ? (
+                    <p className="text-[11px] text-slate-500 flex items-center gap-1.5"><Loader2 className="w-3.5 h-3.5 animate-spin text-purple-600" />{L.aiMaking}</p>
+                  ) : heroChosen && heroCard}
+                  <button onClick={autoHero} disabled={!!charBusy}
+                    className="text-[11px] font-bold text-purple-700 flex items-center gap-1 disabled:opacity-50">
+                    <RefreshCw className="w-3 h-3" />{L.aiAnother}
+                  </button>
+                  {charErr && <p className="text-[11px] font-semibold text-rose-600">{charErr}</p>}
+                </div>
+              )}
+              {hasChar && (
+                <div className="space-y-2.5 rounded-xl bg-slate-50 border border-slate-100 p-2.5">
+                  <p className="text-[10.5px] text-purple-700 font-semibold">{L.oneHero}</p>
 
-                    <p className="text-[11px] text-slate-600 bg-slate-50 p-2 rounded-xl italic border border-slate-100 leading-relaxed">
-                      "{idea.hook}"
-                    </p>
+                  {/* Tanlangan qahramon */}
+                  {heroChosen && heroCard}
 
-                    <p className="text-[10.5px] text-slate-500 leading-relaxed">
-                      {idea.description}
-                    </p>
+                  <div>
+                    <p className="text-[11px] font-bold mb-1">{L.note}</p>
+                    <input value={charNote} onChange={(e) => setCharNote(e.target.value)} maxLength={300}
+                      placeholder={L.notePh}
+                      className="w-full text-sm rounded-xl border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-200" />
                   </div>
 
-                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
-                    <span className="text-[10px] font-bold text-slate-400">
-                      {idea.platform} • {idea.duration}
-                    </span>
-
-                    <button
-                      onClick={() => {
-                        setTopic(idea.title);
-                        setAdditionalNote(idea.hook);
-                        setActiveTab('ai-video');
-                        handleGenerateScript();
-                      }}
-                      className="px-3 py-1 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-[10.5px] font-bold transition-all flex items-center gap-1 active:scale-95 shadow-2xs"
-                    >
-                      <span>Ssenariy yaratish</span>
-                      <ChevronRight className="w-3 h-3" />
+                  {heroChosen && !charMode && <p className="text-[10.5px] font-bold text-slate-500">{L.change}:</p>}
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <button onClick={searchHeroes} disabled={!!charBusy}
+                      className={`py-2 rounded-xl text-[11px] font-bold border flex items-center justify-center gap-1.5 disabled:opacity-50 ${
+                        charMode === 'search' ? 'bg-purple-600 text-white border-purple-600' : 'bg-white border-slate-200'}`}>
+                      {charBusy === 'search' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Library className="w-3.5 h-3.5" />}
+                      {L.findPin}
                     </button>
+                    <button onClick={() => { setCharMode(charMode === 'link' ? null : 'link'); setCandidates(null); setCharErr(''); }}
+                      disabled={!!charBusy}
+                      className={`py-2 rounded-xl text-[11px] font-bold border flex items-center justify-center gap-1.5 disabled:opacity-50 ${
+                        charMode === 'link' ? 'bg-purple-600 text-white border-purple-600' : 'bg-white border-slate-200'}`}>
+                      <Pencil className="w-3.5 h-3.5" />{L.pinLink}
+                    </button>
+                    <label className={`py-2 rounded-xl text-[11px] font-bold bg-white border border-slate-200 flex items-center justify-center gap-1.5 cursor-pointer ${
+                      charBusy ? 'opacity-50 pointer-events-none' : ''}`}>
+                      <Upload className="w-3.5 h-3.5" />{L.upload}
+                      <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden"
+                        onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadHero(f); e.target.value = ''; }} />
+                    </label>
+                    <button onClick={textHero} disabled={!!charBusy || !charNote.trim()}
+                      className="py-2 rounded-xl text-[11px] font-bold bg-white border border-slate-200 flex items-center justify-center gap-1.5 disabled:opacity-40">
+                      {charBusy === 'text' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
+                      {L.noPhoto}
+                    </button>
+                  </div>
+
+                  {charMode === 'link' && (
+                    <div className="flex gap-1.5">
+                      <input value={pinLink} onChange={(e) => setPinLink(e.target.value)} maxLength={600} placeholder={L.pinLinkPh}
+                        className="flex-1 min-w-0 text-sm rounded-xl border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-200" />
+                      <button onClick={() => pickHero({ link: pinLink.trim() })} disabled={!pinLink.trim() || !!charBusy}
+                        className="px-3 rounded-xl text-[11px] font-black bg-purple-600 text-white disabled:opacity-40 flex items-center gap-1">
+                        {charBusy === 'pick' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}{L.usePin}
+                      </button>
+                    </div>
+                  )}
+
+                  {charMode === 'search' && charBusy === 'search' && (
+                    <p className="text-[11px] text-slate-500 flex items-center gap-1.5"><Loader2 className="w-3.5 h-3.5 animate-spin" />{L.searching}</p>
+                  )}
+                  {charMode === 'search' && candidates && (
+                    candidates.length === 0 ? (
+                      <p className="text-[11px] text-slate-500">{L.nothing}</p>
+                    ) : (
+                      <div className="space-y-1.5">
+                        <p className="text-[11px] font-bold">{L.pickOne}</p>
+                        <div className="grid grid-cols-4 gap-1.5">
+                          {candidates.map((c) => (
+                            <button key={c.image_url} onClick={() => pickHero({ image_url: c.image_url })} disabled={!!charBusy}
+                              title={c.title}
+                              className="aspect-[3/4] rounded-lg overflow-hidden border-2 border-transparent hover:border-purple-500 bg-slate-100 disabled:opacity-50 active:scale-95">
+                              <img src={c.image_url} alt={c.title} loading="lazy" referrerPolicy="no-referrer"
+                                className="w-full h-full object-cover" />
+                            </button>
+                          ))}
+                        </div>
+                        <button onClick={searchHeroes} disabled={!!charBusy}
+                          className="text-[11px] font-bold text-purple-700 flex items-center gap-1 disabled:opacity-50">
+                          <RefreshCw className="w-3 h-3" />{L.more}
+                        </button>
+                      </div>
+                    )
+                  )}
+                  {charBusy === 'pick' && (
+                    <p className="text-[11px] text-slate-500 flex items-center gap-1.5"><Loader2 className="w-3.5 h-3.5 animate-spin" />{L.saving}</p>
+                  )}
+                  {charErr && <p className="text-[11px] font-semibold text-rose-600">{charErr}</p>}
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-xs font-bold">4. {L.q4}</p>
+              <div className="flex gap-1.5">
+                {([10, 15, 20] as const).map((n) => (
+                  <button key={n} onClick={() => setSeconds(n)} className={chip(seconds === n)}>{L.sec(n)}</button>
+                ))}
+              </div>
+              <p className="text-[10.5px] text-slate-500">{L.secHint}</p>
+            </div>
+
+            <div className="space-y-1">
+              <p className="text-[11px] font-bold text-slate-500">{L.extra}</p>
+              <input value={extra} onChange={(e) => setExtra(e.target.value)} maxLength={500} placeholder={L.extraPh}
+                className="w-full text-sm rounded-xl border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-200" />
+            </div>
+
+            <div className="flex gap-2">
+              {editing && (
+                <button onClick={() => setEditing(false)} className="flex-1 py-2.5 rounded-xl text-xs font-bold bg-slate-100">{L.cancel}</button>
+              )}
+              <button onClick={saveProfile} disabled={!canSave || saving}
+                className="flex-1 py-2.5 rounded-xl text-xs font-black bg-purple-600 text-white flex items-center justify-center gap-1.5 disabled:opacity-40">
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                {saving ? L.saving : L.save}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── 2. Vaqt tanlash (reja yo'q) ── */}
+        {tab === 'plan' && !loading && !needsNiche && !showWizard && plan && !planActive && (
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-3.5 space-y-3">
+            <h2 className="text-sm font-black flex items-center gap-1.5"><Clock className="w-4 h-4 text-purple-600" />{L.timesTitle}</h2>
+            <p className="text-[11.5px] text-slate-700 font-semibold">{L.cadence(plan.cadence)}</p>
+            <div className="flex gap-2">
+              {Array.from({ length: plan.cadence.per_day }).map((_, i) => (
+                <label key={i} className="flex-1">
+                  <span className="text-[10.5px] font-bold text-slate-500">{L.time}{plan.cadence.per_day > 1 ? ` ${i + 1}` : ''}</span>
+                  <input type="time" value={times[i]} onChange={(e) => setTimes((t) => t.map((x, k) => (k === i ? e.target.value : x)))}
+                    className="mt-1 w-full text-sm rounded-xl border border-slate-200 px-3 py-2" />
+                </label>
+              ))}
+            </div>
+            <p className="text-[11px] text-slate-500">{L.timesHint}</p>
+            <button onClick={startPlan} disabled={starting}
+              className="w-full py-3 rounded-xl text-sm font-black bg-purple-600 text-white flex items-center justify-center gap-2 disabled:opacity-40">
+              {starting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CalendarClock className="w-4 h-4" />}
+              {starting ? L.starting : L.start}
+            </button>
+            <button onClick={() => setEditing(true)} className="w-full text-[11px] font-bold text-purple-700 flex items-center justify-center gap-1">
+              <Pencil className="w-3 h-3" />{L.editStyle}
+            </button>
+          </div>
+        )}
+
+        {/* ── 3. Faol reja: kelgusi videolar va ssenariylar ── */}
+        {tab === 'plan' && !loading && !needsNiche && !showWizard && plan && planActive && (
+          <>
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-3 flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-xs font-black">{L.upcoming}</p>
+                <p className="text-[10.5px] text-slate-500 truncate">
+                  {L.cadence(plan.cadence)} {plan.settings?.times?.slice(0, plan.cadence.per_day).join(', ')} · ≤ {L.sec(profile?.seconds || 10)}
+                </p>
+              </div>
+              <div className="flex flex-col gap-1 shrink-0">
+                <button onClick={() => setEditing(true)} className="text-[10.5px] font-bold text-purple-700">{L.editStyle}</button>
+                <button onClick={stopPlan} className="text-[10.5px] font-bold text-rose-600">{L.stop}</button>
+              </div>
+            </div>
+
+            {visiblePlan.map((it) => {
+              const isOpen = open === it.id;
+              return (
+                <div key={it.id} className="bg-white border border-slate-200/90 rounded-2xl p-3 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[11px] font-black text-purple-700 flex items-center gap-1">
+                      <CalendarClock className="w-3.5 h-3.5" />{localWhen(it.scheduled_at, lang)}
+                    </span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      it.status === 'published' ? 'bg-emerald-50 text-emerald-700'
+                        : it.status === 'scheduled' ? 'bg-sky-50 text-sky-700'
+                        : it.status === 'failed' ? 'bg-rose-50 text-rose-700' : 'bg-slate-100 text-slate-600'}`}>
+                      {it.status === 'published' ? L.published : it.status === 'scheduled' ? L.ready
+                        : it.status === 'failed' ? L.failed : it.scenario ? L.scenario : '…'}
+                    </span>
+                  </div>
+
+                  {/* Video turi va uzunligi: yuz (haftada 1) / to'liq bo'y / so'zsiz + musiqa */}
+                  {it.topic && (it.style || it.seconds) && (
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {it.style && (
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                          it.style === 'silent' ? 'bg-amber-50 text-amber-700'
+                            : it.style === 'closeup' ? 'bg-pink-50 text-pink-700' : 'bg-violet-50 text-violet-700'}`}>
+                          {it.style === 'silent' ? L.styleSilent : it.style === 'closeup' ? L.styleCloseup : L.styleWide}
+                        </span>
+                      )}
+                      {!!it.seconds && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">{L.sec(it.seconds)}</span>
+                      )}
+                    </div>
+                  )}
+
+                  {it.topic ? (
+                    <button onClick={() => setOpen(isOpen ? null : it.id)} className="w-full text-left flex items-start justify-between gap-2">
+                      <span className="text-[12.5px] font-bold leading-snug">{it.topic}</span>
+                      {it.scenario && (isOpen ? <ChevronUp className="w-4 h-4 shrink-0 text-slate-400" /> : <ChevronDown className="w-4 h-4 shrink-0 text-slate-400" />)}
+                    </button>
+                  ) : (
+                    <p className="text-[11px] text-slate-500 flex items-center gap-1.5">
+                      {it.id === nextDraftId && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                      {it.id === nextDraftId ? L.preparing : L.pendingScript}
+                    </p>
+                  )}
+
+                  {isOpen && it.scenario && (
+                    <div className="rounded-xl bg-slate-50 border border-slate-100 p-2.5 text-[12px] leading-relaxed text-slate-700 whitespace-pre-line">
+                      {it.scenario}
+                    </div>
+                  )}
+
+                  {it.video_url && (
+                    <video src={it.video_url} controls playsInline preload="metadata" className="w-full max-w-[220px] mx-auto aspect-[9/16] rounded-xl bg-black" />
+                  )}
+
+                  {it.status === 'draft' && it.scenario && (
+                    <div className="flex items-center gap-1.5">
+                      {(['kk', 'ru'] as const).map((l) => (
+                        <button key={l} onClick={() => switchLang(it, l)} disabled={langBusy === it.id}
+                          className={`px-3 py-1 rounded-lg text-[11px] font-black border active:scale-95 ${
+                            (it.lang || 'kk') === l ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-slate-600 border-slate-200'}`}>
+                          {l === 'kk' ? 'ҚАЗ' : 'РУС'}
+                        </button>
+                      ))}
+                      {langBusy === it.id && <Loader2 className="w-3.5 h-3.5 text-purple-600 animate-spin" />}
+                    </div>
+                  )}
+
+                  {it.status === 'draft' && it.scenario && (
+                    <button onClick={() => { setAskFor(it); setWish(''); }}
+                      className="w-full py-2 rounded-xl text-[11.5px] font-bold bg-purple-50 text-purple-700 border border-purple-200 flex items-center justify-center gap-1.5">
+                      <RefreshCw className="w-3.5 h-3.5" />{L.other}
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </>
+        )}
+
+        {/* ── Videolarim ── */}
+        {tab === 'library' && (
+          <div className="space-y-3">
+            {videos.length === 0 && (
+              <div className="bg-white border border-slate-200 rounded-2xl p-6 text-center text-sm text-slate-500">
+                <Film className="w-8 h-8 mx-auto mb-2 text-slate-300" />{L.empty}
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-2.5">
+              {videos.map((v) => (
+                <div key={v.id} className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+                  <video src={v.video_url} controls playsInline preload="metadata" className="w-full aspect-[9/16] bg-black" />
+                  <div className="p-2">
+                    <p className="text-[11px] font-semibold text-slate-800 line-clamp-2">{v.content}</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">{formatDay(v.created_at, language)}</p>
                   </div>
                 </div>
               ))}
             </div>
           </div>
         )}
-
-        {/* ========================================================================= */}
-        {/* TAB 3: Buyurtma & Yuklash (Mobile Form Layout) */}
-        {/* ========================================================================= */}
-        {activeTab === 'order-upload' && (
-          <div className="space-y-3.5 w-full max-w-full">
-            {/* 1. DIY Video Upload Section */}
-            <div className="bg-white border border-slate-200/90 rounded-2xl p-3.5 sm:p-4 shadow-2xs space-y-3 w-full">
-              <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-black shrink-0">
-                    <Upload className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <h3 className="text-xs sm:text-sm font-bold text-slate-900 uppercase tracking-wide truncate">
-                      O'Z VIDEONGIZNI YUKLASH (DIY)
-                    </h3>
-                  </div>
-                </div>
-                <span className="text-[9px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full shrink-0">
-                  Tayyor rolik
-                </span>
-              </div>
-
-              {/* Upload Box */}
-              <label className="border-2 border-dashed border-slate-200 hover:border-purple-400 bg-slate-50 hover:bg-purple-50/40 rounded-2xl p-4 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-1.5 block w-full">
-                <input
-                  type="file"
-                  accept="video/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    if (e.target.files && e.target.files[0]) {
-                      setUploadedFileName(e.target.files[0].name);
-                    }
-                  }}
-                />
-                <FileVideo className="w-7 h-7 text-purple-600 shrink-0" />
-                <div className="text-xs font-bold text-slate-800 truncate max-w-xs">
-                  {uploadedFileName || "Video faylni tanlang yoki tashlang"}
-                </div>
-                <div className="text-[10px] text-slate-400">
-                  MP4, MOV (Maksimal 500MB)
-                </div>
-              </label>
-
-              {/* Schedule date & time */}
-              <div className="space-y-2 pt-1">
-                <label className="text-[10.5px] font-bold text-slate-700 block uppercase tracking-wider">
-                  Qo'yilish Sanasi:
-                </label>
-                <div className="grid grid-cols-3 gap-1.5 w-full">
-                  {[
-                    { id: 'today', label: 'Bugun' },
-                    { id: 'tomorrow', label: 'Ertaga' },
-                    { id: 'custom', label: 'Boshqa' }
-                  ].map((item) => (
-                    <button
-                      key={item.id}
-                      onClick={() => setScheduleDate(item.id as any)}
-                      className={`py-2 text-center text-xs font-bold rounded-xl border transition-all ${
-                        scheduleDate === item.id
-                          ? 'bg-purple-600 text-white border-purple-600 shadow-2xs'
-                          : 'bg-slate-50 text-slate-700 border-slate-200'
-                      }`}
-                    >
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 pt-1">
-                  <div>
-                    <label className="text-[10px] font-bold text-slate-500 block mb-1">Joylash Soati:</label>
-                    <input
-                      type="time"
-                      value={scheduleTime}
-                      onChange={(e) => setScheduleTime(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] font-bold text-slate-500 block mb-1">Platforma:</label>
-                    <div className="flex gap-1">
-                      {(['Instagram', 'Telegram'] as const).map((plat) => (
-                        <button
-                          key={plat}
-                          onClick={() => setTargetPlatform(plat)}
-                          className={`flex-1 py-2 rounded-xl text-[11px] font-bold border transition-all truncate ${
-                            targetPlatform === plat
-                              ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
-                              : 'bg-slate-50 text-slate-600 border-slate-200'
-                          }`}
-                        >
-                          {plat === 'Instagram' ? 'Insta' : 'TG'}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  onClick={handleScheduleOrder}
-                  className="w-full mt-2 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-95"
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>Avto-Publishing jadvaliga qo'shish</span>
-                </button>
-              </div>
-            </div>
-
-            {/* 2. AI Video Generation Order */}
-            <div className="bg-white border border-slate-200/90 rounded-2xl p-3.5 sm:p-4 shadow-2xs space-y-3 w-full">
-              <div className="flex items-center gap-2 border-b border-slate-100 pb-2.5">
-                <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center font-black shrink-0">
-                  <Sparkles className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="text-xs sm:text-sm font-bold text-slate-900 uppercase tracking-wide">
-                    AI Video Buyurtmasi
-                  </h3>
-                  <p className="text-[10px] text-slate-500">Ssenariy va vizual plan kiritish</p>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-[10.5px] font-bold text-slate-700 block mb-1">
-                  Video mavzusi / g'oyasi nima haqida? *
-                </label>
-                <textarea
-                  value={orderTopic}
-                  onChange={(e) => setOrderTopic(e.target.value)}
-                  rows={2}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:bg-white focus:border-purple-500 font-medium resize-none shadow-2xs"
-                  placeholder="Masalan: Kiyimlarimizni amaliy yuvish testi..."
-                />
-              </div>
-
-              {/* Style Buttons */}
-              <div>
-                <label className="text-[10.5px] font-bold text-slate-700 block mb-1">
-                  Video Uslubi (Style):
-                </label>
-                <div className="grid grid-cols-3 gap-1.5 w-full">
-                  {[
-                    { id: 'elegant', label: '🎁 Elegant' },
-                    { id: 'viral', label: '⚡ Viral' },
-                    { id: 'minimal', label: '✨ Minimal' }
-                  ].map((st) => (
-                    <button
-                      key={st.id}
-                      onClick={() => setOrderStyle(st.id as any)}
-                      className={`py-2 px-1 rounded-xl text-xs font-bold border transition-all text-center truncate ${
-                        orderStyle === st.id
-                          ? 'bg-purple-600 text-white border-purple-600 shadow-2xs'
-                          : 'bg-slate-50 text-slate-700 border-slate-200'
-                      }`}
-                    >
-                      {st.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Duration & Mode */}
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-[10px] font-bold text-slate-600 block mb-1">Davomiyligi:</label>
-                  <input
-                    type="text"
-                    value={orderDuration}
-                    onChange={(e) => setOrderDuration(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-purple-700 outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-[10px] font-bold text-slate-600 block mb-1">Joylash Turi:</label>
-                  <select
-                    value={publishMode}
-                    onChange={(e) => setPublishMode(e.target.value as any)}
-                    className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none"
-                  >
-                    <option value="semi">Yarim Avtomat</option>
-                    <option value="auto">To‘liq Avtomat</option>
-                  </select>
-                </div>
-              </div>
-
-              <button
-                onClick={handleScheduleOrder}
-                className="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-95"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Video ssenariyni yarat va rejalashtir</span>
-              </button>
-            </div>
-
-            {/* Video Preview Player */}
-            <div className="bg-white border border-slate-200/90 rounded-2xl p-3.5 sm:p-4 shadow-2xs space-y-2.5 w-full">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                <div className="flex items-center gap-2">
-                  <Play className="w-3.5 h-3.5 text-purple-600" />
-                  <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
-                    9:16 Video Prevyu (Reels & TikTok)
-                  </h3>
-                </div>
-
-                <span className="text-[9.5px] bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded-full">
-                  1080x1920
-                </span>
-              </div>
-
-              <div className="rounded-2xl p-6 bg-slate-900 text-white text-center flex flex-col items-center justify-center gap-2 min-h-[140px] relative overflow-hidden">
-                <div
-                  onClick={() => setIsPlayingPreview(!isPlayingPreview)}
-                  className="w-11 h-11 rounded-full bg-purple-600 hover:bg-purple-500 text-white flex items-center justify-center cursor-pointer transition-transform active:scale-95 shadow-lg"
-                >
-                  {isPlayingPreview ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5 fill-white" />}
-                </div>
-
-                <div className="text-xs font-bold text-slate-200">
-                  {isPlayingPreview ? "Rolik ijro etilmoqda" : "Ssenariy prevyusini ko'rish"}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ========================================================================= */}
-        {/* TAB 4: Sozlamalar (Experience Memory) */}
-        {/* ========================================================================= */}
-        {activeTab === 'settings' && (
-          <div className="space-y-3.5 w-full max-w-full">
-            <div className="bg-white border border-slate-200/90 rounded-2xl p-3.5 sm:p-4 shadow-2xs space-y-3.5 w-full">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-8 h-8 rounded-xl bg-purple-50 border border-purple-100 text-purple-600 flex items-center justify-center shrink-0">
-                    <Sliders className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <h2 className="text-xs sm:text-sm font-bold text-slate-900 truncate">
-                        AI Yo'nalish Sozlamalari
-                      </h2>
-                      <span className="text-[9px] bg-purple-100 text-purple-700 font-extrabold px-1.5 py-0.2 rounded-full">
-                        MEMORY
-                      </span>
-                    </div>
-                    <p className="text-[10.5px] text-slate-500 truncate">Brendingizga mos qoidalar saqlanadi</p>
-                  </div>
-                </div>
-              </div>
-
-              {savedSettingsNotice && (
-                <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-bold flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Sozlamalar AI xotirasiga saqlandi!</span>
-                </div>
-              )}
-
-              {/* 1. Video Janri */}
-              <div className="space-y-1.5">
-                <label className="text-[10.5px] font-bold text-slate-700 block uppercase tracking-wider">
-                  Video Janri:
-                </label>
-                <div className="flex flex-wrap gap-1.5">
-                  {[
-                    'Mahsulot taqdimoti',
-                    'Aksiya va chegirma',
-                    'Mijoz sharhi',
-                    'Trend videolar',
-                    'Komediya & Hazil',
-                    'Foydali maslahat'
-                  ].map((genre) => {
-                    const isSelected = selectedGenres.includes(genre);
-                    return (
-                      <button
-                        key={genre}
-                        onClick={() => {
-                          if (isSelected) {
-                            setSelectedGenres(selectedGenres.filter((g) => g !== genre));
-                          } else {
-                            setSelectedGenres([...selectedGenres, genre]);
-                          }
-                        }}
-                        className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition-all flex items-center gap-1 ${
-                          isSelected
-                            ? 'bg-purple-600 text-white border-purple-600 shadow-2xs'
-                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                        }`}
-                      >
-                        <span>{genre}</span>
-                        {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* 2. Video Uslubi */}
-              <div className="space-y-1.5">
-                <label className="text-[10.5px] font-bold text-slate-700 block uppercase tracking-wider">
-                  Video Uslubi:
-                </label>
-                <div className="flex flex-wrap gap-1.5">
-                  {['Professional', 'Quvnoq', 'Minimalist', 'Energetik'].map((style) => {
-                    const isSelected = selectedStyle === style;
-                    return (
-                      <button
-                        key={style}
-                        onClick={() => setSelectedStyle(style)}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
-                          isSelected
-                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
-                            : 'bg-slate-50 text-slate-700 border-slate-200'
-                        }`}
-                      >
-                        {style}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* 3. Custom Prompt */}
-              <div className="space-y-1">
-                <label className="text-[10.5px] font-bold text-slate-700 uppercase tracking-wider block">
-                  Qo'shimcha Ko'rsatma (AI doim hisobga oladi):
-                </label>
-                <textarea
-                  value={customPromptInstruction}
-                  onChange={(e) => setCustomPromptInstruction(e.target.value)}
-                  rows={2}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:bg-white focus:border-purple-500 font-medium resize-none shadow-2xs"
-                  placeholder="Masalan: Narxlarni aniq aytilsin va har doim manzil ko'rsatilsin."
-                />
-              </div>
-
-              {/* 4. Muzika kayfiyati */}
-              <div className="space-y-1.5">
-                <label className="text-[10.5px] font-bold text-slate-700 block uppercase tracking-wider">
-                  Musiqa Kayfiyati:
-                </label>
-                <div className="flex flex-wrap gap-1.5">
-                  {['Enerjetik', 'Vazmin', 'Zamonaviy', 'Milliy'].map((m) => {
-                    const isSelected = musicMood === m;
-                    return (
-                      <button
-                        key={m}
-                        onClick={() => setMusicMood(m)}
-                        className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition-all flex items-center gap-1 ${
-                          isSelected
-                            ? 'bg-purple-600 text-white border-purple-600 shadow-2xs'
-                            : 'bg-slate-50 text-slate-700 border-slate-200'
-                        }`}
-                      >
-                        <Music className="w-3 h-3" />
-                        <span>{m}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <button
-                onClick={handleSaveSettings}
-                className="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-95"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                <span>Sozlamalarni AI xotirasiga saqlash</span>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ========================================================================= */}
-        {/* TAB 5: Jadval (Mobile-Friendly Scheduled Cards) */}
-        {/* ========================================================================= */}
-        {activeTab === 'schedule' && (
-          <div className="space-y-3.5 w-full max-w-full">
-            <div className="bg-white border border-slate-200/90 rounded-2xl p-3.5 sm:p-4 shadow-2xs space-y-3 w-full">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-8 h-8 rounded-xl bg-purple-50 border border-purple-100 text-purple-600 flex items-center justify-center shrink-0">
-                    <Calendar className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <h2 className="text-xs sm:text-sm font-bold text-slate-900 truncate">
-                      NASHR JADVALI
-                    </h2>
-                    <p className="text-[10px] text-slate-500 truncate">
-                      Kutilayotgan videolaringiz
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => setActiveTab('order-upload')}
-                  className="px-2.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl flex items-center gap-1 shadow-2xs transition-all active:scale-95 shrink-0"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>+ Qo'shish</span>
-                </button>
-              </div>
-
-              {/* Mobile Scheduled Cards List (NO TABLE OVERFLOW) */}
-              <div className="flex flex-col gap-2 w-full">
-                {schedules.map((item) => (
-                  <div
-                    key={item.id}
-                    className="p-3 bg-slate-50 border border-slate-200/80 rounded-2xl flex items-start gap-2.5 justify-between w-full"
-                  >
-                    <div className="flex items-start gap-2.5 min-w-0 flex-1">
-                      <img
-                        src={item.thumbnail}
-                        alt={item.title}
-                        className="w-12 h-12 rounded-xl object-cover border border-slate-200 shrink-0"
-                      />
-                      <div className="min-w-0 flex-1 space-y-1">
-                        <div className="font-bold text-slate-900 text-xs line-clamp-1">{item.title}</div>
-                        
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className={`inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md text-[10px] font-bold ${
-                            item.platform === 'Instagram' ? 'bg-pink-50 text-pink-700 border border-pink-200' : 'bg-sky-50 text-sky-700 border border-sky-200'
-                          }`}>
-                            {item.platform === 'Instagram' ? <Instagram className="w-2.5 h-2.5" /> : <Send className="w-2.5 h-2.5" />}
-                            {item.platform}
-                          </span>
-
-                          <span className="text-[10px] font-bold text-slate-500 flex items-center gap-0.5">
-                            <Clock className="w-2.5 h-2.5" /> {item.scheduledTime}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <span className={`px-2 py-0.2 rounded-full text-[9.5px] font-black ${
-                            item.status === 'Nashr etildi'
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : item.status === 'Kutilmoqda'
-                              ? 'bg-amber-100 text-amber-800'
-                              : 'bg-slate-200 text-slate-700'
-                          }`}>
-                            {item.status}
-                          </span>
-                          <span className="text-[10px] text-slate-400 font-semibold">{item.viewsForecast}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => setSchedules(schedules.filter((s) => s.id !== item.id))}
-                      className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors shrink-0"
-                      title="O'chirish"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* AI Trend Search Modal (Mobile Optimized) */}
-      {showTrendSearch && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3">
-          <div className="bg-white rounded-2xl max-w-sm w-full p-4 shadow-2xl border border-slate-200 space-y-3">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-              <div className="flex items-center gap-1.5">
-                <Flame className="w-4 h-4 text-amber-500" />
-                <h3 className="text-xs sm:text-sm font-bold text-slate-900">AI Trend Radar</h3>
-              </div>
-              <button
-                onClick={() => setShowTrendSearch(false)}
-                className="w-7 h-7 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center justify-center text-xs font-bold"
-              >
-                ✕
+      {/* "Boshqa tuz" — avval so'raydi */}
+      {askFor && (
+        <div className="absolute inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50" onClick={() => !regenerating && setAskFor(null)}>
+          <div className="bg-white w-full max-w-[480px] rounded-t-3xl sm:rounded-3xl p-4 space-y-3" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-black">{L.askTitle}</h3>
+              <button onClick={() => !regenerating && setAskFor(null)} className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center">
+                <X className="w-4 h-4" />
               </button>
             </div>
-
-            {trendSearching ? (
-              <div className="py-6 text-center space-y-2">
-                <RefreshCw className="w-5 h-5 text-purple-600 animate-spin mx-auto" />
-                <div className="text-xs font-bold text-slate-800">Trendlar tahlil qilinmoqda...</div>
-              </div>
+            <p className="text-[11px] text-slate-500 line-clamp-2">{askFor.topic}</p>
+            <textarea value={wish} onChange={(e) => setWish(e.target.value)} rows={3} maxLength={1000} placeholder={L.askPh}
+              disabled={regenerating}
+              className="w-full text-sm rounded-xl border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-200 resize-none" />
+            {regenerating ? (
+              <p className="text-xs font-semibold text-purple-700 flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />{L.writing}</p>
             ) : (
-              <div className="space-y-1.5 max-h-60 overflow-y-auto">
-                {trendResults.map((tr, idx) => (
-                  <div
-                    key={idx}
-                    onClick={() => {
-                      setTopic(`${tr.keyword} mavzusida viral rolik`);
-                      setShowTrendSearch(false);
-                      setActiveTab('ai-video');
-                    }}
-                    className="p-2.5 bg-slate-50 hover:bg-purple-50 border border-slate-200/80 rounded-xl flex items-center justify-between text-xs cursor-pointer transition-all active:scale-95"
-                  >
-                    <div>
-                      <div className="font-bold text-purple-700 text-xs">{tr.keyword}</div>
-                      <div className="text-[10px] text-slate-500">{tr.count}</div>
-                    </div>
-                    <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-                      {tr.growth}
-                    </span>
-                  </div>
-                ))}
+              <div className="flex gap-2">
+                <button onClick={() => regenerate(false)} className="flex-1 py-2.5 rounded-xl text-xs font-bold bg-slate-100">{L.byAi}</button>
+                <button onClick={() => regenerate(true)} disabled={!wish.trim()}
+                  className="flex-1 py-2.5 rounded-xl text-xs font-black bg-purple-600 text-white disabled:opacity-40">{L.byWish}</button>
               </div>
             )}
-
-            <button
-              onClick={() => setShowTrendSearch(false)}
-              className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl"
-            >
-              Yopish
-            </button>
           </div>
         </div>
       )}

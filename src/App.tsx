@@ -1,84 +1,113 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Calendar, LayoutGrid, Smartphone, Columns, Monitor, Sparkles, UserPlus, Globe, LogIn } from 'lucide-react';
-import { StatusBar } from './components/StatusBar';
-import { HeaderNav, LanguageSelectorPill } from './components/HeaderNav';
+import { Download, Calendar, LayoutGrid } from 'lucide-react';
+import { HeaderNav } from './components/HeaderNav';
 import { BottomNavBar } from './components/BottomNavBar';
 import { MetricCards } from './components/MetricCards';
 import { ProfitChart } from './components/ProfitChart';
 import { CustomerBreakdown } from './components/CustomerBreakdown';
 import { DayActiveChart } from './components/DayActiveChart';
 import { RetentionGauge } from './components/RetentionGauge';
-import { AIAssistantCard } from './components/AIAssistantCard';
-import { ThreeScreenShowcase } from './components/ThreeScreenShowcase';
-import { OrdersTab } from './components/OrdersTab';
-import { InventoryTab } from './components/InventoryTab';
 import { ProfileTab } from './components/ProfileTab';
 import { ToolDetailView } from './components/ToolDetailView';
+import { UserAvatarIcon } from './components/UserAvatar';
 
 // Modals
 import { ExportModal } from './components/ExportModal';
 import { DateRangeModal } from './components/DateRangeModal';
 import { AddWidgetModal } from './components/AddWidgetModal';
-import { AIAssistantDrawer } from './components/AIAssistantDrawer';
 import { NotificationDrawer } from './components/NotificationDrawer';
 import { CustomerDetailsModal } from './components/CustomerDetailsModal';
 import { RetentionDetailsModal } from './components/RetentionDetailsModal';
 import { FilterModal } from './components/FilterModal';
 import { ProfileModal } from './components/ProfileModal';
-import { AuthModal } from './components/AuthModal';
-import { OnboardingCatalogModal } from './components/OnboardingCatalogModal';
+import { AuthFlow, AuthStep } from './components/AuthFlow';
+import { api, ApiError, tokens, MeResponse, BusinessProfile, consumeOAuthReturn } from './lib/api';
+
+// Google'dan qaytilgan bo'lsa — tokenlarni URL hash'idan oladi (komponentdan OLDIN, bir marta).
+const OAUTH_RESULT = consumeOAuthReturn();
 import { ToolDemoModal } from './components/ToolDemoModal';
 import { AvatarQuickMenuModal } from './components/AvatarQuickMenuModal';
 
 // Language Context
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
 
-// Mock Data
+// Real ma'lumot (Supabase -> backend /dashboard)
+import { DashboardData } from './lib/api';
 import {
-  initialMetrics,
-  profitHistory,
-  customerSegments,
-  dayActivityData,
-  notificationsList
-} from './data/mockData';
-import { MetricItem, CustomerSegment, ActiveTab, ViewMode, UserProfile } from './types';
+  buildMetrics,
+  buildNotifications,
+  buildRevenueSeries,
+  buildSegments,
+  buildStoreContext,
+  buildWeekdays
+} from './lib/dashboardView';
+import { rangeLabel } from './components/DateRangeModal';
+import { CustomerSegment, ActiveTab, UserProfile } from './types';
+
+// Kirmagan holat uchun bo'sh profil (AuthFlow yopilmaguncha dashboard ko'rinmaydi).
+const GUEST_PROFILE: UserProfile = {
+  id: '',
+  uniqueCode: '',
+  name: 'Operon',
+  email: '',
+  storeName: '',
+  businessType: 'Retailer',
+  role: '',
+  avatarId: 1,
+  isVerified: false,
+  onboardingCompleted: false
+};
+
+// Backend /auth/me javobidan dashboard profilini yasash.
+function profileFromMe(me: MeResponse, prev: UserProfile, profile?: BusinessProfile): UserProfile {
+  const code = me.business ? `OPR-${me.business.store_code}` : me.id.slice(0, 8).toUpperCase();
+  return {
+    ...prev,
+    id: me.id,
+    uniqueCode: code,
+    name: prev.email === me.email && prev.name && prev.name !== 'Operon' ? prev.name : me.email.split('@')[0],
+    email: me.email,
+    storeName: me.business?.brand_name || profile?.brand_name || prev.storeName,
+    isVerified: true,
+    onboardingCompleted: !!me.business,
+    businessData: profile
+      ? {
+          ...prev.businessData,
+          category: profile.business_type,
+          salesChannels: profile.channels,
+          targetAudience: profile.target_audience || undefined
+        }
+      : prev.businessData
+  };
+}
 
 function DashboardApp() {
   const { t, language, setLanguage } = useLanguage();
 
   // Navigation & View Mode
-  const [viewMode, setViewMode] = useState<ViewMode>('showcase'); // default to 3-screen showcase
   const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
 
   // User Profile & Authentication State
   const [userProfile, setUserProfile] = useState<UserProfile>(() => {
     try {
       const saved = localStorage.getItem('operon_user_profile');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        // Merge over the guest profile so an older/partial stored shape can't
+        // leave required fields (avatarId, businessType, ...) undefined.
+        return { ...GUEST_PROFILE, ...(JSON.parse(saved) as Partial<UserProfile>) };
+      }
     } catch (e) {}
-    return {
-      id: 'OPR-84920',
-      uniqueCode: 'OPR-84920',
-      name: 'Shohjahon Uralbayev',
-      email: 'shohjahonuralbayev5@gmail.com',
-      storeName: 'Operon Fashion Brand',
-      phone: '+998 90 123 45 67',
-      role: 'Asoschi & Boshqaruvchi',
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-      joinedDate: 'Yanvar 2024',
-      totalRevenue: '$1,469,324,230',
-      activeProductsCount: 142,
-      onboardingCompleted: true
-    };
+    return GUEST_PROFILE;
   });
 
   // State Management
-  const [metrics, setMetrics] = useState<MetricItem[]>(initialMetrics);
-  const [profitData] = useState(profitHistory);
-  const [customerData] = useState<CustomerSegment[]>(customerSegments);
-  const [dayActiveData] = useState(dayActivityData);
-  const [notifications, setNotifications] = useState(notificationsList);
-  const [dateRange, setDateRange] = useState('01 - 30 Jan, 2024');
+  // Dashboard — hammasi Supabase'dan (backend /dashboard/{id})
+  const [businessId, setBusinessId] = useState<string | null>(null);
+  const [days, setDays] = useState<number>(30);
+  const [dash, setDash] = useState<DashboardData | null>(null);
+  const [dashError, setDashError] = useState('');
+  const [dashLoading, setDashLoading] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [activeWidgetIds, setActiveWidgetIds] = useState<string[]>(['conversion-rate']);
   const [selectedChannel, setSelectedChannel] = useState('All Channels');
   const [currency, setCurrency] = useState('USD');
@@ -92,7 +121,6 @@ function DashboardApp() {
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isDateRangeOpen, setIsDateRangeOpen] = useState(false);
   const [isAddWidgetOpen, setIsAddWidgetOpen] = useState(false);
-  const [isAIChatOpen, setIsAIChatOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isCustomerDetailsOpen, setIsCustomerDetailsOpen] = useState(false);
   const [selectedCustomerSeg, setSelectedCustomerSeg] = useState<CustomerSegment | null>(null);
@@ -100,26 +128,113 @@ function DashboardApp() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
-  // Authentication & Onboarding Modals
-  const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
-  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
+  // Kirish / Ro'yxatdan o'tish / Onboarding oqimi.
+  // session: 'checking' (token tekshirilmoqda) | 'anon' | 'ready'.
+  const [session, setSession] = useState<'checking' | 'anon' | 'ready'>(tokens.access ? 'checking' : 'anon');
+  const [authStep, setAuthStep] = useState<AuthStep | null>(tokens.access ? null : 'welcome');
   const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
 
-  // Check if first-time visitor needs to see Kirish (Login)
+  const openAuth = (mode: 'login' | 'register') => setAuthStep(mode);
+
+  // Ilova ochilganda: saqlangan token bo'lsa — backend'dan haqiqiy holatni olamiz.
   useEffect(() => {
-    const isAuthed = localStorage.getItem('operon_is_authenticated');
-    if (!isAuthed) {
-      setAuthMode('login'); // First time entry: Kirish is shown first
-      setIsAuthOpen(true);
-    }
+    if (!tokens.access) return;
+    let cancelled = false;
+    // Vaqtinchalik server/tarmoq xatosida (5xx, 0) qayta urinamiz — tokenni o'chirmaymiz.
+    const meWithRetry = async () => {
+      for (let i = 0; ; i++) {
+        try {
+          return await api.me();
+        } catch (e) {
+          const s = e instanceof ApiError ? e.status : 0;
+          if (s === 401 || s === 403 || i >= 3) throw e;
+          await new Promise((r) => setTimeout(r, 1200 * (i + 1)));
+        }
+      }
+    };
+    meWithRetry()
+      .then((me) => {
+        if (cancelled) return;
+        setUserProfile((prev) => profileFromMe(me, prev));
+        if (OAUTH_RESULT === 'reset') {
+          // "Parolni unutdingizmi?" — Google tasdig'idan keyin yangi parol
+          setSession('anon');
+          setAuthStep('newpass');
+        } else if (me.business) {
+          if (me.business.language) setLanguage(me.business.language);
+          setBusinessId(me.business.id);
+          setSession('ready');
+          setAuthStep(null);
+        } else {
+          // Birinchi marta (Google) — biznes nomi → parol → turi
+          setSession('anon');
+          setAuthStep('name');
+        }
+      })
+      .catch(() => {
+        if (cancelled) return;
+        tokens.clear();
+        setSession('anon');
+        setAuthStep('login');
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  // Unread notifications count
-  const unreadCount = notifications.filter((n) => n.unread).length;
+  // Dashboard ma'lumotini yuklash (biznes, davr yoki qayta yuklash o'zgarganda)
+  useEffect(() => {
+    if (session !== 'ready' || !businessId) return;
+    let cancelled = false;
+    setDashLoading(true);
+    setDashError('');
+    api
+      .dashboard(businessId, days)
+      .then((d) => {
+        if (!cancelled) setDash(d);
+      })
+      .catch(() => {
+        if (!cancelled)
+          setDashError(language === 'ru' ? 'Не удалось загрузить данные.' : 'Деректерді жүктеу мүмкін болмады.');
+      })
+      .finally(() => {
+        if (!cancelled) setDashLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session, businessId, days, reloadKey]);
 
-  const handleMarkAllRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
+  const metrics = dash ? buildMetrics(dash, language) : [];
+  const revenueSeries = dash ? buildRevenueSeries(dash, language) : [];
+  const customerData = dash ? buildSegments(dash, language) : [];
+  const dayActiveData = dash ? buildWeekdays(dash, language) : [];
+  const notifications = dash ? buildNotifications(dash, language) : [];
+  const currencyCode = dash?.currency || 'KZT';
+  const dateRange = rangeLabel(days, language);
+  const retentionTarget = 40;
+  const conversion =
+    dash && dash.metrics.orders + dash.metrics.inquiries > 0
+      ? Math.round((dash.metrics.orders / (dash.metrics.orders + dash.metrics.inquiries)) * 1000) / 10
+      : null;
+
+  const unreadCount = dash?.unread_notifications ?? 0;
+
+  const handleMarkAllRead = async () => {
+    if (!businessId) return;
+    try {
+      await api.markNotificationsRead(businessId);
+      setReloadKey((k) => k + 1);
+    } catch (e) {
+      /* panel ochiq qoladi, keyingi yuklashda qayta uriniladi */
+    }
+  };
+
+  const handleSetOrderStatus = async (orderId: string, status: 'inquiry' | 'confirmed' | 'cancelled') => {
+    if (!businessId) return;
+    await api.setOrderStatus(businessId, orderId, status);
+    setReloadKey((k) => k + 1);
   };
 
   const handleToggleWidget = (id: string) => {
@@ -130,488 +245,234 @@ function DashboardApp() {
     setActiveToolDemo(id);
   };
 
-  const handleSelectCustomerSegment = (seg: CustomerSegment) => {
-    setSelectedCustomerSeg(seg);
-    setActiveToolDemo('business-analyze');
-  };
-
-  const handleUpdateProfile = (updated: UserProfile) => {
+  const handleUpdateProfile = async (updated: UserProfile): Promise<string | null> => {
+    // Do'kon nomi — REAL: bazaga yoziladi (avval faqat localStorage'da qolardi)
+    if (businessId && updated.storeName && updated.storeName !== userProfile.storeName) {
+      try {
+        await api.updateBusiness(businessId, { brand_name: updated.storeName });
+        setReloadKey((k) => k + 1);
+      } catch (e) {
+        const ru = language === 'ru';
+        if (e instanceof ApiError && e.status === 409) return ru ? 'Это название уже занято' : 'Бұл атау бос емес';
+        if (e instanceof ApiError && e.status === 400) return ru ? 'Слишком короткое название' : 'Атау тым қысқа';
+        return ru ? 'Не удалось сохранить' : 'Сақталмады';
+      }
+    }
     setUserProfile(updated);
     try {
       localStorage.setItem('operon_user_profile', JSON.stringify(updated));
     } catch (e) {}
+    return null;
   };
 
-  const handleAuthSuccess = (profile: UserProfile, isNewRegistration: boolean) => {
-    setUserProfile(profile);
-    setIsAuthOpen(false);
-
-    if (isNewRegistration) {
-      // For NEW registrations -> Open 2-Catalog Onboarding Screen (Biznesni qo'shish vs Biznes yaratish)
-      setIsOnboardingOpen(true);
-    } else {
-      // For existing Login -> Enters directly to their business dashboard!
-      setIsOnboardingOpen(false);
+  const enterDashboard = (me: MeResponse, profile?: BusinessProfile) => {
+    if (me.business) {
+      if (me.business.language) setLanguage(me.business.language);
+      setBusinessId(me.business.id);
     }
+    setUserProfile((prev) => {
+      const next = profileFromMe(me, prev, profile);
+      try {
+        localStorage.setItem('operon_user_profile', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+    setSession('ready');
+    setAuthStep(null);
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('operon_is_authenticated');
-    setAuthMode('login');
-    setIsAuthOpen(true);
+    // Token va keshlangan profil tozalanadi — keyingi foydalanuvchi oldingisining
+    // do'konini ko'rmasin.
+    api.logout();
+    try {
+      localStorage.removeItem('operon_is_authenticated');
+      localStorage.removeItem('operon_user_profile');
+    } catch (e) {}
+    setUserProfile(GUEST_PROFILE);
+    setSession('anon');
+    setBusinessId(null);
+    setDash(null);
+    setIsProfileOpen(false);
+    setIsAvatarMenuOpen(false);
+    setActiveToolDemo(null);
+    setActivePhoneTool(null);
+    setActiveTab('overview');
+    setAuthStep('welcome');
   };
 
-  const storeContext = {
-    totalProfit: '$1,469,324,230 (+12.2%)',
-    pageViews: '16,431 (+15.5%)',
-    visitors: '6,225 (+8.4%)',
-    clicks: '2,832 (-10.5%)',
-    orders: '1,224 (+4.4%)',
-    dateRange,
-    storeName: userProfile.storeName,
-    activeProducts: userProfile.activeProductsCount || 142
-  };
+  const storeContext = buildStoreContext(dash, userProfile.storeName, dateRange, language);
 
   return (
-    <div className="min-h-screen bg-[#F0F2F6] text-slate-900 font-sans flex flex-col antialiased">
-      {/* Top Main Navigation Bar */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 py-2.5 shadow-2xs">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-          
-          {/* Logo & Platform Info */}
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-black text-sm shadow-xs">
-              OP
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-extrabold text-sm tracking-tight text-slate-900">OPERON JIMI OS</span>
-                <span className="text-[10px] font-bold bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full border border-blue-200/60 hidden sm:inline-block">
-                  AI PRO 2026
-                </span>
-              </div>
-              <div className="text-[10px] text-slate-400 hidden sm:block">
-                {t.ecosystemSubtitle}
-              </div>
-            </div>
-          </div>
+    <div className="h-[100dvh] w-full bg-[#E9ECF2] flex justify-center text-slate-900 font-sans antialiased overflow-hidden">
+      {/* Ilova: telefonda to'liq ekran, kompyuterda o'rtada mobil kenglikda */}
+      <div className="w-full max-w-[480px] h-full bg-[#FAFAFC] flex flex-col relative sm:shadow-[0_0_40px_-10px_rgba(0,0,0,0.15)] pt-[env(safe-area-inset-top)]">
+      {/* Brand Navigation */}
+      <HeaderNav
+        onOpenNotifications={() => setIsNotificationsOpen(true)}
+        onOpenFilter={() => setIsFilterOpen(true)}
+        onOpenProfile={() => setIsProfileOpen(true)}
+        onOpenAuth={() => {
+          openAuth('login');
+        }}
+        onOpenAvatarMenu={() => setIsAvatarMenuOpen(true)}
+        unreadCount={unreadCount}
+        userProfile={userProfile}
+      />
 
-          {/* Center: View Switcher (3-Screen vs Single Phone vs Fullscreen Canvas) */}
-          <div className="flex items-center bg-slate-100/90 p-1 rounded-xl border border-slate-200/70">
-            <button
-              id="view-mode-showcase"
-              onClick={() => setViewMode('showcase')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                viewMode === 'showcase'
-                  ? 'bg-white text-blue-600 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-              title={t.showcaseMode}
-            >
-              <Columns className="w-3.5 h-3.5" />
-              <span className="hidden md:inline">{t.viewShowcase}</span>
-            </button>
-
-            <button
-              id="view-mode-single"
-              onClick={() => setViewMode('single')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                viewMode === 'single'
-                  ? 'bg-white text-blue-600 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-              title={t.singlePhoneMode}
-            >
-              <Smartphone className="w-3.5 h-3.5" />
-              <span className="hidden md:inline">{t.viewSingle}</span>
-            </button>
-
-            <button
-              id="view-mode-full"
-              onClick={() => setViewMode('full')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                viewMode === 'full'
-                  ? 'bg-white text-blue-600 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-              title={t.fullCanvasMode}
-            >
-              <Monitor className="w-3.5 h-3.5" />
-              <span className="hidden md:inline">{t.viewFull}</span>
-            </button>
-          </div>
-
-          {/* Right Controls: Quick Language Switcher & Auth / Profile */}
-          <div className="flex items-center gap-2">
-            {/* Quick 2-Language Toggle (KZ / RU) */}
-            <div className="flex items-center bg-slate-100 rounded-xl p-0.5 border border-slate-200">
-              <button
-                onClick={() => setLanguage('kk')}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
-                  language === 'kk' ? 'bg-white text-blue-600 shadow-2xs' : 'text-slate-500 hover:text-slate-900'
-                }`}
-                title="Қазақша"
-              >
-                KZ 🇰🇿
-              </button>
-              <button
-                onClick={() => setLanguage('ru')}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
-                  language === 'ru' ? 'bg-white text-blue-600 shadow-2xs' : 'text-slate-500 hover:text-slate-900'
-                }`}
-                title="Русский"
-              >
-                RU 🇷🇺
-              </button>
-            </div>
-
-            {/* Kirish / Ro'yxatdan o'tish yoki Profil / Til tezkor menyusi */}
-            <button
-              onClick={() => setIsAvatarMenuOpen(true)}
-              className="flex items-center gap-2 pl-1.5 pr-3 py-1 bg-white hover:bg-slate-50 border border-slate-200/90 rounded-xl shadow-2xs transition-all active:scale-95 cursor-pointer"
-              title={t.langAndAuth}
-            >
-              <img
-                src={userProfile.avatarUrl}
-                alt={userProfile.name}
-                className="w-6 h-6 rounded-full object-cover border border-slate-200"
-              />
-              <span className="text-xs font-bold text-slate-800 hidden sm:inline max-w-[100px] truncate">
-                {userProfile.name.split(' ')[0]}
-              </span>
-            </button>
-          </div>
-
-        </div>
-      </header>
-
-      {/* Main Workspace Area */}
-      <main className="flex-1 max-w-7xl mx-auto w-full p-2 sm:p-4 md:p-5 flex flex-col justify-center">
-        
-        {/* MODE 1: 3-Screen Side-by-Side Showcase */}
-        {viewMode === 'showcase' && (
-          <ThreeScreenShowcase
-            metrics={metrics}
-            profitData={profitData}
-            customerData={customerData}
-            dayActiveData={dayActiveData}
-            dateRange={dateRange}
-            activeTab={activeTab}
-            onChangeTab={setActiveTab}
-            onOpenExport={() => setIsExportOpen(true)}
-            onOpenDateRange={() => setIsDateRangeOpen(true)}
-            onOpenAddWidget={() => setIsAddWidgetOpen(true)}
-            onOpenNotifications={() => setIsNotificationsOpen(true)}
-            onOpenFilter={() => setIsFilterOpen(true)}
-            onOpenProfile={() => setIsProfileOpen(true)}
-            onOpenAuth={(mode) => {
-              setAuthMode(mode || 'login');
-              setIsAuthOpen(true);
-            }}
-            onOpenAvatarMenu={() => setIsAvatarMenuOpen(true)}
-            onOpenRetentionDetails={() => setActiveToolDemo('business-analyze')}
-            onOpenCustomerDetails={() => setActiveToolDemo('business-analyze')}
-            onOpenAIChat={() => setIsAIChatOpen(true)}
-            onOpenToolDemo={(toolId) => setActiveToolDemo(toolId)}
-            onSelectMetric={(m) => {
-              if (m?.id === 'orders' || (m?.label && (m.label.toLowerCase().includes('order') || m.label.toLowerCase().includes('buyurtma')))) {
-                setActiveToolDemo('orders-manager');
-              } else {
-                setActiveToolDemo('analytics');
-              }
-            }}
+      {/* Main Content Area: Tool View or Dashboard Tabs */}
+      {activePhoneTool ? (
+        <div className="flex-1 overflow-hidden flex flex-col">
+          <ToolDetailView
+            toolId={activePhoneTool}
+            onBack={() => setActivePhoneTool(null)}
             storeContext={storeContext}
-            userProfile={userProfile}
           />
-        )}
-
-        {/* MODE 2: Single Interactive iPhone Frame */}
-        {viewMode === 'single' && (
-          <div className="flex flex-col items-center w-full px-2">
-            {/* Phone Bezel */}
-            <div className="w-full max-w-[380px] bg-[#FAFAFC] rounded-[38px] sm:rounded-[48px] p-2.5 sm:p-3 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.18),0_0_0_1px_rgba(0,0,0,0.08)] border-2 sm:border-4 border-slate-800/80 relative overflow-hidden flex flex-col h-[710px] sm:h-[780px]">
-              {/* Dynamic Island / Notch */}
-              <div className="absolute top-3 left-1/2 -translate-x-1/2 w-28 h-5 bg-slate-900 rounded-full z-30 flex items-center justify-end px-3">
-                <div className="w-2.5 h-2.5 rounded-full bg-slate-800 border border-slate-700" />
+        </div>
+      ) : activeTab === 'video' || activeTab === 'analytics' ? (
+        // Pastki menyu: Video yaratish va Analitika (Заказы/Склад o'rniga, 2026-11-13)
+        <div className="flex-1 overflow-hidden flex flex-col">
+          <ToolDetailView
+            key={activeTab}
+            toolId={activeTab === 'video' ? 'video-creator' : 'analytics'}
+            onBack={() => setActiveTab('overview')}
+            storeContext={storeContext}
+          />
+        </div>
+      ) : (
+        <div className="flex-1 overflow-y-auto px-4 space-y-3.5 no-scrollbar pb-3">
+          {activeTab === 'overview' && (
+            <>
+              {/* Title & Export */}
+              <div className="flex items-center justify-between pt-1">
+                <div>
+                  <h1 className="text-[23px] font-extrabold text-slate-900 tracking-tight">{t.dashboard}</h1>
+                  <p className="text-[11px] text-slate-400 font-mono font-bold">
+                    ID: {userProfile.uniqueCode || userProfile.id}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsExportOpen(true)}
+                  className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-[12px] font-semibold flex items-center gap-1.5 shadow-sm transition-all"
+                >
+                  <Download className="w-3.5 h-3.5" strokeWidth={2.5} />
+                  <span>{t.export}</span>
+                </button>
               </div>
 
-              {/* Status bar */}
-              <StatusBar time="9:41" />
-
-              {/* Brand Navigation */}
-              <HeaderNav
-                onOpenNotifications={() => setIsNotificationsOpen(true)}
-                onOpenFilter={() => setIsFilterOpen(true)}
-                onOpenProfile={() => setIsProfileOpen(true)}
-                onOpenAuth={() => {
-                  setAuthMode('login');
-                  setIsAuthOpen(true);
-                }}
-                onOpenAvatarMenu={() => setIsAvatarMenuOpen(true)}
-                unreadCount={unreadCount}
-                userProfile={userProfile}
-              />
-
-              {/* Main Content Area: Tool View or Dashboard Tabs */}
-              {activePhoneTool ? (
-                <div className="flex-1 overflow-hidden flex flex-col">
-                  <ToolDetailView
-                    toolId={activePhoneTool}
-                    onBack={() => setActivePhoneTool(null)}
-                    storeContext={storeContext}
-                  />
-                </div>
-              ) : (
-                <div className="flex-1 overflow-y-auto px-4 space-y-3.5 no-scrollbar pb-3">
-                  {activeTab === 'overview' && (
-                    <>
-                      {/* Title & Export */}
-                      <div className="flex items-center justify-between pt-1">
-                        <div>
-                          <h1 className="text-[23px] font-extrabold text-slate-900 tracking-tight">{t.dashboard}</h1>
-                          <p className="text-[11px] text-slate-400 font-mono font-bold">
-                            ID: {userProfile.uniqueCode || userProfile.id}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => setIsExportOpen(true)}
-                          className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-[12px] font-semibold flex items-center gap-1.5 shadow-sm transition-all"
-                        >
-                          <Download className="w-3.5 h-3.5" strokeWidth={2.5} />
-                          <span>{t.export}</span>
-                        </button>
-                      </div>
-
-                      {/* Date picker & Add Widget */}
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => setIsDateRangeOpen(true)}
-                          className="flex-1 py-1.5 px-2.5 rounded-xl bg-white border border-slate-200/90 hover:border-slate-300 text-[11px] font-medium text-slate-700 flex items-center gap-1.5 shadow-2xs transition-colors truncate"
-                        >
-                          <Calendar className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                          <span className="truncate">{dateRange}</span>
-                        </button>
-
-                        <button
-                          onClick={() => setIsAddWidgetOpen(true)}
-                          className="py-1.5 px-2.5 rounded-xl bg-white border border-slate-200/90 hover:border-slate-300 text-[11px] font-medium text-slate-700 flex items-center gap-1.5 shadow-2xs transition-colors shrink-0"
-                        >
-                          <LayoutGrid className="w-3.5 h-3.5 text-slate-500" />
-                          <span>{t.addWidget}</span>
-                        </button>
-                      </div>
-
-                      {/* 4 Metric Cards */}
-                      <MetricCards
-                        metrics={metrics}
-                        onSelectMetric={(m) => {
-                          if (m?.id === 'orders' || (m?.label && (m.label.toLowerCase().includes('order') || m.label.toLowerCase().includes('buyurtma')))) {
-                            setActivePhoneTool('orders-manager');
-                          } else {
-                            setActivePhoneTool('analytics');
-                          }
-                        }}
-                      />
-
-                      {/* Active Added Extra Widgets */}
-                      {activeWidgetIds.includes('conversion-rate') && (
-                        <div
-                          onClick={() => setActivePhoneTool('analytics')}
-                          className="p-3 bg-white rounded-2xl border border-slate-100 flex items-center justify-between shadow-2xs cursor-pointer hover:shadow-xs transition-all"
-                        >
-                          <div>
-                            <div className="text-[11.5px] font-medium text-slate-500">{t.conversionRate}</div>
-                            <div className="text-lg font-bold text-slate-900">4.32%</div>
-                          </div>
-                          <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-                            ▲ 0.8%
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Total Profit Area Line Chart -> Opens Dedicated Analytics Screen */}
-                      <ProfitChart
-                        data={profitData}
-                        totalProfit="$1,469,324,230"
-                        profitChange="▲ +12.2%"
-                        onOpenDetails={() => setActivePhoneTool('analytics')}
-                      />
-
-                      {/* Customer Segments */}
-                      <CustomerBreakdown
-                        segments={customerData}
-                        onSelectSegment={() => setActivePhoneTool('business-analyze')}
-                        onOpenMenu={() => setActivePhoneTool('business-analyze')}
-                      />
-
-                      {/* Day Activity Bar Chart */}
-                      <DayActiveChart
-                        data={dayActiveData}
-                        onOpenMenu={() => setActivePhoneTool('business-analyze')}
-                      />
-
-                      {/* Retention Speedometer Gauge */}
-                      <RetentionGauge
-                        percentage={68}
-                        target={80}
-                        onShowDetails={() => setActivePhoneTool('business-analyze')}
-                      />
-
-                      {/* AI Assistant Card */}
-                      <AIAssistantCard
-                        onOpenFullChat={() => setIsAIChatOpen(true)}
-                        storeContext={storeContext}
-                      />
-                    </>
-                  )}
-
-                  {activeTab === 'messages' && (
-                    <OrdersTab onOpenExport={() => setActivePhoneTool('orders-manager')} />
-                  )}
-
-                  {activeTab === 'inventory' && <InventoryTab />}
-
-                  {activeTab === 'profile' && (
-                    <ProfileTab
-                      onOpenNotifications={() => setIsNotificationsOpen(true)}
-                      onOpenProfile={() => setIsProfileOpen(true)}
-                      onOpenAuth={(mode) => {
-                        setAuthMode(mode || 'login');
-                        setIsAuthOpen(true);
-                      }}
-                      onOpenAIChat={() => setIsAIChatOpen(true)}
-                      onSelectTool={(toolId) => setActivePhoneTool(toolId)}
-                      userProfile={userProfile}
-                      storeContext={storeContext}
-                    />
-                  )}
-                </div>
-              )}
-
-              {/* Bottom Docked Nav */}
-              <BottomNavBar
-                activeTab={activeTab}
-                onChangeTab={(tab) => {
-                  setActiveTab(tab);
-                  setActivePhoneTool(null);
-                }}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* MODE 3: Full Screen Canvas View */}
-        {viewMode === 'full' && (
-          <div className="w-full bg-white rounded-3xl p-6 border border-slate-200/80 shadow-md">
-            {/* Top Bar */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-100">
-              <div className="flex items-center gap-3">
-                <HeaderNav
-                  onOpenNotifications={() => setIsNotificationsOpen(true)}
-                  onOpenFilter={() => setIsFilterOpen(true)}
-                  onOpenProfile={() => setIsProfileOpen(true)}
-                  onOpenAuth={(mode) => {
-                    setAuthMode(mode || 'login');
-                    setIsAuthOpen(true);
-                  }}
-                  onOpenAvatarMenu={() => setIsAvatarMenuOpen(true)}
-                  unreadCount={unreadCount}
-                  userProfile={userProfile}
-                />
-              </div>
-
+              {/* Date picker & Add Widget */}
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setIsDateRangeOpen(true)}
-                  className="py-2 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 flex items-center gap-2 hover:bg-slate-100"
+                  className="flex-1 py-1.5 px-2.5 rounded-xl bg-white border border-slate-200/90 hover:border-slate-300 text-[11px] font-medium text-slate-700 flex items-center gap-1.5 shadow-2xs transition-colors truncate"
                 >
-                  <Calendar className="w-4 h-4 text-slate-500" />
-                  <span>{dateRange}</span>
+                  <Calendar className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                  <span className="truncate">{dateRange}</span>
                 </button>
 
                 <button
                   onClick={() => setIsAddWidgetOpen(true)}
-                  className="py-2 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 flex items-center gap-2 hover:bg-slate-100"
+                  className="py-1.5 px-2.5 rounded-xl bg-white border border-slate-200/90 hover:border-slate-300 text-[11px] font-medium text-slate-700 flex items-center gap-1.5 shadow-2xs transition-colors shrink-0"
                 >
-                  <LayoutGrid className="w-4 h-4 text-slate-500" />
+                  <LayoutGrid className="w-3.5 h-3.5 text-slate-500" />
                   <span>{t.addWidget}</span>
                 </button>
-
-                <button
-                  onClick={() => setActiveToolDemo('analytics')}
-                  className="py-2 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-2 shadow-xs"
-                >
-                  <Download className="w-4 h-4" />
-                  <span>{t.export}</span>
-                </button>
               </div>
-            </div>
 
-            {/* Dashboard Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mt-6">
-              {/* Left Column: Metrics & Profit Chart */}
-              <div className="md:col-span-8 space-y-6">
-                <MetricCards
-                  metrics={metrics}
-                  onSelectMetric={(m) => {
-                    if (m?.id === 'orders' || (m?.label && (m.label.toLowerCase().includes('order') || m.label.toLowerCase().includes('buyurtma')))) {
-                      setActiveToolDemo('orders-manager');
-                    } else {
-                      setActiveToolDemo('analytics');
-                    }
-                  }}
-                />
-
-                <ProfitChart
-                  data={profitData}
-                  totalProfit="$1,469,324,230"
-                  profitChange="▲ +12.2%"
-                  onOpenDetails={() => setActiveToolDemo('analytics')}
-                />
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <DayActiveChart data={dayActiveData} onOpenMenu={() => setActiveToolDemo('business-analyze')} />
-                  <RetentionGauge percentage={68} target={80} onShowDetails={() => setActiveToolDemo('business-analyze')} />
+              {dashError && (
+                <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center justify-between gap-2">
+                  <span>{dashError}</span>
+                  <button onClick={() => setReloadKey((k) => k + 1)} className="font-bold underline shrink-0">
+                    {language === 'ru' ? 'Повторить' : 'Қайталау'}
+                  </button>
                 </div>
-              </div>
+              )}
 
-              {/* Right Column: Customers & AI Assistant */}
-              <div className="md:col-span-4 space-y-6">
-                <CustomerBreakdown
-                  segments={customerData}
-                  onSelectSegment={() => setActiveToolDemo('business-analyze')}
-                  onOpenMenu={() => setActiveToolDemo('business-analyze')}
-                />
-
-                <AIAssistantCard
-                  onOpenFullChat={() => setIsAIChatOpen(true)}
-                  storeContext={storeContext}
-                />
-
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
-                  <h4 className="text-xs font-bold text-slate-900 mb-2">{t.liveStatus}</h4>
-                  <div className="space-y-1.5 text-xs text-slate-600">
-                    <div className="flex justify-between">
-                      <span>{t.serverStatus}</span>
-                      <span className="text-emerald-600 font-semibold">99.98% Uptime</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>{t.syncEngine}</span>
-                      <span className="text-blue-600 font-semibold">Operon Real-time Connected</span>
-                    </div>
-                  </div>
+              {!dash && !dashError && (
+                <div className="py-16 flex justify-center">
+                  <div className="w-8 h-8 border-[3px] border-blue-600 border-t-transparent rounded-full animate-spin" />
                 </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </main>
+              )}
+
+              {dash && (
+                <div className={`space-y-3.5 transition-opacity ${dashLoading ? 'opacity-60' : ''}`}>
+                  {/* 4 ta asosiy ko'rsatkich — Supabase'dan */}
+                  <MetricCards metrics={metrics} onSelectMetric={() => setActivePhoneTool('orders-manager')} />
+
+                  {activeWidgetIds.includes('conversion-rate') && (
+                    <div className="p-3 bg-white rounded-2xl border border-slate-100 flex items-center justify-between shadow-2xs">
+                      <div>
+                        <div className="text-[11.5px] font-medium text-slate-500">{t.conversionRate}</div>
+                        <div className="text-lg font-bold text-slate-900">{conversion === null ? '—' : `${conversion}%`}</div>
+                      </div>
+                      <span className="text-[10.5px] text-slate-400 text-right max-w-[150px]">
+                        {language === 'ru' ? 'продажи / (продажи + запросы)' : 'сатылым / (сатылым + сұрау)'}
+                      </span>
+                    </div>
+                  )}
+
+                  <ProfitChart
+                    data={revenueSeries}
+                    total={dash.metrics.revenue}
+                    change={dash.metrics.revenue_change}
+                    currency={currencyCode}
+                    onOpenDetails={() => setActiveTab('analytics')}
+                  />
+
+                  <CustomerBreakdown
+                    segments={customerData}
+                    onSelectSegment={(seg) => {
+                      setSelectedCustomerSeg(seg);
+                      setIsCustomerDetailsOpen(true);
+                    }}
+                    onOpenMenu={() => setIsCustomerDetailsOpen(true)}
+                  />
+
+                  <DayActiveChart data={dayActiveData} detail={dash.activity} currency={currencyCode} />
+
+                  <RetentionGauge
+                    percentage={dash.retention}
+                    target={retentionTarget}
+                    detail={dash.retention_detail}
+                    onShowDetails={() => setIsRetentionDetailsOpen(true)}
+                  />
+                </div>
+              )}
+
+            </>
+          )}
+
+          {activeTab === 'profile' && (
+            <ProfileTab
+              onOpenNotifications={() => setIsNotificationsOpen(true)}
+              onOpenProfile={() => setIsProfileOpen(true)}
+              onOpenAuth={(mode) => {
+                openAuth(mode || 'login');
+              }}
+              onSelectTool={(toolId) => setActivePhoneTool(toolId)}
+              userProfile={userProfile}
+              storeContext={storeContext}
+            />
+          )}
+        </div>
+      )}
+
+      {/* Bottom Docked Nav */}
+      <BottomNavBar
+        activeTab={activeTab}
+        onChangeTab={(tab) => {
+          setActiveTab(tab);
+          setActivePhoneTool(null);
+        }}
+      />
+      </div>
 
       {/* Dedicated Standalone / Fullscreen Tool Modal for any requested tool */}
       <ToolDemoModal
         toolId={activeToolDemo}
         onClose={() => setActiveToolDemo(null)}
         storeContext={storeContext}
+        onChangeTab={setActiveTab}
       />
 
       {/* Interactive Modals */}
@@ -620,14 +481,15 @@ function DashboardApp() {
         onClose={() => setIsExportOpen(false)}
         dateRange={dateRange}
         metrics={metrics}
-        totalProfit="$1,469,324,230"
+        totalProfit={dash ? `${dash.metrics.revenue} ${currencyCode}` : '—'}
+        retention={dash?.retention}
       />
 
       <DateRangeModal
         isOpen={isDateRangeOpen}
         onClose={() => setIsDateRangeOpen(false)}
-        currentRange={dateRange}
-        onSelectRange={setDateRange}
+        currentDays={days}
+        onSelectDays={setDays}
       />
 
       <AddWidgetModal
@@ -637,11 +499,6 @@ function DashboardApp() {
         onToggleWidget={handleToggleWidget}
       />
 
-      <AIAssistantDrawer
-        isOpen={isAIChatOpen}
-        onClose={() => setIsAIChatOpen(false)}
-        storeContext={storeContext}
-      />
 
       <NotificationDrawer
         isOpen={isNotificationsOpen}
@@ -660,8 +517,10 @@ function DashboardApp() {
       <RetentionDetailsModal
         isOpen={isRetentionDetailsOpen}
         onClose={() => setIsRetentionDetailsOpen(false)}
-        rate={68}
-        target={80}
+        rate={dash?.retention ?? 0}
+        target={retentionTarget}
+        detail={dash?.retention_detail}
+        currency={currencyCode}
       />
 
       <FilterModal
@@ -677,30 +536,22 @@ function DashboardApp() {
         isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
         userProfile={userProfile}
-        onOpenAuth={() => {
-          setAuthMode('login');
-          setIsAuthOpen(true);
+        onOpenAuth={(mode) => {
+          openAuth(mode || 'login');
         }}
-        onOpenOnboarding={() => setIsOnboardingOpen(true)}
+        onOpenOnboarding={() => setAuthStep('choose')}
         onUpdateProfile={handleUpdateProfile}
         onLogout={handleLogout}
       />
 
-      {/* Registration & Login Auth Modal */}
-      <AuthModal
-        isOpen={isAuthOpen}
-        onClose={() => setIsAuthOpen(false)}
-        onSuccess={handleAuthSuccess}
-        initialMode={authMode}
-      />
-
-      {/* 2-Catalog Onboarding & Deep Questionnaire / Startup Advisor Modal */}
-      <OnboardingCatalogModal
-        isOpen={isOnboardingOpen}
-        onClose={() => setIsOnboardingOpen(false)}
-        userProfile={userProfile}
-        onCompleteOnboarding={handleUpdateProfile}
-      />
+      {/* Kirish → Ro'yxatdan o'tish → (Biznesni qo'shish | Biznes yaratish) → AI intervyu */}
+      {authStep && session !== 'checking' && (
+        <AuthFlow
+          initialStep={authStep}
+          onReady={(me) => enterDashboard(me)}
+          onClose={session === 'ready' ? () => setAuthStep(null) : undefined}
+        />
+      )}
 
       {/* Quick Avatar Menu: Til va Ro'yxatdan o'tish (Avatar ustiga bosganda chiqadi) */}
       <AvatarQuickMenuModal
@@ -708,10 +559,10 @@ function DashboardApp() {
         onClose={() => setIsAvatarMenuOpen(false)}
         userProfile={userProfile}
         onOpenAuth={(mode) => {
-          setAuthMode(mode || 'login');
-          setIsAuthOpen(true);
+          openAuth(mode || 'login');
         }}
         onOpenProfileSettings={() => setIsProfileOpen(true)}
+        onLogout={handleLogout}
       />
     </div>
   );

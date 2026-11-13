@@ -38,12 +38,16 @@ export const AvatarQuickMenuModal: React.FC<AvatarQuickMenuModalProps> = ({
 
   if (!isOpen) return null;
 
-  const currentId = userProfile?.uniqueCode || userProfile?.id || 'OPR-84920';
+  const currentId = userProfile?.uniqueCode || userProfile?.id || '';
 
-  const handleCopyId = () => {
-    navigator.clipboard.writeText(currentId);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopyId = async () => {
+    try {
+      await navigator.clipboard.writeText(currentId);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.warn('Clipboard write failed:', err);
+    }
   };
 
   const languageOptions: { code: Language; name: string; native: string; flag: string }[] = [
@@ -242,7 +246,7 @@ export const AvatarQuickMenuModal: React.FC<AvatarQuickMenuModalProps> = ({
                 className="py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
               >
                 <LogOut className="w-3.5 h-3.5" />
-                <span>{t.logout || 'Chiqish'}</span>
+                <span>{t.logout || (language === 'ru' ? 'Выйти' : 'Шығу')}</span>
               </button>
             )}
           </div>

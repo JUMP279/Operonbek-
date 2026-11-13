@@ -35,7 +35,9 @@ export const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({
             </div>
             <div>
               <h3 className="text-base font-bold text-slate-900">{t.customers}</h3>
-              <p className="text-xs text-slate-400">Total 4,878 active client partners</p>
+              <p className="text-xs text-slate-400">
+                {language === 'ru' ? 'Всего' : 'Барлығы'}: {segments.reduce((a, x) => a + x.numericCount, 0)}
+              </p>
             </div>
           </div>
           <button
@@ -62,10 +64,10 @@ export const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({
                   </div>
                   <div>
                     <h4 className="text-xs font-bold text-slate-900">{getSegmentName(seg)}</h4>
-                    <p className="text-[11px] text-slate-500">{seg.count} {language === 'ru' ? 'аккаунтов' : 'тіркелген аккаунт'}</p>
+                    <p className="text-[11px] text-slate-500">{seg.count} {language === 'ru' ? 'клиентов' : 'клиент'}</p>
                   </div>
                 </div>
-                <span className="text-xs font-bold text-slate-900">{seg.percentage}% share</span>
+                <span className="text-xs font-bold text-slate-900">{seg.percentage}%</span>
               </div>
 
               {/* Progress bar */}
@@ -76,10 +78,6 @@ export const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({
                 />
               </div>
 
-              <div className="flex justify-between text-[10.5px] text-slate-500 pt-1">
-                <span>Avg. Order: ${seg.id === 'retailers' ? '184.50' : seg.id === 'distributors' ? '1,420.00' : '5,890.00'}</span>
-                <span>Growth: +14.2% YoY</span>
-              </div>
             </div>
           ))}
         </div>

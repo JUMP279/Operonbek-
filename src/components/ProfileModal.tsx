@@ -8,9 +8,10 @@ interface ProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
   userProfile?: UserProfile | null;
-  onOpenAuth?: () => void;
+  onOpenAuth?: (mode?: 'login' | 'register') => void;
   onOpenOnboarding?: () => void;
-  onUpdateProfile?: (updated: UserProfile) => void;
+  /** Xato bo'lsa — ko'rsatiladigan matn, muvaffaqiyatda null. */
+  onUpdateProfile?: (updated: UserProfile) => Promise<string | null> | void;
   onLogout?: () => void;
 }
 
@@ -26,39 +27,51 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   const { t, language, setLanguage } = useLanguage();
   const [isEditing, setIsEditing] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [editName, setEditName] = useState(userProfile?.name || 'Shohjahon Uralbayev');
-  const [editStore, setEditStore] = useState(userProfile?.storeName || 'Operon Flagship Global');
+  const [editName, setEditName] = useState(userProfile?.name || '');
+  const [editStore, setEditStore] = useState(userProfile?.storeName || '');
   const [editAvatar, setEditAvatar] = useState(userProfile?.avatarId || 1);
+  const [saveError, setSaveError] = useState('');
+  const [saving, setSaving] = useState(false);
 
   if (!isOpen) return null;
 
   const currentProfile: UserProfile = userProfile || {
-    id: 'OPR-84920',
-    uniqueCode: 'OPR-84920',
-    name: 'Shohjahon Uralbayev',
-    email: 'shohjahonuralbayev5@gmail.com',
-    storeName: 'Operon Flagship Global',
+    id: '',
+    uniqueCode: '',
+    name: '',
+    email: '',
+    storeName: '',
     businessType: 'Retailer',
-    role: 'Store Owner & Lead Admin',
+    role: '',
     avatarId: 1,
-    phone: '+998 90 123 45 67',
-    isVerified: true
+    isVerified: false
   };
 
-  const handleCopyId = () => {
-    navigator.clipboard.writeText(currentProfile.uniqueCode || currentProfile.id);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopyId = async () => {
+    try {
+      await navigator.clipboard.writeText(currentProfile.uniqueCode || currentProfile.id);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.warn('Clipboard write failed:', err);
+    }
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (onUpdateProfile) {
-      onUpdateProfile({
+      setSaving(true);
+      setSaveError('');
+      const err = await onUpdateProfile({
         ...currentProfile,
         name: editName.trim() || currentProfile.name,
         storeName: editStore.trim() || currentProfile.storeName,
         avatarId: editAvatar
       });
+      setSaving(false);
+      if (err) {
+        setSaveError(err);
+        return;
+      }
     }
     setIsEditing(false);
   };
@@ -107,14 +120,15 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                       className="w-full px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs text-slate-700"
                       placeholder={t.storeName}
                     />
+                    {saveError && <p className="text-[10.5px] text-rose-600 font-semibold">{saveError}</p>}
+                    {saving && <p className="text-[10.5px] text-slate-400">…</p>}
                   </div>
                 ) : (
                   <>
-                    <h4 className="text-sm font-bold text-slate-900 truncate">{currentProfile.name}</h4>
-                    <p className="text-xs text-slate-600 font-medium truncate flex items-center gap-1 mt-0.5">
-                      <Store className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                      {currentProfile.storeName}
-                    </p>
+                    <h4 className="text-lg font-black text-slate-900 truncate flex items-center gap-1.5 tracking-tight">
+                      <Store className="w-4 h-4 text-blue-600 shrink-0" />
+                      {currentProfile.storeName || 'Operon'}
+                    </h4>
                     <div className="flex items-center gap-1 text-[10.5px] text-emerald-600 font-semibold mt-0.5">
                       <ShieldCheck className="w-3.5 h-3.5 shrink-0" /> {t.verifiedMerchant}
                     </div>
@@ -144,7 +158,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
             {isEditing && (
               <div className="pt-2 border-t border-slate-200/80">
                 <label className="text-[10.5px] font-semibold text-slate-600 block mb-1">
-                  Avatarni o‘zgartirish (Qizlar va Erkaklar):
+                  {language === 'ru' ? 'Выберите аватар:' : 'Аватар таңдаңыз:'}
                 </label>
                 <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
                   {AVATAR_LIST.map((av) => (
@@ -167,12 +181,12 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
             <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between bg-white/70 p-2 rounded-xl border border-slate-200/50">
               <div className="flex items-center gap-1.5">
                 <Tag className="w-3.5 h-3.5 text-blue-600" />
-                <span className="text-[11px] font-semibold text-slate-600">Unikal Tadbirkor ID:</span>
+                <span className="text-[11px] font-semibold text-slate-600">{language === 'ru' ? 'Уникальный ID:' : 'Бірегей ID:'}</span>
               </div>
               <button
                 onClick={handleCopyId}
                 className="flex items-center gap-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-mono font-bold text-xs px-2 py-0.5 rounded-lg border border-blue-200 transition-colors"
-                title="ID nusxalash"
+                title={language === 'ru' ? 'Скопировать ID' : 'ID көшіру'}
               >
                 <span>{currentProfile.uniqueCode || currentProfile.id}</span>
                 {copied ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3 text-slate-400" />}
@@ -206,11 +220,11 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
               <div className="flex items-center gap-2 text-left">
                 <Sparkles className="w-4 h-4 text-amber-300 shrink-0" />
                 <div>
-                  <h5 className="font-bold text-xs">Biznes Tahlili & Onboarding</h5>
-                  <p className="text-[10px] text-blue-100">Katalogni qayta ko‘rish yoki sozlash</p>
+                  <h5 className="font-bold text-xs">{language === 'ru' ? 'Анализ бизнеса' : 'Бизнес талдауы'}</h5>
+                  <p className="text-[10px] text-blue-100">{language === 'ru' ? 'Просмотр и настройка каталога' : 'Каталогты қарау және баптау'}</p>
                 </div>
               </div>
-              <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-lg font-bold">Ochish</span>
+              <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-lg font-bold">{language === 'ru' ? 'Открыть' : 'Ашу'}</span>
             </button>
           )}
 
@@ -251,7 +265,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
             <button
               onClick={() => {
                 onClose();
-                if (onOpenAuth) onOpenAuth();
+                // This button is labelled "Register", so it must open the register tab.
+                if (onOpenAuth) onOpenAuth('register');
               }}
               className="text-[11px] font-extrabold bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-xl shadow-xs transition-all active:scale-95 cursor-pointer"
             >

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { api } from '../lib/api';
 import { Maximize2, Sparkles, RefreshCw, ChevronRight } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { Language } from '../types';
 
 interface AIAssistantCardProps {
   onOpenFullChat?: () => void;
@@ -10,40 +12,34 @@ interface AIAssistantCardProps {
 export const AIAssistantCard: React.FC<AIAssistantCardProps> = ({ onOpenFullChat, storeContext }) => {
   const { t, language } = useLanguage();
 
-  const defaultInsights: Record<string, string> = {
-    uz: "Seshanba kunlari eng yuqori trafik (+8,162 faol foydalanuvchi) haftalik buyurtmalarning 42% ini tashkil qildi. Konversiyani oshirish uchun maxsus chegirmalar tavsiya etiladi.",
-    en: "Tuesday peak traffic (+8,162 active users) generated 42% of weekly orders. Consider running Tuesday Flash Specials to drive conversion higher.",
-    ru: "Пиковый трафик во вторник (+8,162 активных сессий) обеспечил 42% недельных заказов. Рекомендуются специальные промо-акции по вторникам."
+  // Keyed by the app's actual Language union ('kk' | 'ru').
+  // These used to be keyed 'uz'/'en'/'ru', so Kazakh users were shown Uzbek text.
+  const placeholder: Record<Language, string> = {
+    kk: 'Бизнесіңіз бойынша қысқа кеңес алу үшін ↻ басыңыз немесе Operon-ға сұрақ қойыңыз.',
+    ru: 'Нажмите ↻, чтобы получить короткий совет по вашему бизнесу, или задайте вопрос Operon.'
   };
 
-  const [quickInsight, setQuickInsight] = useState<string>(
-    defaultInsights[language] || defaultInsights.uz
-  );
+  const [quickInsight, setQuickInsight] = useState<string>(placeholder[language]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    setQuickInsight(defaultInsights[language] || defaultInsights.uz);
+    setQuickInsight(placeholder[language]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [language]);
 
   const handleRefresh = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!storeContext?.businessId || loading) return;
     setLoading(true);
     try {
-      const res = await fetch('/api/ai/query', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: "Generate a 1-sentence quick actionable insight for this store.",
-          storeContext,
-          language
-        })
-      });
-      const data = await res.json();
-      if (data.reply) {
-        setQuickInsight(data.reply);
-      }
+      const q =
+        language === 'ru'
+          ? 'Дай один короткий практический совет (1-2 предложения) по моему бизнесу на основе текущих данных.'
+          : 'Қазіргі деректерге сүйеніп, бизнесім бойынша бір қысқа практикалық кеңес бер (1-2 сөйлем).';
+      const data = await api.ask(storeContext.businessId, q);
+      if (data.answer) setQuickInsight(data.answer);
     } catch (err) {
-      console.error(err);
+      setQuickInsight(language === 'ru' ? 'Не удалось получить совет. Попробуйте позже.' : 'Кеңес алу мүмкін болмады. Кейінірек қайталаңыз.');
     } finally {
       setLoading(false);
     }
