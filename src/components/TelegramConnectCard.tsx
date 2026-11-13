@@ -2,11 +2,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Send, Loader2, CheckCircle2, AlertCircle, Circle, Copy, Link2, MessageSquare, Bot } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { api, TelegramInfo } from '../lib/api';
+import { OwnBotPanel } from './OwnBotPanel';
 
 // Telegram ulash (2026-11-10): 1) imzolangan havola bilan botni ochib «Start» → bot egasining chatiga
 // bog'lanadi; 2) botni kanalga ADMIN qilib qo'shish → kanal biznesga avtomatik yoziladi.
 // Shundan keyin rejadagi post va videolar Telegram kanalga ham chiqadi.
-export const TelegramConnectCard: React.FC<{ businessId?: string | null }> = ({ businessId }) => {
+export const TelegramConnectCard: React.FC<{ businessId?: string | null; storeName?: string }> = ({ businessId, storeName }) => {
   const { language } = useLanguage();
   const ru = language === 'ru';
   const [info, setInfo] = useState<TelegramInfo | null>(null);
@@ -199,6 +200,12 @@ export const TelegramConnectCard: React.FC<{ businessId?: string | null }> = ({ 
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {info !== null && (
+        <div className="mt-2">
+          <OwnBotPanel businessId={businessId} ru={ru} info={info} storeName={storeName} onChanged={() => { load(); }} />
         </div>
       )}
 

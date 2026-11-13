@@ -12,7 +12,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ activeTab, onChangeT
   const { t, language } = useLanguage();
 
   return (
-    <div className="w-full bg-white border-t border-slate-100/90 px-7 pt-2.5 pb-[max(1rem,env(safe-area-inset-bottom))] flex flex-col items-center select-none shrink-0 z-20">
+    <div className="w-full bg-white border-t border-slate-100/90 px-7 pt-2.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] flex flex-col items-center select-none shrink-0 z-20">
       <div className="w-full flex items-center justify-between py-0.5">
         {/* Tab 1: Overview / Compass */}
         <button
@@ -87,8 +87,6 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ activeTab, onChangeT
         </button>
       </div>
 
-      {/* iOS Home Indicator Bar (Dark rounded capsule exactly from user's image) */}
-      <div className="w-32 h-[3.5px] bg-[#3A3F47] rounded-full mt-2" />
     </div>
   );
 };

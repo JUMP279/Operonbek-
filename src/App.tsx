@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Download, Calendar, LayoutGrid } from 'lucide-react';
 import { HeaderNav } from './components/HeaderNav';
 import { BottomNavBar } from './components/BottomNavBar';
@@ -206,6 +206,16 @@ function DashboardApp() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, businessId, days, reloadKey]);
+
+  // Biror vositadan (mahsulot qo'shish, buyurtmalar...) yoki boshqa tabdan bosh sahifaga QAYTGANDA
+  // ma'lumot yangilanadi — aks holda "3 ta mahsulot qo'shing" kartasi mahsulot qo'shilgandan keyin ham
+  // ilova qayta ochilmaguncha eski sonni ko'rsatardi (2026-11-13, sinovda topilgan).
+  const onOverview = !activePhoneTool && activeTab === 'overview';
+  const wasOnOverview = useRef(onOverview);
+  useEffect(() => {
+    if (onOverview && !wasOnOverview.current) setReloadKey((k) => k + 1);
+    wasOnOverview.current = onOverview;
+  }, [onOverview]);
 
   const metrics = dash ? buildMetrics(dash, language) : [];
   const revenueSeries = dash ? buildRevenueSeries(dash, language) : [];

@@ -305,7 +305,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
 
       {/* Instagram ulash (real) */}
       <InstagramConnectCard businessId={storeContext?.businessId} />
-      <TelegramConnectCard businessId={storeContext?.businessId} />
+      <TelegramConnectCard businessId={storeContext?.businessId} storeName={userProfile?.storeName} />
 
       {/* Logotip — post rasmlarida chiqadi */}
       <LogoCard businessId={storeContext?.businessId} />

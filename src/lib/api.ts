@@ -265,6 +265,8 @@ export interface TelegramInfo {
   customer_link?: string | null;
   /** Ulangan izohlar (muhokama) guruhi nomi */
   comments_group?: string | null;
+  /** Tadbirkorning o'z boti (do'kon nomi/logotipi bilan) — services/own_bot.py */
+  own_bot?: { username: string; name: string; connected_at?: string } | null;
 }
 
 export interface DashboardData {
@@ -446,6 +448,19 @@ export const api = {
     request<TelegramInfo>(`/business/${encodeURIComponent(businessId)}/telegram`),
   telegramDisconnect: (businessId: string) =>
     request<{ ok: boolean }>(`/business/${encodeURIComponent(businessId)}/telegram/disconnect`, { method: 'POST' }),
+
+  // O'z boti: @BotFather tokeni → Operon nom, logotip va webhook'ni qo'yadi
+  ownBotConnect: (businessId: string, token: string, name?: string) =>
+    request<{ username: string; name: string; name_set: boolean; logo_set: boolean; owner_link: string | null }>(
+      `/business/${encodeURIComponent(businessId)}/telegram/own-bot`,
+      { method: 'POST', body: JSON.stringify({ token, name: name || null }) }),
+
+  ownBotRename: (businessId: string, name: string) =>
+    request<{ username: string; name: string }>(`/business/${encodeURIComponent(businessId)}/telegram/own-bot`,
+      { method: 'PUT', body: JSON.stringify({ name }) }),
+
+  ownBotDisconnect: (businessId: string) =>
+    request<{ ok: boolean }>(`/business/${encodeURIComponent(businessId)}/telegram/own-bot`, { method: 'DELETE' }),
 
   instagramDisconnect: (businessId: string) =>
     request<{ ok: boolean }>(`/auth/instagram/disconnect/${encodeURIComponent(businessId)}`, { method: 'POST' }),
@@ -682,6 +697,8 @@ export interface Product {
   stock: number | null;
   is_active: boolean;
   product_code: number | null;
+  /** Chegirma % (0 — chegirma yo'q). Narx `price` — asl narx */
+  discount_percent?: number | null;
 }
 
 export interface ProductInput {
@@ -691,6 +708,7 @@ export interface ProductInput {
   image_url?: string | null;
   stock?: number;
   is_active?: boolean;
+  discount_percent?: number;
 }
 
 export type PostPlatform = 'instagram' | 'telegram' | 'both';

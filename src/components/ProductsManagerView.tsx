@@ -28,6 +28,9 @@ const T = {
     active: 'В продаже', inactive: 'Скрыт',
     save: 'Сохранить', cancel: 'Отмена', edit: 'Изменить', del: 'Удалить', delConfirm: 'Удалить товар?',
     newTitle: 'Новый товар', editTitle: 'Изменить товар', noPrice: 'Цена не указана',
+    discount: 'Скидка, %', discountHint: (p: string) => `Цена со скидкой: ${p}. AI укажет скидку в постах, видео и ответах клиентам.`,
+    discountNotSaved: 'Товар сохранён, но скидка — нет: нужно обновить базу данных (миграция 0016).',
+    discountBad: 'Скидка — от 0 до 90%',
     errors: { network: 'Нет связи с сервером', generic: 'Что-то пошло не так. Попробуйте ещё раз.', name: 'Укажите название', image: 'Не удалось загрузить фото (JPG, PNG, WEBP, до 8 МБ)' },
   },
   kk: {
@@ -38,6 +41,9 @@ const T = {
     active: 'Сатылымда', inactive: 'Жасырын',
     save: 'Сақтау', cancel: 'Бас тарту', edit: 'Өзгерту', del: 'Жою', delConfirm: 'Тауарды жою керек пе?',
     newTitle: 'Жаңа тауар', editTitle: 'Тауарды өзгерту', noPrice: 'Бағасы көрсетілмеген',
+    discount: 'Жеңілдік, %', discountHint: (p: string) => `Жеңілдікпен баға: ${p}. AI жеңілдікті посттарда, бейнелерде және клиенттерге жауапта айтады.`,
+    discountNotSaved: 'Тауар сақталды, бірақ жеңілдік сақталмады: дерекқорды жаңарту керек (0016 миграция).',
+    discountBad: 'Жеңілдік — 0-ден 90%-ға дейін',
     errors: { network: 'Сервермен байланыс жоқ', generic: 'Бірдеңе дұрыс болмады. Қайталап көріңіз.', name: 'Атауын жазыңыз', image: 'Сурет жүктелмеді (JPG, PNG, WEBP, 8 МБ дейін)' },
   },
 };
@@ -50,9 +56,14 @@ interface Form {
   stock: string;
   image_url: string;
   is_active: boolean;
+  discount: string;
 }
 
-const EMPTY: Form = { id: null, name: '', price: '', description: '', stock: '', image_url: '', is_active: true };
+const EMPTY: Form = { id: null, name: '', price: '', description: '', stock: '', image_url: '', is_active: true, discount: '' };
+
+// Chegirmali narx — backend (services/pricing.py) bilan bir xil: 10 ga yaxlitlanadi
+const salePrice = (price: number, pct: number) => Math.round((price * (100 - pct)) / 100 / 10) * 10 || price;
+const priceNum = (v: string) => parseInt(v.replace(/\D/g, ''), 10);
 
 export const ProductsManagerView: React.FC<ProductsManagerViewProps> = ({ onBack, storeContext }) => {
   const { language } = useLanguage();
@@ -90,6 +101,7 @@ export const ProductsManagerView: React.FC<ProductsManagerViewProps> = ({ onBack
     setForm({
       id: p.id, name: p.name, price: p.price != null ? String(p.price) : '', description: p.description || '',
       stock: p.stock != null ? String(p.stock) : '', image_url: p.image_url || '', is_active: p.is_active,
+      discount: p.discount_percent ? String(p.discount_percent) : '',
     });
 
   const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -114,6 +126,11 @@ export const ProductsManagerView: React.FC<ProductsManagerViewProps> = ({ onBack
       setError(L.errors.name);
       return;
     }
+    const pct = form.discount.trim() ? parseInt(form.discount, 10) : 0;
+    if (Number.isNaN(pct) || pct < 0 || pct > 90) {
+      setError(L.discountBad);
+      return;
+    }
     setSaving(true);
     setError('');
     const body = {
@@ -123,12 +140,13 @@ export const ProductsManagerView: React.FC<ProductsManagerViewProps> = ({ onBack
       image_url: form.image_url || null,
       stock: Math.max(0, parseInt(form.stock, 10) || 0),
       is_active: form.is_active,
+      discount_percent: pct,
     };
     try {
-      if (form.id) await api.updateProduct(form.id, body);
-      else await api.createProduct(businessId, body);
+      const res = form.id ? await api.updateProduct(form.id, body) : await api.createProduct(businessId, body);
       setForm(null);
       await load();
+      if (pct > 0 && (res as { discount_saved?: boolean })?.discount_saved === false) setError(L.discountNotSaved);
     } catch (e) {
       setError(errText(e));
     } finally {
@@ -202,8 +220,14 @@ export const ProductsManagerView: React.FC<ProductsManagerViewProps> = ({ onBack
                       {p.is_active ? L.active : L.inactive}
                     </span>
                   </div>
-                  <p className="text-[12px] font-semibold text-purple-700">
-                    {p.price != null ? formatMoney(p.price, currency, lang) : L.noPrice}
+                  <p className="text-[12px] font-semibold text-purple-700 flex items-center gap-1.5 flex-wrap">
+                    {p.price == null ? L.noPrice : p.discount_percent ? (
+                      <>
+                        <span className="line-through text-slate-400 font-medium">{formatMoney(p.price, currency, lang)}</span>
+                        <span>{formatMoney(salePrice(p.price, p.discount_percent), currency, lang)}</span>
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-rose-50 text-rose-600">−{p.discount_percent}%</span>
+                      </>
+                    ) : formatMoney(p.price, currency, lang)}
                   </p>
                   {p.description && <p className="text-[11px] text-slate-500 line-clamp-2">{p.description}</p>}
                   <div className="flex gap-3 pt-1">
@@ -235,11 +259,26 @@ export const ProductsManagerView: React.FC<ProductsManagerViewProps> = ({ onBack
                 <p className="text-[11px] font-bold text-slate-500">{L.price} ({currency === 'KZT' ? '₸' : currency})</p>
                 <input value={form.price} inputMode="numeric" onChange={(e) => setForm({ ...form, price: e.target.value })} className={input} />
               </div>
-              <div className="space-y-1 w-28">
+              <div className="space-y-1 w-24">
+                <p className="text-[11px] font-bold text-slate-500">{L.discount}</p>
+                <input value={form.discount} inputMode="numeric" maxLength={2} placeholder="0"
+                  onChange={(e) => setForm({ ...form, discount: e.target.value.replace(/\D/g, '') })} className={input} />
+              </div>
+              <div className="space-y-1 w-20">
                 <p className="text-[11px] font-bold text-slate-500">{L.stock}</p>
                 <input value={form.stock} inputMode="numeric" onChange={(e) => setForm({ ...form, stock: e.target.value })} className={input} />
               </div>
             </div>
+            {(() => {
+              const pr = priceNum(form.price);
+              const pct = parseInt(form.discount || '0', 10);
+              if (!pr || !pct || pct > 90) return null;
+              return (
+                <p className="text-[11.5px] font-semibold text-rose-600 -mt-1">
+                  {L.discountHint(formatMoney(salePrice(pr, pct), currency, lang))}
+                </p>
+              );
+            })()}
             <div className="space-y-1">
               <p className="text-[11px] font-bold text-slate-500">{L.photo}</p>
               <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onFile} />
