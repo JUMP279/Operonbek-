@@ -31,7 +31,8 @@ export const ProductsNudge: React.FC<{ count: number; lang: 'ru' | 'kk'; onAdd: 
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
           <p className="text-[14px] font-black text-slate-900">{L.title(count)}</p>
-          <span className="text-[11px] font-bold text-amber-700 shrink-0">{count}/{PRODUCTS_TARGET}</span>
+          {/* "1/3" ko'rinishi "ko'pi bilan 3 ta qo'yish mumkin" deb tushunilardi — endi faqat qo'yilgan soni */}
+          {count > 0 && <span className="text-[11px] font-bold text-amber-700 shrink-0">{lang === 'kk' ? `${count} тауар қосылды` : `Добавлено: ${count}`}</span>}
         </div>
         <p className="text-[12px] text-slate-600 mt-0.5 leading-snug">{L.body}</p>
         <span className="mt-2 inline-flex items-center gap-1 text-[12px] font-bold text-amber-700">

@@ -670,10 +670,32 @@ export const api = {
     return request<{ image_url: string }>('/products/upload-image', { method: 'POST', body: fd });
   },
 
+  // Biznes tushunchasi (2026-11-13): Operon biznesni qanday tushungani + tadbirkor tuzatishlari.
+  // AI chat EMAS — tuzatishdan keyin tushuncha fonda ~3 daqiqada qayta yoziladi.
+  understanding: (businessId: string) =>
+    request<BusinessUnderstanding>(`/memory/${encodeURIComponent(businessId)}/understanding`),
+  addUnderstandingCorrection: (businessId: string, text: string) =>
+    request<BusinessUnderstanding>(`/memory/${encodeURIComponent(businessId)}/understanding/corrections`, {
+      method: 'POST', body: JSON.stringify({ text }),
+    }),
+  deleteUnderstandingCorrection: (businessId: string, index: number) =>
+    request<BusinessUnderstanding>(`/memory/${encodeURIComponent(businessId)}/understanding/corrections/${index}`, {
+      method: 'DELETE',
+    }),
+
   logout() {
     tokens.clear();
   },
 };
+
+export interface BusinessUnderstanding {
+  summary: string;
+  facts: string[];
+  corrections: { text: string; at: string }[];
+  /** empty | updating | ready | error */
+  status: string;
+  updated_at: string | null;
+}
 
 export interface Product {
   id: string;
