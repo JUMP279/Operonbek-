@@ -31,7 +31,7 @@ type Style = 'reklama' | 'jalb' | 'malumot';
 
 const T = {
   ru: {
-    back: 'Назад', title: 'AI пост', plan: 'План', create: 'Создать', journal: 'Мои посты',
+    back: 'Назад', title: 'AI пост', plan: 'План', create: 'Создать', journal: 'Запланированные',
     where: 'Куда публиковать',
     igNot: 'Instagram не подключён', tgNot: 'Telegram-канал не подключён',
     both: 'Оба',
@@ -44,11 +44,11 @@ const T = {
     openPost: 'Открыть пост', openChannel: 'Открыть канал', openProfile: 'Открыть профиль',
     noImageIg: 'Для Instagram нужна картинка — AI не смог её создать.',
     resultTitle: 'Результат публикации', newPost: 'Новый пост',
-    empty: 'Постов пока нет', loading: 'Загрузка…',
+    empty: 'Запланированных постов нет', loading: 'Загрузка…',
     errors: { network: 'Нет связи с сервером', generic: 'Что-то пошло не так. Попробуйте ещё раз.', limit: 'Лимит постов по тарифу исчерпан' },
   },
   kk: {
-    back: 'Артқа', title: 'AI пост', plan: 'Жоспар', create: 'Жасау', journal: 'Менің посттарым',
+    back: 'Артқа', title: 'AI пост', plan: 'Жоспар', create: 'Жасау', journal: 'Жоспарланған',
     where: 'Қайда жариялау',
     igNot: 'Instagram қосылмаған', tgNot: 'Telegram-арна қосылмаған',
     both: 'Екеуі де',
@@ -61,7 +61,7 @@ const T = {
     openPost: 'Постты ашу', openChannel: 'Арнаны ашу', openProfile: 'Профильді ашу',
     noImageIg: 'Instagram үшін сурет керек — AI оны жасай алмады.',
     resultTitle: 'Жариялау нәтижесі', newPost: 'Жаңа пост',
-    empty: 'Әзірге пост жоқ', loading: 'Жүктелуде…',
+    empty: 'Жоспарланған пост жоқ', loading: 'Жүктелуде…',
     errors: { network: 'Сервермен байланыс жоқ', generic: 'Бірдеңе дұрыс болмады. Қайталап көріңіз.', limit: 'Тариф бойынша пост лимиті бітті' },
   },
 };
@@ -144,7 +144,12 @@ export const AIPostGeneratorView: React.FC<AIPostGeneratorViewProps> = ({ onBack
   const loadPosts = async () => {
     if (!businessId) return;
     try {
-      setPosts((await api.posts(businessId, 40)).posts.filter((p) => p.mode !== 'video_plan' && !(p.mode === 'post_plan' && p.status === 'draft')));
+      // Faqat CHIQISHI kutilayotgan (rejalashtirilgan) postlar — chiqib bo'lganlari ko'rsatilmaydi (2026-11-13)
+      const now = Date.now() - 60 * 60 * 1000;
+      setPosts((await api.posts(businessId, 60)).posts
+        .filter((p) => p.mode !== 'video_plan' && p.status === 'scheduled'
+          && (!p.scheduled_at || new Date(p.scheduled_at).getTime() >= now))
+        .sort((a, b) => new Date(a.scheduled_at || a.created_at).getTime() - new Date(b.scheduled_at || b.created_at).getTime()));
     } catch (e) {
       setError(errText(e));
       setPosts([]);
@@ -430,7 +435,7 @@ export const AIPostGeneratorView: React.FC<AIPostGeneratorViewProps> = ({ onBack
           <div key={p.id} className="bg-white border border-slate-200/90 rounded-2xl p-3 space-y-2">
             <div className="flex items-center justify-between gap-2">
               <span className="text-[11px] font-bold text-slate-500 flex items-center gap-1.5">
-                {platformIcons(p.platform)}{when(p.published_at || p.scheduled_at || p.created_at, lang)}
+                {platformIcons(p.platform)}{when(p.scheduled_at || p.created_at, lang)}
               </span>
               {statusBadge(p.status)}
             </div>

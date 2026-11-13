@@ -2,12 +2,11 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Send, Loader2, CheckCircle2, AlertCircle, Circle, Copy, Link2, MessageSquare, Bot } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { api, TelegramInfo } from '../lib/api';
-import { OwnBotPanel } from './OwnBotPanel';
 
 // Telegram ulash (2026-11-10): 1) imzolangan havola bilan botni ochib «Start» → bot egasining chatiga
 // bog'lanadi; 2) botni kanalga ADMIN qilib qo'shish → kanal biznesga avtomatik yoziladi.
 // Shundan keyin rejadagi post va videolar Telegram kanalga ham chiqadi.
-export const TelegramConnectCard: React.FC<{ businessId?: string | null; storeName?: string }> = ({ businessId, storeName }) => {
+export const TelegramConnectCard: React.FC<{ businessId?: string | null }> = ({ businessId }) => {
   const { language } = useLanguage();
   const ru = language === 'ru';
   const [info, setInfo] = useState<TelegramInfo | null>(null);
@@ -134,30 +133,20 @@ export const TelegramConnectCard: React.FC<{ businessId?: string | null; storeNa
 
       {!connected && info !== null && (
         <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100 p-2.5 text-[11px] leading-snug space-y-1.5">
-          <p className="font-bold text-slate-800">{ru ? 'Как подключить канал (2 шага):' : 'Арнаны қалай қосу керек (2 қадам):'}</p>
           <Step done={!!info.bot_linked} n={1}>
-            {ru
-              ? <>Нажмите «Подключить» — откроется {bot} в Telegram. Нажмите <b>«Start»</b>.</>
-              : <>«Қосу» батырмасын басыңыз — Telegram-да {bot} ашылады. <b>«Start»</b> басыңыз.</>}
+            {ru ? <>«Подключить» → в {bot} нажмите <b>Start</b>.</> : <>«Қосу» → {bot} ішінде <b>Start</b> басыңыз.</>}
             {info.bot_linked && (
               <button onClick={openBot} className="ml-1 text-sky-700 font-bold">{ru ? 'Открыть снова' : 'Қайта ашу'}</button>
             )}
           </Step>
           <Step done={false} n={2}>
-            {ru
-              ? <>Откройте свой канал → Управление каналом → <b>Администраторы</b> → Добавить → найдите {bot} → включите <b>«Публикация сообщений»</b> → Сохранить.</>
-              : <>Арнаңызды ашыңыз → Арнаны басқару → <b>Әкімшілер</b> → Қосу → {bot} табыңыз → <b>«Хабар жариялау»</b> құқығын қосыңыз → Сақтау.</>}
+            {ru ? <>Канал → <b>Администраторы</b> → добавьте {bot}.</> : <>Арна → <b>Әкімшілер</b> → {bot} қосыңыз.</>}
           </Step>
           {waiting && (
             <p className="text-sky-700 font-semibold flex items-center gap-1.5">
               <Loader2 className="w-3.5 h-3.5 animate-spin" />{ru ? 'Ждём подключения канала…' : 'Арнаның қосылуын күтудеміз…'}
             </p>
           )}
-          <p className="text-slate-500">
-            {ru
-              ? 'После подключения посты и видео по плану будут выходить и в Instagram, и в Telegram-канал.'
-              : 'Қосылғаннан кейін жоспардағы посттар мен бейнелер Instagram-ға да, Telegram арнаға да шығады.'}
-          </p>
         </div>
       )}
 
@@ -172,19 +161,13 @@ export const TelegramConnectCard: React.FC<{ businessId?: string | null; storeNa
                   <Copy className="w-3.5 h-3.5" />{copied ? (ru ? 'Скопировано' : 'Көшірілді') : (ru ? 'Копировать' : 'Көшіру')}
                 </button>
               </div>
-              <p className="text-slate-500">
-                {ru ? 'Поставьте её в шапку Instagram, описание канала и сторис. Клиент нажмёт — попадёт в чат вашего магазина: AI ответит, а заказ появится в «Заказах». Под каждым постом в канале уже есть кнопка «Заказать».'
-                  : 'Оны Instagram профиліне, арна сипаттамасына және сторисқа қойыңыз. Клиент басса — дүкеніңіздің чатына түседі: AI жауап береді, тапсырыс «Тапсырыстар» бөлімінде шығады. Арнадағы әр посттың астында «Тапсырыс беру» батырмасы бар.'}
-              </p>
+              <p className="text-slate-500">{ru ? 'Для шапки Instagram и описания канала.' : 'Instagram профилі мен арна сипаттамасына.'}</p>
             </div>
           )}
-          <div className="rounded-xl bg-slate-50 border border-slate-100 p-2.5 text-[11px] leading-snug space-y-1">
-            <p className="font-bold text-slate-800 flex items-center gap-1.5"><Bot className="w-3.5 h-3.5 text-purple-600" />{ru ? 'Бот для вас (владельца)' : 'Сізге арналған бот (иесі)'}</p>
-            <p className="text-slate-600">
-              {ru ? <>В чате с {bot}: <b>/orders</b> — заказы, <b>/hot</b> — готовы купить, <b>/stats</b> — итоги дня, <b>/link</b> — ссылка. Новые заказы приходят с кнопками «Продано / Отмена». Ответьте (Reply) на уведомление — ответ уйдёт клиенту.</>
-                : <>{bot} чатында: <b>/orders</b> — тапсырыстар, <b>/hot</b> — сатып алуға дайын, <b>/stats</b> — күн қорытындысы, <b>/link</b> — сілтеме. Жаңа тапсырыстар «Сатылды / Бас тарту» батырмаларымен келеді. Хабарламаға Reply жазсаңыз — жауап клиентке жетеді.</>}
-            </p>
-          </div>
+          <p className="text-[11px] text-slate-600 flex items-start gap-1.5 px-0.5">
+            <Bot className="w-3.5 h-3.5 text-purple-600 shrink-0 mt-px" />
+            <span>{ru ? <>Заказы приходят в {bot}. Команды: <b>/orders</b> <b>/hot</b> <b>/stats</b></> : <>Тапсырыстар {bot} ішіне келеді. Командалар: <b>/orders</b> <b>/hot</b> <b>/stats</b></>}</span>
+          </p>
           {connected && (
             <div className="rounded-xl bg-slate-50 border border-slate-100 p-2.5 text-[11px] leading-snug space-y-1">
               <p className="font-bold text-slate-800 flex items-center gap-1.5">
@@ -194,18 +177,12 @@ export const TelegramConnectCard: React.FC<{ businessId?: string | null; storeNa
               </p>
               {!info.comments_group && (
                 <p className="text-slate-600">
-                  {ru ? <>Канал → Управление → <b>Обсуждение</b> → создайте или выберите группу. Затем в этой группе → Администраторы → добавьте {bot}. AI начнёт отвечать на комментарии под постами.</>
-                    : <>Арна → Басқару → <b>Талқылау</b> → топ құрыңыз не таңдаңыз. Сосын сол топта → Әкімшілер → {bot} қосыңыз. AI посттар астындағы пікірлерге жауап бере бастайды.</>}
+                  {ru ? <>Канал → <b>Обсуждение</b> → группа → добавьте {bot} админом.</>
+                    : <>Арна → <b>Талқылау</b> → топ → {bot} әкімші етіп қосыңыз.</>}
                 </p>
               )}
             </div>
           )}
-        </div>
-      )}
-
-      {info !== null && (
-        <div className="mt-2">
-          <OwnBotPanel businessId={businessId} ru={ru} info={info} storeName={storeName} onChanged={() => { load(); }} />
         </div>
       )}
 

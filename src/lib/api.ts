@@ -449,19 +449,6 @@ export const api = {
   telegramDisconnect: (businessId: string) =>
     request<{ ok: boolean }>(`/business/${encodeURIComponent(businessId)}/telegram/disconnect`, { method: 'POST' }),
 
-  // O'z boti: @BotFather tokeni → Operon nom, logotip va webhook'ni qo'yadi
-  ownBotConnect: (businessId: string, token: string, name?: string) =>
-    request<{ username: string; name: string; name_set: boolean; logo_set: boolean; owner_link: string | null }>(
-      `/business/${encodeURIComponent(businessId)}/telegram/own-bot`,
-      { method: 'POST', body: JSON.stringify({ token, name: name || null }) }),
-
-  ownBotRename: (businessId: string, name: string) =>
-    request<{ username: string; name: string }>(`/business/${encodeURIComponent(businessId)}/telegram/own-bot`,
-      { method: 'PUT', body: JSON.stringify({ name }) }),
-
-  ownBotDisconnect: (businessId: string) =>
-    request<{ ok: boolean }>(`/business/${encodeURIComponent(businessId)}/telegram/own-bot`, { method: 'DELETE' }),
-
   instagramDisconnect: (businessId: string) =>
     request<{ ok: boolean }>(`/auth/instagram/disconnect/${encodeURIComponent(businessId)}`, { method: 'POST' }),
   instagramStatus: (businessId: string) =>

@@ -174,39 +174,14 @@ export const InstagramConnectCard: React.FC<{ businessId?: string | null }> = ({
       )}
       {!connected && status !== null && (
         <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100 p-2.5 text-[11px] leading-snug text-slate-600 space-y-1">
-          <p className="font-bold text-slate-800">
-            {ru ? 'Как подключить (1 минута):' : 'Қалай қосу керек (1 минут):'}
-          </p>
-          <p>
-            1.{' '}
-            {ru ? (
-              <>Откроется страница <b>Instagram</b> — войдите в аккаунт магазина (не в личный).</>
-            ) : (
-              <><b>Instagram</b> беті ашылады — дүкен аккаунтына кіріңіз (жеке аккаунтқа емес).</>
-            )}
-          </p>
-          <p>2. {ru ? <>Нажмите <b>«Разрешить»</b> — окно закроется само.</> : <><b>«Рұқсат беру»</b> батырмасын басыңыз — терезе өзі жабылады.</>}</p>
-          <p className="text-slate-500">
-            {ru
-              ? '🔒 Пароль вводится только на сайте Instagram/Meta — Operon его не видит.'
-              : '🔒 Құпиясөз тек Instagram/Meta сайтында енгізіледі — Operon оны көрмейді.'}
-          </p>
-          <p className="text-slate-500">
-            {ru
-              ? 'Нужен профессиональный аккаунт (Бизнес или Автор) — переключить можно в настройках Instagram.'
-              : 'Кәсіби аккаунт керек (Бизнес не Автор) — Instagram баптауларында ауыстыруға болады.'}
-          </p>
+          <p>{ru ? <>Войдите в аккаунт <b>магазина</b> (Бизнес или Автор) и нажмите «Разрешить».</>
+            : <><b>Дүкен</b> аккаунтына (Бизнес не Автор) кіріп, «Рұқсат беру» басыңыз.</>}</p>
         </div>
       )}
       {connected && status?.telegram_url && (
         <div className="mt-3 rounded-xl bg-sky-50 border border-sky-100 p-2.5 text-[11px] leading-snug text-slate-700 space-y-1.5">
           <p className="font-bold text-slate-800">
-            {ru ? 'Добавьте Telegram в профиль Instagram' : 'Telegram-ды Instagram профиліне қосыңыз'}
-          </p>
-          <p className="text-slate-500">
-            {ru
-              ? 'Instagram не разрешает приложениям менять профиль, поэтому это 1 шаг для вас: Instagram → Редактировать профиль → Ссылки → вставьте ссылку.'
-              : 'Instagram қосымшаларға профильді өзгертуге рұқсат бермейді, сондықтан бұл сіз үшін 1 қадам: Instagram → Профильді өңдеу → Сілтемелер → сілтемені қойыңыз.'}
+            {ru ? 'Ссылка на Telegram для профиля Instagram' : 'Instagram профиліне Telegram сілтемесі'}
           </p>
           <div className="flex items-center gap-2">
             <code className="flex-1 truncate bg-white border border-sky-100 rounded-lg px-2 py-1">{status.telegram_url}</code>
@@ -225,9 +200,6 @@ export const InstagramConnectCard: React.FC<{ businessId?: string | null }> = ({
               {copied ? (ru ? 'Скопировано' : 'Көшірілді') : ru ? 'Копировать' : 'Көшіру'}
             </button>
           </div>
-          <p className="text-slate-500">
-            {ru ? 'Ссылка также добавляется в подписи к видео и в первый ответ клиенту в Direct.' : 'Сілтеме бейне жазбаларына және Direct-тегі алғашқы жауапқа да қосылады.'}
-          </p>
         </div>
       )}
       {error && (

@@ -69,8 +69,12 @@ export const PostPlanPanel: React.FC<{ businessId: string; lang: 'ru' | 'kk' }> 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [businessId]);
 
-  const upcoming = (plan?.items || []).filter((i) => !i.past || i.status === 'draft' || i.status === 'scheduled');
-  const recentDone = (plan?.items || []).filter((i) => i.past && (i.status === 'published' || i.status === 'failed')).slice(-3);
+  // Faqat oldindagi (rejalashtirilgan) postlar — chiqib bo'lganlari va o'tgan kunlar ko'rsatilmaydi (2026-11-13)
+  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+  const upcoming = (plan?.items || [])
+    .filter((i) => i.status !== 'published' && i.status !== 'failed'
+      && (!i.past || new Date(i.scheduled_at) >= todayStart))
+    .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime());
   const nextDraft = upcoming.find((i) => i.status === 'draft');
   waiting.current = !!nextDraft && !nextDraft.text;
   const active = upcoming.length > 0;
@@ -175,7 +179,7 @@ export const PostPlanPanel: React.FC<{ businessId: string; lang: 'ru' | 'kk' }> 
         </div>
       )}
 
-      {active && recentDone.concat(upcoming).map((it) => (
+      {active && upcoming.map((it) => (
         <div key={it.id} className="bg-white border border-slate-200/90 rounded-2xl p-3 space-y-2">
           <div className="flex items-center justify-between gap-2">
             <span className="text-[11.5px] font-bold text-purple-700 flex items-center gap-1.5">
