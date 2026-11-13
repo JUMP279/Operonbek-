@@ -21,6 +21,7 @@ import { RetentionDetailsModal } from './components/RetentionDetailsModal';
 import { FilterModal } from './components/FilterModal';
 import { ProfileModal } from './components/ProfileModal';
 import { AuthFlow, AuthStep } from './components/AuthFlow';
+import { ConsentGate } from './components/LegalConsent';
 import { api, ApiError, tokens, MeResponse, BusinessProfile, consumeOAuthReturn } from './lib/api';
 
 // Google'dan qaytilgan bo'lsa — tokenlarni URL hash'idan oladi (komponentdan OLDIN, bir marta).
@@ -134,6 +135,8 @@ function DashboardApp() {
   const [session, setSession] = useState<'checking' | 'anon' | 'ready'>(tokens.access ? 'checking' : 'anon');
   const [authStep, setAuthStep] = useState<AuthStep | null>(tokens.access ? null : 'welcome');
   const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
+  // Yuridik rozilik: joriy versiyaga rozilik bo'lmasa majburiy oyna (backend /auth/me -> consent_required)
+  const [consentVersion, setConsentVersion] = useState<string | null>(null);
 
   const openAuth = (mode: 'login' | 'register') => setAuthStep(mode);
 
@@ -157,6 +160,7 @@ function DashboardApp() {
       .then((me) => {
         if (cancelled) return;
         setUserProfile((prev) => profileFromMe(me, prev));
+        setConsentVersion(me.consent_required && me.legal_version ? me.legal_version : null);
         if (OAUTH_RESULT === 'reset') {
           // "Parolni unutdingizmi?" — Google tasdig'idan keyin yangi parol
           setSession('anon');
@@ -277,6 +281,7 @@ function DashboardApp() {
   };
 
   const enterDashboard = (me: MeResponse, profile?: BusinessProfile) => {
+    setConsentVersion(me.consent_required && me.legal_version ? me.legal_version : null);
     if (me.business) {
       if (me.business.language) setLanguage(me.business.language);
       setBusinessId(me.business.id);
@@ -565,6 +570,15 @@ function DashboardApp() {
           initialStep={authStep}
           onReady={(me) => enterDashboard(me)}
           onClose={session === 'ready' ? () => setAuthStep(null) : undefined}
+        />
+      )}
+
+      {session === 'ready' && !authStep && consentVersion && (
+        <ConsentGate
+          lang={language === 'kk' ? 'kk' : 'ru'}
+          version={consentVersion}
+          onDone={() => setConsentVersion(null)}
+          onLogout={() => { setConsentVersion(null); handleLogout(); }}
         />
       )}
 

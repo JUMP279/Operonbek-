@@ -156,6 +156,10 @@ export interface MeResponse {
   plan: string;
   is_onboarded: boolean;
   onboarding_in_progress?: boolean;
+  /** Yuridik rozilik (2026-11-14): joriy versiyaga rozilik yo'q bo'lsa true — majburiy oyna ko'rsatiladi */
+  consent_required?: boolean;
+  consent_version?: string | null;
+  legal_version?: string;
   business: {
     id: string;
     brand_name: string;
@@ -362,10 +366,10 @@ export const api = {
     request<{ available: boolean }>(`/auth/name-available?name=${encodeURIComponent(name)}`),
 
   // Parol o'rnatilgach Supabase eski sessiyani bekor qiladi — server qaytargan YANGI tokenlarni saqlaymiz.
-  async setupAccount(business_name: string, password: string, mode: OnboardingMode, language: 'kk' | 'ru') {
+  async setupAccount(business_name: string, password: string, mode: OnboardingMode, language: 'kk' | 'ru', consent_version?: string | null) {
     const r = await request<{ business: { id: string; brand_name: string }; access_token?: string; refresh_token?: string }>(
       '/auth/setup',
-      { method: 'POST', body: JSON.stringify({ business_name, password, mode, language }) },
+      { method: 'POST', body: JSON.stringify({ business_name, password, mode, language, consent_version: consent_version || null }) },
     );
     if (r.access_token) tokens.set(r.access_token, r.refresh_token);
     return r;
@@ -683,6 +687,14 @@ export const api = {
       method: 'DELETE',
     }),
 
+  // Yuridik hujjatlar (services/legal.py) va rozilik (POST /auth/consent)
+  legalIndex: () => request<{ version: string; docs: string[] }>('/legal'),
+  legalDoc: (doc: string, lang: 'kk' | 'ru') => request<LegalDoc>(`/legal/${encodeURIComponent(doc)}?lang=${lang}`),
+  acceptConsent: (version: string) =>
+    request<{ ok: boolean; version: string; at: string }>('/auth/consent', {
+      method: 'POST', body: JSON.stringify({ version, cross_border: true }),
+    }),
+
   logout() {
     tokens.clear();
   },
@@ -696,6 +708,26 @@ export interface BusinessUnderstanding {
   status: string;
   updated_at: string | null;
 }
+
+export interface LegalDoc {
+  id: string;
+  lang: 'kk' | 'ru';
+  version: string;
+  updated: string;
+  title: string;
+  intro: string;
+  sections: { h: string; p: (string | string[])[] }[];
+}
+
+/** Google'ga ketishdan oldin belgilangan rozilik versiyasi (qaytgach /auth/setup ga yuboriladi) */
+export const pendingConsent = {
+  get(): string | null {
+    try { return sessionStorage.getItem('operon_consent_version'); } catch { return null; }
+  },
+  set(v: string | null) {
+    try { if (v) sessionStorage.setItem('operon_consent_version', v); else sessionStorage.removeItem('operon_consent_version'); } catch { /* ignore */ }
+  },
+};
 
 export interface Product {
   id: string;

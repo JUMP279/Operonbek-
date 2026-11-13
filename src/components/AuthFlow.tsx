@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { ArrowLeft, ArrowRight, Eye, EyeOff, KeyRound, Lock, Rocket, Store } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useLanguage } from '../context/LanguageContext';
-import { api, ApiError, MeResponse, OnboardingMode } from '../lib/api';
+import { api, ApiError, MeResponse, OnboardingMode, pendingConsent } from '../lib/api';
+import { ConsentChecks, legalVersion } from './LegalConsent';
 import { OperonMark } from './HeaderNav';
 
 // Oqim (2026-11-08):
@@ -149,6 +150,12 @@ export const AuthFlow: React.FC<AuthFlowProps> = ({ initialStep = 'login', onRea
   // name+password yig'ilgan bo'lsa — "choose" bosilganda setupAccount (birinchi sozlash),
   // aks holda (dashboard'dan yangi biznes qo'shish) onboardingQuick.
   const [setupMode, setSetupMode] = useState(false);
+  // Yuridik rozilik (2026-11-14): Google'ga ketishdan oldin belgilanadi; versiya /auth/setup ga yuboriladi
+  const [consentOk, setConsentOk] = useState(false);
+  const [legalVer, setLegalVer] = useState<string | null>(null);
+  useEffect(() => {
+    legalVersion().then(setLegalVer);
+  }, []);
 
   useEffect(() => {
     setStep(norm(initialStep));
@@ -178,6 +185,7 @@ export const AuthFlow: React.FC<AuthFlowProps> = ({ initialStep = 'login', onRea
   };
 
   const google = async (purpose: 'login' | 'reset') => {
+    if (consentOk && legalVer) pendingConsent.set(legalVer);
     setBusy(true);
     setError('');
     try {
@@ -264,8 +272,9 @@ export const AuthFlow: React.FC<AuthFlowProps> = ({ initialStep = 'login', onRea
     setStep('finishing');
     setError('');
     try {
-      if (setupMode) await api.setupAccount(bizName, password, m, language);
+      if (setupMode) await api.setupAccount(bizName, password, m, language, pendingConsent.get());
       else await api.onboardingQuick(m, language);
+      pendingConsent.set(null);
       setPassword('');
       setPassword2('');
       const me = await api.me();
@@ -358,10 +367,10 @@ export const AuthFlow: React.FC<AuthFlowProps> = ({ initialStep = 'login', onRea
     </button>
   );
 
-  const GoogleBtn = ({ purpose, label }: { purpose: 'login' | 'reset'; label: string }) => (
+  const GoogleBtn = ({ purpose, label, locked }: { purpose: 'login' | 'reset'; label: string; locked?: boolean }) => (
     <button
       type="button"
-      disabled={busy}
+      disabled={busy || locked}
       onClick={() => google(purpose)}
       className="w-full py-3 rounded-2xl bg-white hover:bg-slate-50 text-slate-900 font-bold text-sm border border-slate-200 flex items-center justify-center gap-2.5 disabled:opacity-60 active:scale-[0.98] transition-all"
     >
@@ -447,7 +456,8 @@ export const AuthFlow: React.FC<AuthFlowProps> = ({ initialStep = 'login', onRea
           <span className="text-[11px] font-semibold text-slate-400 uppercase">{T.or}</span>
           <div className="h-px flex-1 bg-slate-200" />
         </div>
-        <GoogleBtn purpose="login" label={T.google} />
+        <ConsentChecks lang={language === 'kk' ? 'kk' : 'ru'} onValid={setConsentOk} />
+        <GoogleBtn purpose="login" label={T.google} locked={!consentOk} />
         <p className="text-center text-[11px] text-slate-500 leading-relaxed px-2">{T.firstTime}</p>
       </form>
     );
