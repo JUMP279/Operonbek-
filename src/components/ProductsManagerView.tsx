@@ -54,12 +54,15 @@ interface Form {
   price: string;
   description: string;
   stock: string;
-  image_url: string;
+  /** 4 tagacha rasm (1-chisi — asosiy) */
+  images: string[];
   is_active: boolean;
   discount: string;
 }
 
-const EMPTY: Form = { id: null, name: '', price: '', description: '', stock: '', image_url: '', is_active: true, discount: '' };
+const MAX_PHOTOS = 4;
+
+const EMPTY: Form = { id: null, name: '', price: '', description: '', stock: '', images: [], is_active: true, discount: '' };
 
 // Chegirmali narx — backend (services/pricing.py) bilan bir xil: 10 ga yaxlitlanadi
 const salePrice = (price: number, pct: number) => Math.round((price * (100 - pct)) / 100 / 10) * 10 || price;
@@ -100,19 +103,22 @@ export const ProductsManagerView: React.FC<ProductsManagerViewProps> = ({ onBack
   const openEdit = (p: Product) =>
     setForm({
       id: p.id, name: p.name, price: p.price != null ? String(p.price) : '', description: p.description || '',
-      stock: p.stock != null ? String(p.stock) : '', image_url: p.image_url || '', is_active: p.is_active,
+      stock: p.stock != null ? String(p.stock) : '', images: p.images?.length ? p.images : (p.image_url ? [p.image_url] : []), is_active: p.is_active,
       discount: p.discount_percent ? String(p.discount_percent) : '',
     });
 
   const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
+    const files = Array.from(e.target.files || []);
     e.target.value = '';
-    if (!f || !businessId || !form) return;
+    if (!files.length || !businessId || !form) return;
     setUploading(true);
     setError('');
     try {
-      const { image_url } = await api.uploadProductImage(businessId, f);
-      setForm((x) => (x ? { ...x, image_url } : x));
+      // Bir nechta rasmni birdan tanlash mumkin — 4 tagacha
+      for (const f of files.slice(0, MAX_PHOTOS - form.images.length)) {
+        const { image_url } = await api.uploadProductImage(businessId, f);
+        setForm((x) => (x && x.images.length < MAX_PHOTOS ? { ...x, images: [...x.images, image_url] } : x));
+      }
     } catch {
       setError(L.errors.image);
     } finally {
@@ -137,7 +143,7 @@ export const ProductsManagerView: React.FC<ProductsManagerViewProps> = ({ onBack
       name: form.name.trim(),
       price: form.price.trim() || null,
       description: form.description.trim() || null,
-      image_url: form.image_url || null,
+      images: form.images,
       stock: Math.max(0, parseInt(form.stock, 10) || 0),
       is_active: form.is_active,
       discount_percent: pct,
@@ -281,22 +287,30 @@ export const ProductsManagerView: React.FC<ProductsManagerViewProps> = ({ onBack
             })()}
             <div className="space-y-1">
               <p className="text-[11px] font-bold text-slate-500">{L.photo}</p>
-              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onFile} />
-              {form.image_url ? (
-                <div className="relative w-28">
-                  <img src={form.image_url} alt="" className="w-28 h-28 rounded-xl object-cover" />
-                  <button onClick={() => setForm({ ...form, image_url: '' })}
-                    className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center">
-                    <X className="w-3.5 h-3.5" />
+              <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={onFile} />
+              <div className="grid grid-cols-4 gap-2">
+                {form.images.map((u, i) => (
+                  <div key={u} className="relative">
+                    <img src={u} alt="" className={`w-full aspect-square rounded-xl object-cover ${i === 0 ? 'ring-2 ring-purple-500' : ''}`}
+                      onClick={() => i > 0 && setForm({ ...form, images: [u, ...form.images.filter((x) => x !== u)] })} />
+                    {i === 0 && <span className="absolute bottom-1 left-1 text-[9px] font-bold bg-purple-600 text-white rounded px-1">{lang === 'kk' ? 'Негізгі' : 'Главное'}</span>}
+                    <button onClick={() => setForm({ ...form, images: form.images.filter((x) => x !== u) })}
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-white border border-slate-200 flex items-center justify-center">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+                {form.images.length < MAX_PHOTOS && (
+                  <button onClick={() => fileRef.current?.click()} disabled={uploading}
+                    className="aspect-square rounded-xl border-2 border-dashed border-slate-200 text-slate-500 flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold">
+                    {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}
+                    {form.images.length}/{MAX_PHOTOS}
                   </button>
-                </div>
-              ) : (
-                <button onClick={() => fileRef.current?.click()} disabled={uploading}
-                  className="w-full py-3 rounded-xl border-2 border-dashed border-slate-200 text-[12px] font-bold text-slate-600 flex items-center justify-center gap-2">
-                  {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}{L.photoAdd}
-                </button>
-              )}
-              <p className="text-[10.5px] text-slate-400">{L.photoHint}</p>
+                )}
+              </div>
+              <p className="text-[10.5px] text-slate-400">{lang === 'kk'
+                ? '4 суретке дейін. Біріншісі — негізгі (басып ауыстыруға болады). Бірнеше сурет болса, пост карусель болып шығады.'
+                : 'До 4 фото. Первое — главное (нажмите на другое, чтобы сделать главным). Несколько фото — пост выйдет каруселью.'}</p>
             </div>
             <div className="space-y-1">
               <p className="text-[11px] font-bold text-slate-500">{L.desc}</p>

@@ -800,6 +800,8 @@ export interface Product {
   product_code: number | null;
   /** Chegirma % (0 — chegirma yo'q). Narx `price` — asl narx */
   discount_percent?: number | null;
+  /** 4 tagacha rasm (1-chisi = image_url) — services/product_images.py */
+  images?: string[];
 }
 
 export interface ProductInput {
@@ -810,6 +812,7 @@ export interface ProductInput {
   stock?: number;
   is_active?: boolean;
   discount_percent?: number;
+  images?: string[];
 }
 
 export type PostPlatform = 'instagram' | 'telegram' | 'both';
