@@ -41,7 +41,7 @@ export const MarketplaceConnectCard: React.FC<{ businessId: string; onSynced?: (
   };
   const errText = (e: unknown) => {
     if (e instanceof ApiError && e.status === 403) {
-      return language === 'kk' ? 'Маркетплейстер Growth және Business тарифтерінде қолжетімді.' : 'Маркетплейсы доступны в тарифах Growth и Business.';
+      return language === 'kk' ? 'Starter тарифінде 1 маркетплейс қосылады. Үшеуі де — Growth және Business тарифтерінде.' : 'В тарифе Starter можно подключить 1 маркетплейс. Все три — в Growth и Business.';
     }
     const code = e instanceof ApiError ? (e.message || '').split(':')[0] : '';
     return ERR[code] || ERR.unavailable;

@@ -30,7 +30,8 @@ const T = {
       starter: [
         '15 AI-видео и 15 постов в месяц',
         'Через день: день видео, день пост',
-        '1 платформа на выбор — Instagram или Telegram',
+        'Instagram и Telegram',
+        '1 маркетплейс на выбор — Kaspi, Wildberries или Uzum',
         'AI отвечает клиентам, товары и заказы',
       ],
       growth: [
@@ -45,10 +46,10 @@ const T = {
         '3 поста в день в Instagram и Telegram',
         'Все функции + все 3 маркетплейса',
         'Новости Operon и ранний доступ к новым функциям',
-        'Прямой контакт владельца Operon',
+        'Прямой контакт для связи с администраторами Operon',
       ],
     }[p]),
-    ownerContact: 'Контакт владельца Operon',
+    adminContact: 'Связь с администраторами Operon',
     error: 'Не удалось загрузить данные тарифа',
   },
   kk: {
@@ -63,7 +64,8 @@ const T = {
       starter: [
         'Айына 15 AI-бейне және 15 пост',
         'Күн аралатып: бір күн бейне, бір күн пост',
-        'Таңдауыңызша 1 платформа — Instagram немесе Telegram',
+        'Instagram және Telegram',
+        'Таңдауыңызша 1 маркетплейс — Kaspi, Wildberries немесе Uzum',
         'AI клиенттерге жауап береді, тауарлар мен тапсырыстар',
       ],
       growth: [
@@ -78,10 +80,10 @@ const T = {
         'Instagram мен Telegram-ға күніне 3 пост',
         'Барлық мүмкіндік + 3 маркетплейс',
         'Operon жаңалықтары және жаңа мүмкіндіктерге алғашқы қолжетімділік',
-        'Operon иесімен тікелей байланыс',
+        'Operon әкімшілерімен байланысуға тікелей контакт',
       ],
     }[p]),
-    ownerContact: 'Operon иесінің байланысы',
+    adminContact: 'Operon әкімшілерімен байланыс',
     error: 'Тариф деректері жүктелмеді',
   },
 };
@@ -178,9 +180,9 @@ export const SubscriptionPlanView: React.FC<SubscriptionPlanViewProps> = ({ onBa
           </div>
         )}
 
-        {usage?.owner_contact && (
+        {usage?.admin_contact && (
           <div className="bg-purple-50 border border-purple-200 text-purple-900 rounded-2xl p-3 text-[12px] font-semibold">
-            {L.ownerContact}: {usage.owner_contact}
+            {L.adminContact}: {usage.admin_contact}
           </div>
         )}
 

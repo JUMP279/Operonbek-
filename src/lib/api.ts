@@ -1124,9 +1124,9 @@ export interface MarketState {
 
 export interface PlanUsage {
   plan: string;
-  features?: { platforms: number; marketplaces: boolean; business_analysis: boolean; news: boolean; early_access: boolean; owner_contact: boolean };
+  features?: { platforms: number; marketplaces: number; business_analysis: boolean; news: boolean; early_access: boolean; admin_contact: boolean };
   prices?: Record<string, number>;
-  owner_contact?: string | null;
+  admin_contact?: string | null;
   /** Sinov yoki to'langan davr tugash sanasi */
   trial_end: string | null;
   /** trial | paid | expired (expired — video/post yaratish to'xtaydi) */
