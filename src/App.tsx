@@ -439,15 +439,7 @@ function DashboardApp() {
                     onOpenDetails={() => setActiveTab('analytics')}
                   />
 
-                  <CustomerBreakdown
-                    segments={customerData}
-                    onSelectSegment={(seg) => {
-                      setSelectedCustomerSeg(seg);
-                      setIsCustomerDetailsOpen(true);
-                    }}
-                    onOpenMenu={() => setIsCustomerDetailsOpen(true)}
-                  />
-
+                  {/* "Сегменты клиентов" (CustomerBreakdown) 2026-11-14 user so'rovi bilan olib tashlandi */}
                   <DayActiveChart data={dayActiveData} detail={dash.activity} currency={currencyCode} />
 
                   <RetentionGauge

@@ -1,3 +1,4 @@
+import { OwnerIdeasCard } from './OwnerIdeasCard';
 import React, { useEffect, useRef, useState } from 'react';
 import { CalendarClock, Clock, Loader2, RefreshCw, Sparkles } from 'lucide-react';
 import { api, ApiError, ContentLang, PostPlan, PostPlanItem } from '../lib/api';
@@ -167,6 +168,8 @@ export const PostPlanPanel: React.FC<{ businessId: string; lang: 'ru' | 'kk' }> 
           </button>
         </div>
       )}
+
+      {active && <OwnerIdeasCard businessId={businessId} kind="post" lang={lang} onApplied={load} />}
 
       {active && (
         <div className="bg-white border border-slate-200/90 rounded-2xl p-3 flex items-center justify-between gap-2">

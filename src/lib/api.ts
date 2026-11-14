@@ -699,6 +699,17 @@ export const api = {
   marketplaceReport: (businessId: string, days = 30, refresh = false) =>
     request<MarketplaceReport>(`/marketplaces/${encodeURIComponent(businessId)}/report?days=${days}${refresh ? '&refresh=true' : ''}`),
 
+  // Tadbirkor g'oyalari (2026-11-14)
+  ownerIdeas: (businessId: string, kind: 'video' | 'post') =>
+    request<{ ideas: OwnerIdea[] }>(`/ideas/${encodeURIComponent(businessId)}?kind=${kind}`),
+  addOwnerIdea: (businessId: string, kind: 'video' | 'post', text: string) =>
+    request<{ ideas: OwnerIdea[] }>(`/ideas/${encodeURIComponent(businessId)}`, { method: 'POST', body: JSON.stringify({ kind, text }) }),
+  deleteOwnerIdea: (businessId: string, id: string) =>
+    request<{ ok: boolean }>(`/ideas/${encodeURIComponent(businessId)}/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  applyOwnerIdea: (businessId: string, id: string) =>
+    request<{ ok: boolean; post_id: string; scheduled_at: string; ideas: OwnerIdea[] }>(
+      `/ideas/${encodeURIComponent(businessId)}/${encodeURIComponent(id)}/apply`, { method: 'POST' }),
+
   logout() {
     tokens.clear();
   },
@@ -764,6 +775,18 @@ export interface MarketplaceReport {
   days: number;
   generated_at: string;
   sources: { kaspi: MpOrdersBlock; wb: MpOrdersBlock & { funnel?: WbFunnel }; uzum: MpOrdersBlock };
+}
+
+/** Tadbirkorning o'z g'oyasi (services/owner_ideas.py) — keyingi video/post shu bo'yicha tayyorlanadi */
+export interface OwnerIdea {
+  id: string;
+  kind: 'video' | 'post';
+  text: string;
+  created_at: string;
+  status: 'new' | 'used';
+  used_at?: string | null;
+  post_id?: string | null;
+  scheduled_at?: string | null;
 }
 
 export interface Product {

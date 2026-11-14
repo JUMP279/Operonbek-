@@ -1,3 +1,4 @@
+import { OwnerIdeasCard } from './OwnerIdeasCard';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ArrowLeft,
@@ -725,6 +726,10 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
         {/* ── 3. Faol reja: kelgusi videolar va ssenariylar ── */}
         {tab === 'plan' && !loading && !needsNiche && !showWizard && plan && planActive && (
           <>
+            {businessId && (
+              <OwnerIdeasCard businessId={businessId} kind="video" lang={language === 'kk' ? 'kk' : 'ru'}
+                onApplied={async () => { try { setPlan(await api.videoPlan(businessId)); } catch { /* ignore */ } }} />
+            )}
             <div className="bg-white border border-slate-200/90 rounded-2xl p-3 flex items-center justify-between gap-2">
               <div className="min-w-0">
                 <p className="text-xs font-black">{L.upcoming}</p>
