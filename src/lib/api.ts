@@ -710,6 +710,10 @@ export const api = {
     request<{ ok: boolean; post_id: string; scheduled_at: string; ideas: OwnerIdea[] }>(
       `/ideas/${encodeURIComponent(businessId)}/${encodeURIComponent(id)}/apply`, { method: 'POST' }),
 
+  growth: (businessId: string, lang: 'kk' | 'ru') => request<GrowthChecklist>(`/growth/${encodeURIComponent(businessId)}?lang=${lang}`),
+  setGrowthDone: (businessId: string, item: string, done: boolean) =>
+    request<{ ok: boolean }>(`/growth/${encodeURIComponent(businessId)}/done`, { method: 'POST', body: JSON.stringify({ item, done }) }),
+
   logout() {
     tokens.clear();
   },
@@ -787,6 +791,16 @@ export interface OwnerIdea {
   used_at?: string | null;
   post_id?: string | null;
   scheduled_at?: string | null;
+}
+
+/** Obunachilarni o'stirish rejasi (services/growth_playbook.py) */
+export interface GrowthChecklist {
+  items: { id: string; group: 'base' | 'instagram' | 'telegram' | 'growth'; kind: 'auto' | 'manual'; title: string; how: string; done: boolean }[];
+  done: number;
+  total: number;
+  warnings: string[];
+  sources: string[];
+  channel_url: string | null;
 }
 
 export interface Product {

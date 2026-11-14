@@ -20,7 +20,8 @@ import {
   Crown,
   Brain,
   MessageSquareText,
-  Store
+  Store,
+  Rocket
 } from 'lucide-react';
 import { UserProfile, Language } from '../types';
 import { UserAvatarIcon } from './UserAvatar';
@@ -182,6 +183,19 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
       badgeKk: 'Тікелей ағын',
       badgeRu: 'Живой поток',
       badgeColor: 'bg-violet-100 text-violet-700'
+    },
+    {
+      id: 'growth',
+      titleKk: 'Жазылушы өсуі',
+      titleRu: 'Рост подписчиков',
+      subtitleKk: 'Instagram және Telegram: қадамдық жоспар',
+      subtitleRu: 'Instagram и Telegram: план по шагам',
+      icon: <Rocket className="w-4 h-4 text-emerald-600" />,
+      bg: 'bg-emerald-50/80',
+      border: 'border-emerald-100',
+      badgeKk: 'Жоспар',
+      badgeRu: 'План',
+      badgeColor: 'bg-emerald-100 text-emerald-700'
     },
     {
       id: 'marketplaces',
