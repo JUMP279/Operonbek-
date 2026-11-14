@@ -19,7 +19,8 @@ import {
   ShieldCheck,
   Crown,
   Brain,
-  MessageSquareText
+  MessageSquareText,
+  Store
 } from 'lucide-react';
 import { UserProfile, Language } from '../types';
 import { UserAvatarIcon } from './UserAvatar';
@@ -181,6 +182,19 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
       badgeKk: 'Тікелей ағын',
       badgeRu: 'Живой поток',
       badgeColor: 'bg-violet-100 text-violet-700'
+    },
+    {
+      id: 'marketplaces',
+      titleKk: 'Маркетплейстер',
+      titleRu: 'Маркетплейсы',
+      subtitleKk: 'Kaspi, WB, Uzum: тапсырыс, қаралым, сатылым',
+      subtitleRu: 'Kaspi, WB, Uzum: заказы, просмотры, продажи',
+      icon: <Store className="w-4 h-4 text-rose-600" />,
+      bg: 'bg-rose-50/80',
+      border: 'border-rose-100',
+      badgeKk: 'Есеп',
+      badgeRu: 'Отчёт',
+      badgeColor: 'bg-rose-100 text-rose-700'
     },
     {
       id: 'subscription',

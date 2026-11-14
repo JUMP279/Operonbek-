@@ -695,6 +695,10 @@ export const api = {
       method: 'POST', body: JSON.stringify({ version, cross_border: true }),
     }),
 
+  // Marketplace hisoboti (2026-11-14): buyurtmalar + WB voronkasi — services/marketplace_report.py
+  marketplaceReport: (businessId: string, days = 30, refresh = false) =>
+    request<MarketplaceReport>(`/marketplaces/${encodeURIComponent(businessId)}/report?days=${days}${refresh ? '&refresh=true' : ''}`),
+
   logout() {
     tokens.clear();
   },
@@ -728,6 +732,39 @@ export const pendingConsent = {
     try { if (v) sessionStorage.setItem('operon_consent_version', v); else sessionStorage.removeItem('operon_consent_version'); } catch { /* ignore */ }
   },
 };
+
+export interface MpOrdersBlock {
+  connected: boolean;
+  last_sync: string | null;
+  last_error: string | null;
+  connected_at?: string | null;
+  currency: string | null;
+  totals: { orders: number; units: number; revenue: number; cancelled: number; sold: number; avg_check: number | null; cancel_pct: number | null };
+  products: { title: string; orders: number; units: number; revenue: number; cancelled: number; cancel_pct: number | null; first_order: string; last_order: string }[];
+  series: { date: string; orders: number; revenue: number; cancelled: number }[];
+}
+
+export interface WbFunnelProduct {
+  nm_id: number | string | null; title: string; vendor_code: string | null; brand: string | null;
+  open: number; cart: number; order: number; order_sum: number; buyout: number; buyout_sum: number; cancel: number;
+  add_to_cart_pct: number | null; cart_to_order_pct: number | null; buyout_pct: number | null;
+  stock: number; created_at: string | null; photo: string | null;
+}
+
+export interface WbFunnel {
+  error?: string;
+  stale?: boolean;
+  period?: { start: string; end: string };
+  totals?: { open: number; cart: number; order: number; buyout: number; cancel: number; order_sum: number; buyout_sum: number;
+    add_to_cart_pct: number | null; cart_to_order_pct: number | null; buyout_pct: number | null };
+  products?: WbFunnelProduct[];
+}
+
+export interface MarketplaceReport {
+  days: number;
+  generated_at: string;
+  sources: { kaspi: MpOrdersBlock; wb: MpOrdersBlock & { funnel?: WbFunnel }; uzum: MpOrdersBlock };
+}
 
 export interface Product {
   id: string;

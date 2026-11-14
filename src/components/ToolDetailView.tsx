@@ -54,6 +54,7 @@ import { OrdersManagerView } from './OrdersManagerView';
 import { AnalyticsView } from './AnalyticsView';
 import { BusinessAnalyzeView } from './BusinessAnalyzeView';
 import { BusinessMemoryView } from './BusinessMemoryView';
+import { MarketplaceReportView } from './MarketplaceReportView';
 import { CustomerResponseView } from './CustomerResponseView';
 
 export interface ToolDetailViewProps {
@@ -89,6 +90,8 @@ export const ToolDetailView: React.FC<ToolDetailViewProps> = ({
         return language === 'ru' ? 'Аналитика и чистая прибыль' : 'Аналитика & Таза пайда';
       case 'business-analyze':
         return language === 'ru' ? 'Бизнес-анализ (AI)' : 'Бизнес талдауы (AI)';
+      case 'marketplaces':
+        return language === 'ru' ? 'Маркетплейсы' : 'Маркетплейстер';
       case 'orders-manager':
         return language === 'ru' ? 'Управление заказами' : 'Тапсырыстарды басқару';
       case 'phone-operator':
@@ -140,6 +143,10 @@ export const ToolDetailView: React.FC<ToolDetailViewProps> = ({
 
   if (toolId === 'business-analyze') {
     return <BusinessAnalyzeView onBack={onBack} storeContext={storeContext} />;
+  }
+
+  if (toolId === 'marketplaces') {
+    return <MarketplaceReportView onBack={onBack} storeContext={storeContext} />;
   }
 
   if (toolId === 'orders-manager') {
