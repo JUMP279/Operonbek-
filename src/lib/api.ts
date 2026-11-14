@@ -798,6 +798,7 @@ export interface GrowthChecklist {
   items: { id: string; group: 'base' | 'instagram' | 'telegram' | 'growth'; kind: 'auto' | 'manual'; title: string; how: string; done: boolean }[];
   done: number;
   total: number;
+  ai_actions: { active: boolean; title: string; detail: string; stat: string | null }[];
   warnings: string[];
   sources: string[];
   channel_url: string | null;
