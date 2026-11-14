@@ -916,7 +916,7 @@ export interface VideoProfile {
   has_character: boolean;
   character_note?: string | null;
   extra?: string | null;
-  seconds?: 10 | 15 | 20;  // video uzunligi (max 20s)
+  seconds?: 0 | 10 | 15 | 20;  // 0=avto (dastur tanlaydi), yoki maksimum
   art_style?: 'realistic' | 'cartoon' | 'pixel';  // vizual uslub
   character_image_url?: string | null;
   character_desc?: string | null;
