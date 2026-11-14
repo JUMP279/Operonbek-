@@ -45,6 +45,7 @@ const T = {
     wizHint: 'Operon будет делать каждое видео по этим правилам.',
     q1: 'О чём должны быть видео?', q2: 'В каком жанре?', q3: 'Кто будет героем видео? Видео снимаются в стиле UGC — как будто настоящий покупатель снял на телефон.',
     q4: 'Максимальная длина видео', sec: (n: number) => `${n} сек`,
+    q5: 'Стиль видео', styleReal: 'Реалистичный', styleCartoon: 'Мультик', stylePixel: 'Пиксельный', styleHint: 'Как выглядят персонаж и видео.',
     secHint: 'Длину Operon подбирает сам под тип видео: без слов с музыкой — 5 сек, показ товара — 10, совет — 15, три шага — до 20. Здесь вы задаёте только максимум.',
     styleSilent: 'Без слов · музыка', styleCloseup: 'Крупный план', styleWide: 'В полный рост',
     own: 'Свой вариант…', yes: 'Выберу сам', no: 'Пусть AI подберёт',
@@ -87,6 +88,7 @@ const T = {
     wizHint: 'Operon әр бейнені осы ережелер бойынша жасайды.',
     q1: 'Бейнелер не туралы болсын?', q2: 'Қандай жанрда?', q3: 'Бейне кейіпкері кім болады? Бейнелер UGC стилінде — нағыз сатып алушы телефонға түсіргендей.',
     q4: 'Бейненің ең ұзақ уақыты', sec: (n: number) => `${n} сек`,
+    q5: 'Бейне стилі', styleReal: 'Шынайы', styleCartoon: 'Мультфильм', stylePixel: 'Пиксельді', styleHint: 'Кейіпкер мен бейне қалай көрінеді.',
     secHint: 'Ұзақтықты Operon бейне түріне қарай өзі таңдайды: сөзсіз, музыкамен — 5 сек, тауарды көрсету — 10, кеңес — 15, үш қадам — 20-ға дейін. Мұнда тек ең ұзақ шекті белгілейсіз.',
     styleSilent: 'Сөзсіз · музыка', styleCloseup: 'Жақын план', styleWide: 'Толық бойымен',
     own: 'Өз нұсқаңыз…', yes: 'Өзім таңдаймын', no: 'AI таңдасын',
@@ -163,6 +165,7 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
   const [charNote, setCharNote] = useState('');
   const [extra, setExtra] = useState('');
   const [seconds, setSeconds] = useState<10 | 15 | 20>(10);
+  const [artStyle, setArtStyle] = useState<'realistic' | 'cartoon' | 'pixel'>('realistic');
   const [saving, setSaving] = useState(false);
 
   // qahramon (bitta, doimiy): Pinterest qidiruv / havola / o'z rasmi / matn
@@ -211,6 +214,7 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
         setCharNote(pr.profile.character_note || '');
         setExtra(pr.profile.extra || '');
         setSeconds(([10, 15, 20] as const).includes(pr.profile.seconds as 10) ? (pr.profile.seconds as 10 | 15 | 20) : 10);
+        setArtStyle((['realistic', 'cartoon', 'pixel'] as const).includes(pr.profile.art_style as 'realistic') ? (pr.profile.art_style as 'realistic' | 'cartoon' | 'pixel') : 'realistic');
       }
       if (pl.settings?.times?.length) setTimes((t) => pl.settings!.times!.concat(t).slice(0, 2));
     } catch (e) {
@@ -388,7 +392,7 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
     try {
       await api.saveVideoProfile(businessId, {
         direction: direction.trim(), genre: genre.trim(), has_character: !!hasChar,
-        character_note: charNote.trim() || null, extra: extra.trim() || null, seconds,
+        character_note: charNote.trim() || null, extra: extra.trim() || null, seconds, art_style: artStyle,
       });
       // Qahramon tanlanmagan, faqat so'z bilan aytilgan — matndan JSON tuzamiz
       if (hasChar && !heroChosen && charNote.trim()) {
@@ -678,6 +682,16 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
                 ))}
               </div>
               <p className="text-[10.5px] text-slate-500">{L.secHint}</p>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-xs font-bold">5. {L.q5}</p>
+              <div className="flex gap-1.5">
+                {([['realistic', L.styleReal], ['cartoon', L.styleCartoon], ['pixel', L.stylePixel]] as const).map(([v, lbl]) => (
+                  <button key={v} onClick={() => setArtStyle(v)} className={chip(artStyle === v)}>{lbl}</button>
+                ))}
+              </div>
+              <p className="text-[10.5px] text-slate-500">{L.styleHint}</p>
             </div>
 
             <div className="space-y-1">

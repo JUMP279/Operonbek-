@@ -492,7 +492,7 @@ export const api = {
 
   saveVideoProfile: (
     businessId: string,
-    p: Pick<VideoProfile, 'direction' | 'genre' | 'has_character' | 'character_note' | 'extra' | 'seconds'>,
+    p: Pick<VideoProfile, 'direction' | 'genre' | 'has_character' | 'character_note' | 'extra' | 'seconds' | 'art_style'>,
   ) =>
     request<{ profile: VideoProfile }>('/videos/profile', {
       method: 'POST',
@@ -917,6 +917,7 @@ export interface VideoProfile {
   character_note?: string | null;
   extra?: string | null;
   seconds?: 10 | 15 | 20;  // video uzunligi (max 20s)
+  art_style?: 'realistic' | 'cartoon' | 'pixel';  // vizual uslub
   character_image_url?: string | null;
   character_desc?: string | null;
   character_json?: Record<string, string | string[]> | null;
