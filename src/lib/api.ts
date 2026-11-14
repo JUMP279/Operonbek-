@@ -973,6 +973,7 @@ export interface PostPlanItem {
 }
 
 export interface PostPlan {
+  cadence?: { every_days: number; per_day: number; monthly: number };
   settings: { time?: string; script_lang?: ContentLang; stopped_at?: string } | null;
   items: PostPlanItem[];
 }
@@ -1088,6 +1089,8 @@ export interface MarketReport {
 }
 
 export interface MarketState {
+  /** Tarifda yo'q (Starter) — bo'lim qulflangan */
+  locked?: boolean;
   intel: null | {
     generated_at: string;
     next_at?: string;
@@ -1121,6 +1124,9 @@ export interface MarketState {
 
 export interface PlanUsage {
   plan: string;
+  features?: { platforms: number; marketplaces: boolean; business_analysis: boolean; news: boolean; early_access: boolean; owner_contact: boolean };
+  prices?: Record<string, number>;
+  owner_contact?: string | null;
   /** Sinov yoki to'langan davr tugash sanasi */
   trial_end: string | null;
   /** trial | paid | expired (expired — video/post yaratish to'xtaydi) */

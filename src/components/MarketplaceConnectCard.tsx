@@ -40,6 +40,9 @@ export const MarketplaceConnectCard: React.FC<{ businessId: string; onSynced?: (
     unavailable: 'Маркетплейс қазір жауап бермейді. Кейінірек қайталаңыз.',
   };
   const errText = (e: unknown) => {
+    if (e instanceof ApiError && e.status === 403) {
+      return language === 'kk' ? 'Маркетплейстер Growth және Business тарифтерінде қолжетімді.' : 'Маркетплейсы доступны в тарифах Growth и Business.';
+    }
     const code = e instanceof ApiError ? (e.message || '').split(':')[0] : '';
     return ERR[code] || ERR.unavailable;
   };

@@ -156,7 +156,7 @@ export const BusinessAnalyzeView: React.FC<{ onBack: () => void; storeContext?: 
       setError('');
       if (!quiet) {
         fillForm(s.watch);
-        if (!s.intel) setShowWatch(true);
+        if (!s.intel && !s.locked) setShowWatch(true);
       }
     } catch {
       setError(L.error);
@@ -274,6 +274,25 @@ export const BusinessAnalyzeView: React.FC<{ onBack: () => void; storeContext?: 
 
   const ks = intel?.data?.kaspi_summary;
   const igAccounts = (src.instagram?.accounts || []).filter((a): a is MarketIgAccount => typeof a === 'object');
+
+  if (state?.locked) {
+    return (
+      <div className="flex-1 flex flex-col h-full bg-[#FAFBFD] font-sans text-slate-900 w-full">
+        <div className="bg-white border-b border-slate-200/80 px-3 py-2.5 flex items-center gap-2">
+          <button onClick={onBack} className="w-8 h-8 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center"><ArrowLeft className="w-4 h-4" /></button>
+          <h1 className="text-sm font-black flex items-center gap-1.5"><Sparkles className="w-4 h-4 text-purple-600" />{L.title}</h1>
+        </div>
+        <div className="p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 text-center space-y-2">
+            <p className="text-[14px] font-black">{lang === 'kk' ? 'Бизнес талдауы — Growth және Business тарифтерінде' : 'Анализ бизнеса — в тарифах Growth и Business'}</p>
+            <p className="text-[12px] text-slate-600 leading-snug">{lang === 'kk'
+              ? 'Operon Kaspi, WB, Instagram және Telegram-дағы бәсекелестерді бақылап, бизнесіңіздің жағдайын бағалайды. «Тариф» бөлімінен қосыңыз.'
+              : 'Operon будет следить за конкурентами на Kaspi, WB, в Instagram и Telegram и оценивать состояние бизнеса. Подключите в разделе «Тариф».'}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 flex flex-col h-full bg-[#FAFBFD] overflow-x-hidden font-sans text-slate-900 w-full max-w-full">

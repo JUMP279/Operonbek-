@@ -14,8 +14,8 @@ export interface SubscriptionPlanViewProps {
 
 type PlanId = 'starter' | 'growth' | 'business';
 
-const PRICES: Record<PlanId, number> = { starter: 15.99, growth: 28.99, business: 59.99 };
-const VIDEOS: Record<PlanId, number> = { starter: 15, growth: 30, business: 60 };
+// Narx va funksiyalar backend bilan bir xil: services/billing.py (PLAN_PRICES_USD, PLAN_FEATURES), models/video.py
+const PRICES: Record<PlanId, string> = { starter: '20', growth: '49.90', business: '79.99' };
 
 const T = {
   ru: {
@@ -26,13 +26,29 @@ const T = {
     connect: 'Подключить', pending: 'Заявка отправлена', pendingNote: (p: string) => `Заявка на тариф ${p} отправлена. Мы свяжемся с вами для оплаты.`,
     expired: 'Срок действия закончился — видео и посты не создаются. Выберите тариф.',
     daysLeft: (n: number) => `осталось ${n} дн.`, reqError: 'Не удалось отправить заявку, попробуйте ещё раз',
-    cadence: { starter: 'каждые 2 дня', growth: 'каждый день', business: '2 в день' } as Record<PlanId, string>,
-    features: (p: PlanId) => [
-      `${VIDEOS[p]} AI-видео в месяц (${T.ru.cadence[p]}) — Reels + Stories`,
-      'Ежедневный пост в Instagram и Telegram с картинкой',
-      'AI отвечает на комментарии и сообщения клиентов',
-      'Товары, заказы и уведомления',
-    ],
+    features: (p: PlanId) => ({
+      starter: [
+        '15 AI-видео и 15 постов в месяц',
+        'Через день: день видео, день пост',
+        '1 платформа на выбор — Instagram или Telegram',
+        'AI отвечает клиентам, товары и заказы',
+      ],
+      growth: [
+        'Каждый день: 1 AI-видео + 1 пост',
+        'Instagram и Telegram вместе',
+        'Анализ бизнеса и конкурентов',
+        'Kaspi, Wildberries, Uzum — все 3 маркетплейса',
+        'Все функции Operon',
+      ],
+      business: [
+        'Каждый день: 2 AI-видео + 3 поста',
+        '3 поста в день в Instagram и Telegram',
+        'Все функции + все 3 маркетплейса',
+        'Новости Operon и ранний доступ к новым функциям',
+        'Прямой контакт владельца Operon',
+      ],
+    }[p]),
+    ownerContact: 'Контакт владельца Operon',
     error: 'Не удалось загрузить данные тарифа',
   },
   kk: {
@@ -43,13 +59,29 @@ const T = {
     connect: 'Қосу', pending: 'Өтінім жіберілді', pendingNote: (p: string) => `${p} тарифіне өтінім жіберілді. Төлем үшін сізбен хабарласамыз.`,
     expired: 'Мерзім аяқталды — бейне мен посттар жасалмайды. Тариф таңдаңыз.',
     daysLeft: (n: number) => `${n} күн қалды`, reqError: 'Өтінім жіберілмеді, қайта көріңіз',
-    cadence: { starter: '2 күнде 1', growth: 'күн сайын', business: 'күніне 2' } as Record<PlanId, string>,
-    features: (p: PlanId) => [
-      `Айына ${VIDEOS[p]} AI-бейне (${T.kk.cadence[p]}) — Reels + Stories`,
-      'Instagram мен Telegram-ға күн сайын суретті пост',
-      'AI клиенттердің пікірлері мен хабарларына жауап береді',
-      'Тауарлар, тапсырыстар және хабарламалар',
-    ],
+    features: (p: PlanId) => ({
+      starter: [
+        'Айына 15 AI-бейне және 15 пост',
+        'Күн аралатып: бір күн бейне, бір күн пост',
+        'Таңдауыңызша 1 платформа — Instagram немесе Telegram',
+        'AI клиенттерге жауап береді, тауарлар мен тапсырыстар',
+      ],
+      growth: [
+        'Күн сайын: 1 AI-бейне + 1 пост',
+        'Instagram және Telegram бірге',
+        'Бизнес пен бәсекелестер талдауы',
+        'Kaspi, Wildberries, Uzum — 3 маркетплейс',
+        'Operon-ның барлық мүмкіндіктері',
+      ],
+      business: [
+        'Күн сайын: 2 AI-бейне + 3 пост',
+        'Instagram мен Telegram-ға күніне 3 пост',
+        'Барлық мүмкіндік + 3 маркетплейс',
+        'Operon жаңалықтары және жаңа мүмкіндіктерге алғашқы қолжетімділік',
+        'Operon иесімен тікелей байланыс',
+      ],
+    }[p]),
+    ownerContact: 'Operon иесінің байланысы',
     error: 'Тариф деректері жүктелмеді',
   },
 };
@@ -143,6 +175,12 @@ export const SubscriptionPlanView: React.FC<SubscriptionPlanViewProps> = ({ onBa
               <div className="flex justify-between text-[12px] font-semibold"><span>{L.posts}</span><span>{usage.posts_used} / {usage.posts_limit}</span></div>
               {bar(usage.posts_used, usage.posts_limit)}
             </div>
+          </div>
+        )}
+
+        {usage?.owner_contact && (
+          <div className="bg-purple-50 border border-purple-200 text-purple-900 rounded-2xl p-3 text-[12px] font-semibold">
+            {L.ownerContact}: {usage.owner_contact}
           </div>
         )}
 

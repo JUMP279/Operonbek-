@@ -7,17 +7,19 @@ import { api, ApiError, ContentLang, PostPlan, PostPlanItem } from '../lib/api';
 // oldindan tayyorlanadi; ҚАЗ/РУС bilan til almashtiriladi.
 const T = {
   ru: {
-    intro: 'Каждый день 1 пост в Instagram и Telegram. AI заранее готовит текст и картинку — вы видите их до публикации.',
+    intro: 'Посты в Instagram и Telegram по вашему тарифу. AI заранее готовит текст и картинку — вы видите их до публикации.',
+    cadence: (c?: { every_days: number; per_day: number }) => !c ? '' : c.every_days === 2 ? 'Через день (в дни без видео)' : c.per_day > 1 ? `${c.per_day} поста в день` : 'Каждый день',
     time: 'Время публикации', start: 'Запустить план', starting: 'Создаём план…',
-    daily: (t: string) => `Каждый день в ${t}`, stop: 'Остановить план', stopConfirm: 'Точно остановить? Будущие посты удалятся.',
+    daily: (t: string) => `Начало в ${t}`, stop: 'Остановить план', stopConfirm: 'Точно остановить? Будущие посты удалятся.',
     preparing: 'AI готовит пост…', pending: 'Пост появится после выхода предыдущего',
     ready: 'Готов — выйдет по расписанию', published: 'Опубликовано', failed: 'Не получилось', draft: 'Черновик',
     other: 'Другой вариант', errors: { network: 'Нет связи с сервером', generic: 'Что-то пошло не так. Попробуйте ещё раз.', busy: 'Пост уже публикуется — изменить нельзя' },
   },
   kk: {
-    intro: 'Күн сайын Instagram мен Telegram-ға 1 пост. AI мәтін мен суретті алдын ала дайындайды — жарияланғанға дейін көресіз.',
+    intro: 'Тарифіңіз бойынша Instagram мен Telegram-ға посттар. AI мәтін мен суретті алдын ала дайындайды — жарияланғанға дейін көресіз.',
+    cadence: (c?: { every_days: number; per_day: number }) => !c ? '' : c.every_days === 2 ? 'Күн аралатып (бейне жоқ күндері)' : c.per_day > 1 ? `Күніне ${c.per_day} пост` : 'Күн сайын',
     time: 'Жариялау уақыты', start: 'Жоспарды бастау', starting: 'Жоспар жасалуда…',
-    daily: (t: string) => `Күн сайын ${t}`, stop: 'Жоспарды тоқтату', stopConfirm: 'Шынымен тоқтатасыз ба? Болашақ посттар өшеді.',
+    daily: (t: string) => `Басталуы ${t}`, stop: 'Жоспарды тоқтату', stopConfirm: 'Шынымен тоқтатасыз ба? Болашақ посттар өшеді.',
     preparing: 'AI пост дайындап жатыр…', pending: 'Пост алдыңғысы шыққаннан кейін дайын болады',
     ready: 'Дайын — кесте бойынша шығады', published: 'Жарияланды', failed: 'Шықпады', draft: 'Жоба',
     other: 'Басқа нұсқа', errors: { network: 'Сервермен байланыс жоқ', generic: 'Бірдеңе дұрыс болмады. Қайталап көріңіз.', busy: 'Пост жариялануда — өзгерту мүмкін емес' },
@@ -173,7 +175,7 @@ export const PostPlanPanel: React.FC<{ businessId: string; lang: 'ru' | 'kk' }> 
 
       {active && (
         <div className="bg-white border border-slate-200/90 rounded-2xl p-3 flex items-center justify-between gap-2">
-          <p className="text-[12px] font-bold flex items-center gap-1.5"><Clock className="w-4 h-4 text-purple-600" />{L.daily(plan.settings?.time || time)}</p>
+          <p className="text-[12px] font-bold flex items-center gap-1.5"><Clock className="w-4 h-4 text-purple-600" />{L.cadence(plan.cadence)}{plan.cadence ? ' · ' : ''}{L.daily(plan.settings?.time || time)}</p>
           {confirmStop ? (
             <button onClick={stop} className="text-[10.5px] font-bold text-rose-600">{L.stopConfirm}</button>
           ) : (
