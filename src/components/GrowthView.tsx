@@ -53,7 +53,7 @@ export const GrowthView: React.FC<{ onBack?: () => void; storeContext?: { busine
             <div className="p-3.5 rounded-2xl bg-slate-900 text-white">
               <div className="flex items-center justify-between text-[12px] text-white/60"><span>{ru ? 'Выполнено' : 'Орындалды'}</span><b className="text-white text-[15px]">{data.done}/{data.total}</b></div>
               <div className="mt-2 h-2 rounded-full bg-white/10 overflow-hidden"><div className="h-full rounded-full bg-emerald-400" style={{ width: `${(data.done / Math.max(1, data.total)) * 100}%` }} /></div>
-              <p className="mt-2 text-[11px] text-white/60 leading-snug">{ru ? 'План на основе 11 видео и подкастов о продвижении. Operon уже пишет контент по этим правилам.' : 'Жылжыту туралы 11 видео мен подкаст негізіндегі жоспар. Operon контентті осы ережелермен жазады.'}</p>
+              <p className="mt-2 text-[11px] text-white/60 leading-snug">{ru ? 'План на основе 27 видео и интервью (блогеры СНГ, глава Instagram, MrBeast, Hormozi, GaryVee и др.). Operon уже пишет контент по этим правилам.' : '27 видео мен сұхбат негізіндегі жоспар (ТМД блогерлері, Instagram басшысы, MrBeast, Hormozi, GaryVee т.б.). Operon контентті осы ережелермен жазады.'}</p>
             </div>
             {groups.map((g) => {
               const items = data.items.filter((i) => i.group === g.id);
