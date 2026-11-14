@@ -74,6 +74,7 @@ const T = {
     preparing: 'AI пишет сценарий…',
     ready: 'Видео готово — выйдет по расписанию', published: 'Опубликовано', failed: 'Не получилось',
     scenario: 'Сценарий', other: 'Другой вариант',
+    videoLang: 'Язык видео (озвучка и субтитры)', langKk: 'Қазақша', langRu: 'Русский',
     askTitle: 'Как мне сделать это видео?',
     askPh: 'Напишите своё пожелание… (можно оставить пустым)',
     byWish: 'Сделать по-моему', byAi: 'Придумай сам', cancel: 'Отмена', writing: 'Пишем новый сценарий…',
@@ -115,6 +116,7 @@ const T = {
     preparing: 'AI сценарий жазуда…',
     ready: 'Бейне дайын — кесте бойынша шығады', published: 'Жарияланды', failed: 'Шықпады',
     scenario: 'Сценарий', other: 'Басқа нұсқа',
+    videoLang: 'Бейне тілі (дыбыс пен субтитр)', langKk: 'Қазақша', langRu: 'Русский',
     askTitle: 'Бұл бейнені қалай жасайын?',
     askPh: 'Тілегіңізді жазыңыз… (бос қалдыруға болады)',
     byWish: 'Менің айтқанымдай', byAi: 'Өзің ойлап тап', cancel: 'Бас тарту', writing: 'Жаңа сценарий жазылуда…',
@@ -795,11 +797,15 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
                   )}
 
                   {it.video_url && (
-                    <video src={it.video_url} controls playsInline preload="metadata" className="w-full max-w-[220px] mx-auto aspect-[9/16] rounded-xl bg-black" />
+                    <>
+                      <video src={it.video_url} controls playsInline preload="metadata" className="w-full max-w-[220px] mx-auto aspect-[9/16] rounded-xl bg-black" />
+                      <p className="text-[11px] text-slate-500 text-center">{L.videoLang}: <b className="text-slate-700">{(it.lang || 'kk') === 'ru' ? L.langRu : L.langKk}</b></p>
+                    </>
                   )}
 
                   {it.status === 'draft' && it.scenario && (
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[11px] font-semibold text-slate-500">{L.videoLang}:</span>
                       {(['kk', 'ru'] as const).map((l) => (
                         <button key={l} onClick={() => switchLang(it, l)} disabled={langBusy === it.id}
                           className={`px-3 py-1 rounded-lg text-[11px] font-black border active:scale-95 ${
