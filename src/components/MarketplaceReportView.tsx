@@ -4,6 +4,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { api, MarketplaceReport, MpOrdersBlock, WbFunnel } from '../lib/api';
 import { formatDay, formatMoney, formatNumber } from '../lib/format';
 import { MarketplaceConnectCard } from './MarketplaceConnectCard';
+import { MpCardsPanel, MpGuidePanel, MpLinksPanel, MpReviewsPanel } from './MarketplaceTools';
 
 // Marketplace hisoboti (2026-11-14) — saytdagi "Маркетплейсы" bilan bir manba: GET /marketplaces/{id}/report.
 // Kaspi/WB/Uzum buyurtmalari + WB voronkasi (ko'rish → savat → buyurtma → sotib olish).
@@ -37,6 +38,7 @@ export const MarketplaceReportView: React.FC<{ onBack?: () => void; storeContext
   const businessId = storeContext?.businessId;
   const [days, setDays] = useState(30);
   const [tab, setTab] = useState<'all' | Src>('all');
+  const [section, setSection] = useState<'report' | 'reviews' | 'cards' | 'links' | 'guide'>('report');
   const [data, setData] = useState<MarketplaceReport | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -67,7 +69,19 @@ export const MarketplaceReportView: React.FC<{ onBack?: () => void; storeContext
           <Stat label={ru ? 'Выручка' : 'Түсім'} value={formatMoney(b.totals.revenue, cur, lang)} />
           <Stat label={ru ? 'Средний чек' : 'Орташа чек'} value={b.totals.avg_check != null ? formatMoney(b.totals.avg_check, cur, lang) : '—'} />
           <Stat label={ru ? 'Отмены' : 'Бас тарту'} value={b.totals.cancel_pct != null ? `${b.totals.cancel_pct}%` : '—'} />
+          {s === 'wb' && (
+            <>
+              <Stat label={ru ? 'Выкуплено' : 'Сатып алынды'} value={`${formatNumber(b.totals.bought || 0, lang)}${b.totals.buyout_pct != null ? ` · ${b.totals.buyout_pct}%` : ''}`} />
+              <Stat label={ru ? 'Возвраты / в пути' : 'Қайтару / жолда'} value={`${b.totals.returned || 0} / ${b.totals.in_transit ?? 0}`} />
+            </>
+          )}
         </div>
+        {s === 'wb' && (
+          <p className="text-[10.5px] text-slate-400 leading-snug px-1">
+            {ru ? `Выручка WB — только выкупленные товары (отчёт «Продажи»). Сумма всех заказов: ${formatMoney(b.totals.ordered_revenue || 0, cur, lang)}.`
+              : `WB түсімі — тек сатып алынған тауарлар («Сатылымдар» есебі). Барлық тапсырыс сомасы: ${formatMoney(b.totals.ordered_revenue || 0, cur, lang)}.`}
+          </p>
+        )}
         <div className="p-3 bg-white rounded-2xl border border-slate-200">
           <div className="text-[11px] font-bold text-slate-500 mb-2">{ru ? 'Заказы по дням' : 'Күндер бойынша тапсырыс'}</div>
           <Bars values={b.series.map((x) => x.orders)} color={COLOR[s]} />
@@ -80,7 +94,7 @@ export const MarketplaceReportView: React.FC<{ onBack?: () => void; storeContext
             <div key={p.title} className="px-3 py-2.5 flex items-center gap-2">
               <div className="min-w-0 flex-1">
                 <div className="text-[12.5px] font-semibold text-slate-900 truncate">{p.title}</div>
-                <div className="text-[10.5px] text-slate-500">{ru ? 'с' : 'бастап'} {p.first_order ? formatDay(p.first_order, lang) : '—'} · {p.units} {ru ? 'шт' : 'дана'}{p.cancel_pct ? ` · ${ru ? 'отмен' : 'бас тарту'} ${p.cancel_pct}%` : ''}</div>
+                <div className="text-[10.5px] text-slate-500">{ru ? 'с' : 'бастап'} {p.first_order ? formatDay(p.first_order, lang) : '—'} · {p.units} {ru ? 'шт' : 'дана'}{p.cancel_pct ? ` · ${ru ? 'отмен' : 'бас тарту'} ${p.cancel_pct}%` : ''}{s === 'wb' && p.bought != null ? ` · ${ru ? 'выкуп' : 'сатып алу'} ${p.bought}` : ''}{p.product_id ? ' · 🔗' : ''}</div>
               </div>
               <div className="text-right">
                 <div className="text-[12.5px] font-black tabular-nums">{p.orders}</div>
@@ -157,6 +171,20 @@ export const MarketplaceReportView: React.FC<{ onBack?: () => void; storeContext
         <button onClick={() => load(true)} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100"><RefreshCw className={`w-4 h-4 text-slate-600 ${loading ? 'animate-spin' : ''}`} /></button>
       </div>
       <div className="flex gap-1.5 overflow-x-auto no-scrollbar px-4 pb-2">
+        {([['report', ru ? 'Отчёт' : 'Есеп'], ['reviews', ru ? 'Отзывы' : 'Пікірлер'], ['cards', ru ? 'Карточки' : 'Карточкалар'], ['links', ru ? 'Связки' : 'Байланыстар'], ['guide', ru ? 'Правила' : 'Ережелер']] as const).map(([k, label]) => (
+          <button key={k} onClick={() => setSection(k)} className={`px-3 py-1.5 rounded-xl text-[12px] font-bold whitespace-nowrap ${section === k ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'}`}>{label}</button>
+        ))}
+      </div>
+      {section !== 'report' && businessId && (
+        <div className="flex-1 overflow-y-auto px-4 pb-6 no-scrollbar">
+          {section === 'reviews' && <MpReviewsPanel businessId={businessId} l={lang} />}
+          {section === 'cards' && <MpCardsPanel businessId={businessId} l={lang} />}
+          {section === 'links' && <MpLinksPanel businessId={businessId} l={lang} />}
+          {section === 'guide' && <MpGuidePanel businessId={businessId} l={lang} />}
+        </div>
+      )}
+      {section === 'report' && <>
+      <div className="flex gap-1.5 overflow-x-auto no-scrollbar px-4 pb-2">
         {(['all', ...srcs] as const).map((s) => (
           <button key={s} onClick={() => setTab(s)} className={`px-3 py-1.5 rounded-full text-[11.5px] font-semibold whitespace-nowrap border ${tab === s ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-600 border-slate-200'}`}>
             {s === 'all' ? (ru ? 'Все' : 'Барлығы') : NAME[s]}{s !== 'all' && data?.sources[s].connected ? ' •' : ''}
@@ -201,6 +229,7 @@ export const MarketplaceReportView: React.FC<{ onBack?: () => void; storeContext
           </>
         )}
       </div>
+      </>}
     </div>
   );
 };

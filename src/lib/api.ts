@@ -736,6 +736,36 @@ export const api = {
       method: 'POST', body: JSON.stringify({ version, cross_border: true }),
     }),
 
+  // Marketplace: sharhlar, kartochka generatori, bog'lanishlar (2026-11-15) — services/mp_reviews.py, mp_cards.py, mp_links.py
+  mpReviews: (businessId: string, refresh = false) =>
+    request<MpReviews>(`/marketplaces/${encodeURIComponent(businessId)}/reviews${refresh ? '?refresh=true' : ''}`),
+  mpReviewDraft: (businessId: string, r: MpReview, lang: 'ru' | 'kk') =>
+    request<{ text: string }>(`/marketplaces/${encodeURIComponent(businessId)}/reviews/draft`, {
+      method: 'POST',
+      body: JSON.stringify({ id: r.id, source: r.source, rating: r.rating || 0, text: r.text || '', pros: r.pros || '',
+        cons: r.cons || '', author: r.author, product: r.product, lang }),
+    }),
+  mpReviewAnswer: (businessId: string, id: string, text: string) =>
+    request<{ ok: boolean }>(`/marketplaces/${encodeURIComponent(businessId)}/reviews/answer`, {
+      method: 'POST', body: JSON.stringify({ id, text }),
+    }),
+  mpGuide: (businessId: string) => request<MpGuide>(`/marketplaces/${encodeURIComponent(businessId)}/guide`),
+  mpCards: (businessId: string, productId: string) =>
+    request<{ cards: Partial<Record<'kaspi' | 'wb' | 'uzum', MpCard>> }>(`/marketplaces/${encodeURIComponent(businessId)}/cards/${encodeURIComponent(productId)}`),
+  mpCardGenerate: (businessId: string, productId: string, platform: 'kaspi' | 'wb' | 'uzum', extra = '', images = true) =>
+    request<{ card: MpCard }>(`/marketplaces/${encodeURIComponent(businessId)}/cards/${encodeURIComponent(productId)}`, {
+      method: 'POST', body: JSON.stringify({ platform, extra, images }),
+    }),
+  mpLinks: (businessId: string) => request<MpLinks>(`/marketplaces/${encodeURIComponent(businessId)}/links`),
+  mpLinkSet: (businessId: string, productId: string, source: 'kaspi' | 'wb' | 'uzum', skus: string[]) =>
+    request<MpLinks>(`/marketplaces/${encodeURIComponent(businessId)}/links/${encodeURIComponent(productId)}`, {
+      method: 'PUT', body: JSON.stringify({ source, skus }),
+    }),
+  mpStockSync: (businessId: string, source: 'kaspi' | 'wb' | 'uzum', on: boolean) =>
+    request<MpLinks>(`/marketplaces/${encodeURIComponent(businessId)}/stock-sync`, {
+      method: 'PUT', body: JSON.stringify({ source, on }),
+    }),
+
   // Marketplace hisoboti (2026-11-14): buyurtmalar + WB voronkasi — services/marketplace_report.py
   marketplaceReport: (businessId: string, days = 30, refresh = false) =>
     request<MarketplaceReport>(`/marketplaces/${encodeURIComponent(businessId)}/report?days=${days}${refresh ? '&refresh=true' : ''}`),
@@ -795,8 +825,11 @@ export interface MpOrdersBlock {
   last_error: string | null;
   connected_at?: string | null;
   currency: string | null;
-  totals: { orders: number; units: number; revenue: number; cancelled: number; sold: number; avg_check: number | null; cancel_pct: number | null };
-  products: { title: string; orders: number; units: number; revenue: number; cancelled: number; cancel_pct: number | null; first_order: string; last_order: string }[];
+  totals: { orders: number; units: number; revenue: number; cancelled: number; sold: number; avg_check: number | null; cancel_pct: number | null;
+    /** WB: haqiqiy sotib olish (Продажи API), qaytarish, yo'ldagi buyurtmalar, buyurtma summasi */
+    bought?: number; returned?: number; ordered_revenue?: number; buyout_pct?: number | null; in_transit?: number | null };
+  products: { title: string; orders: number; units: number; revenue: number; cancelled: number; cancel_pct: number | null; first_order: string; last_order: string;
+    bought?: number; returned?: number; buyout_pct?: number | null; product_id?: string | null }[];
   series: { date: string; orders: number; revenue: number; cancelled: number }[];
 }
 
@@ -1319,4 +1352,44 @@ export interface Analytics {
   conversations: { people: number; new_people: number; by_platform: Record<string, number>; customer_messages: number; ai_replies: number; operator_replies: number };
   sales: { orders: number; inquiries: number; revenue: number; buyers: number; conversion: number | null; avg_check: number | null; products_active: number };
   series: { date: string; posts: number; videos: number; conversations: number; orders: number; inquiries: number }[];
+}
+
+export interface MpReview {
+  id: string; source: 'wb' | 'kaspi'; rating: number; text: string; pros: string; cons: string;
+  author: string | null; date: string | null; product: string | null; sku: string | null;
+  photos: string[]; answered: boolean; answer: string | null; can_reply: boolean; link?: string;
+}
+export interface MpReviews {
+  items: MpReview[];
+  sources: Record<'wb' | 'kaspi' | 'uzum', { ok: boolean; error?: string; unanswered?: number; products?: number; count?: number }>;
+  summary?: { total: number; avg: number | null; negative: number; unanswered: number; top_complaints: string[] };
+  generated_at: string;
+}
+export interface MpCardIssue { kind: string; word: string; hint: string; field?: string }
+export interface MpCard {
+  platform: 'kaspi' | 'wb' | 'uzum';
+  title: Record<string, string>;
+  description: Record<string, string>;
+  short_keywords?: Record<string, string>;
+  keywords: string[];
+  characteristics: { name: string; value: string }[];
+  faq: { q: string; a: string }[];
+  slides: { kind: string; headline: string; bullets: string[] }[];
+  main_benefit: string;
+  photo_tips: string[];
+  ask_seller: string[];
+  lint: MpCardIssue[];
+  images?: string[];
+  images_error?: string;
+  generated_at: string;
+  product_name?: string;
+}
+export interface MpGuide {
+  platforms: Record<'kaspi' | 'wb' | 'uzum', { name: string; langs: string[]; title_max: number; title_rule: string;
+    photo: { min: number; max: number; size: string; main: string }; video: string; moderation: string; tips: string[] }>;
+  infographic: string[]; reviews: string[]; description: string[];
+}
+export interface MpLinks {
+  items: { id: string; name: string; stock: number | null; kaspi: string[]; wb: string[]; uzum: string[]; auto: boolean }[];
+  stock_sync: Record<'kaspi' | 'wb' | 'uzum', boolean>;
 }
