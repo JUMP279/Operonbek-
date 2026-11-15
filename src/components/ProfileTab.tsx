@@ -28,6 +28,7 @@ import { UserAvatarIcon } from './UserAvatar';
 import { useLanguage } from '../context/LanguageContext';
 import { InstagramConnectCard } from './InstagramConnectCard';
 import { TelegramConnectCard } from './TelegramConnectCard';
+import { TelegramBusinessCard } from './TelegramBusinessCard';
 import { LogoCard } from './LogoCard';
 import { ToolDetailView } from './ToolDetailView';
 import { AvatarQuickMenuModal } from './AvatarQuickMenuModal';
@@ -334,6 +335,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
       {/* Instagram ulash (real) */}
       <InstagramConnectCard businessId={storeContext?.businessId} />
       <TelegramConnectCard businessId={storeContext?.businessId} />
+      <TelegramBusinessCard businessId={storeContext?.businessId} />
 
       {/* Logotip — post rasmlarida chiqadi */}
       <LogoCard businessId={storeContext?.businessId} />

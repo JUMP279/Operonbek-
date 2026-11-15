@@ -193,6 +193,11 @@ export const SubscriptionPlanView: React.FC<SubscriptionPlanViewProps> = ({ onBa
               {currentId === p && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">{L.active}</span>}
             </div>
             <p className="text-[20px] font-black">${PRICES[p]} <span className="text-[12px] font-semibold text-slate-500">{L.perMonth}</span></p>
+            {usage?.state !== 'paid' && !expired && (
+              <p className="inline-flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-bold px-2.5 py-1">
+                🎁 {lang === 'kk' ? 'Алғашқы 14 күн — тегін' : 'Первые 14 дней — бесплатно'}
+              </p>
+            )}
             <ul className="space-y-1">
               {L.features(p).map((f) => (
                 <li key={f} className="text-[12px] text-slate-600 flex gap-1.5"><Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />{f}</li>

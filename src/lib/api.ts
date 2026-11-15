@@ -556,6 +556,10 @@ export const api = {
   conversations: (businessId: string) =>
     request<{ conversations: Conversation[]; counts?: ConvCounts }>(`/business/${encodeURIComponent(businessId)}/conversations`),
 
+  // Telegram Business (services/tg_business.py): AI egasining shaxsiy akkaunti nomidan javob beradi
+  telegramBusiness: (businessId: string) =>
+    request<TelegramBusinessState>(`/business/${encodeURIComponent(businessId)}/telegram-business`),
+
   // Voronka + javob vaqti (services/conv_insights.py)
   conversationInsights: (businessId: string, days: 7 | 30 | 90 = 30) =>
     request<ConvInsights>(`/business/${encodeURIComponent(businessId)}/conversations/insights?days=${days}`),
@@ -1022,6 +1026,16 @@ export interface Conversation {
   deal?: ConversationDeal | null;
   /** Joriy holat (services/conv_insights.py): muammoli / tiqilib qolgan / javob kutmoqda / ... */
   status_info?: ConvStatusInfo;
+}
+
+export interface TelegramBusinessState {
+  connected: boolean;
+  can_reply: boolean;
+  user_name: string | null;
+  username: string | null;
+  connected_at: string | null;
+  owner_linked: boolean;
+  bot_username: string;
 }
 
 export type ConvStatusKey = 'problem' | 'stuck' | 'waiting' | 'hot' | 'live' | 'active' | 'sleeping';
