@@ -12,8 +12,8 @@ import {
   X,
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
-import { api, ApiError, PriceRules, Product } from '../lib/api';
-import { catalogText, ImportCatalogSheet, PriceRulesCard } from './CatalogTools';
+import { api, ApiError, Product } from '../lib/api';
+import { catalogText, ImportCatalogSheet } from './CatalogTools';
 import { formatMoney } from '../lib/format';
 
 export interface ProductsManagerViewProps {
@@ -62,11 +62,13 @@ interface Form {
   discount: string;
   /** Savdolashishda eng past narx (services/price_guard.py) */
   floor: string;
+  /** Savdolashish: necha foizgacha tushish mumkin */
+  bargain: string;
 }
 
 const MAX_PHOTOS = 4;
 
-const EMPTY: Form = { id: null, name: '', price: '', description: '', stock: '', images: [], is_active: true, discount: '', floor: '' };
+const EMPTY: Form = { id: null, name: '', price: '', description: '', stock: '', images: [], is_active: true, discount: '', floor: '', bargain: '' };
 
 // Chegirmali narx — backend (services/pricing.py) bilan bir xil: 10 ga yaxlitlanadi
 const salePrice = (price: number, pct: number) => Math.round((price * (100 - pct)) / 100 / 10) * 10 || price;
@@ -86,14 +88,9 @@ export const ProductsManagerView: React.FC<ProductsManagerViewProps> = ({ onBack
   const [uploading, setUploading] = useState(false);
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const [rules, setRules] = useState<PriceRules | null>(null);
   const [importing, setImporting] = useState(false);
   const [notice, setNotice] = useState('');
   const C = catalogText(lang);
-  useEffect(() => {
-    if (businessId) api.priceRules(businessId).then(setRules).catch(() => setRules(null));
-  }, [businessId]);
-  const saveRules = async (r: PriceRules) => { if (businessId) setRules(await api.savePriceRules(businessId, r)); };
 
   const errText = (e: unknown) => (e instanceof ApiError && e.status === 0 ? L.errors.network : L.errors.generic);
 
@@ -117,7 +114,7 @@ export const ProductsManagerView: React.FC<ProductsManagerViewProps> = ({ onBack
       id: p.id, name: p.name, price: p.price != null ? String(p.price) : '', description: p.description || '',
       stock: p.stock != null ? String(p.stock) : '', images: p.images?.length ? p.images : (p.image_url ? [p.image_url] : []), is_active: p.is_active,
       discount: p.discount_percent ? String(p.discount_percent) : '',
-      floor: rules?.floors?.[p.id] ? String(rules.floors[p.id]) : '',
+      floor: p.min_price ? String(p.min_price) : '', bargain: p.bargain_percent ? String(p.bargain_percent) : '',
     });
 
   const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -150,6 +147,11 @@ export const ProductsManagerView: React.FC<ProductsManagerViewProps> = ({ onBack
       setError(L.discountBad);
       return;
     }
+    const bp = form.bargain.trim() ? parseInt(form.bargain, 10) : 0;
+    if (Number.isNaN(bp) || bp < 0 || bp > 50) {
+      setError(lang === 'kk' ? 'Саудаласу — 0-ден 50%-ға дейін' : 'Торг — от 0 до 50%');
+      return;
+    }
     setSaving(true);
     setError('');
     const body = {
@@ -160,16 +162,11 @@ export const ProductsManagerView: React.FC<ProductsManagerViewProps> = ({ onBack
       stock: Math.max(0, parseInt(form.stock, 10) || 0),
       is_active: form.is_active,
       discount_percent: pct,
+      bargain_percent: bp,
+      min_price: bp ? (parseInt(form.floor, 10) || 0) : 0,
     };
     try {
       const res = form.id ? await api.updateProduct(form.id, body) : await api.createProduct(businessId, body);
-      const pid = (res as { product?: Product })?.product?.id || form.id;
-      const fl = parseInt(form.floor, 10) || 0;
-      if (rules && pid && (rules.floors[pid] || 0) !== fl) {
-        const floors = { ...rules.floors };
-        if (fl > 0) floors[pid] = fl; else delete floors[pid];
-        await saveRules({ ...rules, floors }).catch(() => {});
-      }
       setForm(null);
       await load();
       if (pct > 0 && (res as { discount_saved?: boolean })?.discount_saved === false) setError(L.discountNotSaved);
@@ -236,7 +233,6 @@ export const ProductsManagerView: React.FC<ProductsManagerViewProps> = ({ onBack
                 <FileSpreadsheet className="w-4 h-4" />{C.importBtn}
               </button>
             </div>
-            {items && items.length > 0 && <PriceRulesCard lang={lang} rules={rules} onChange={saveRules} />}
 
             {items === null && (
               <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 text-purple-600 animate-spin" /></div>
@@ -323,15 +319,31 @@ export const ProductsManagerView: React.FC<ProductsManagerViewProps> = ({ onBack
                 </p>
               );
             })()}
-            {rules?.bargain && (
-              <div className="space-y-1">
-                <p className="text-[11px] font-bold text-slate-500">{lang === 'kk' ? 'Саудаласудағы ең төменгі баға' : 'Минимальная цена при торге'}</p>
-                <input value={form.floor} inputMode="numeric" maxLength={12}
-                  placeholder={lang === 'kk' ? `берілмеген — −${rules.max_discount}%-ға дейін` : `не задана — до −${rules.max_discount}%`}
-                  onChange={(e) => setForm({ ...form, floor: e.target.value.replace(/\D/g, '') })} className={input} />
-                <p className="text-[10.5px] text-slate-400">{lang === 'kk' ? 'Клиент мұны көрмейді. AI одан төмен түспейді.' : 'Клиент этого не видит. AI не опустится ниже.'}</p>
+            <div className="rounded-xl border border-slate-200 p-2.5 space-y-1.5">
+              <p className="text-[11px] font-bold text-slate-500">{lang === 'kk' ? 'Клиентпен саудаласу' : 'Торг с клиентом'}</p>
+              <p className="text-[10.5px] text-slate-400">{lang === 'kk' ? 'AI тек осы тауар бойынша және осы шекте бағаны түсіре алады. 0 — баға тұрақты.' : 'AI может уступить только по этому товару и только в этих пределах. 0 — цена фиксированная.'}</p>
+              <div className="flex gap-2">
+                <div className="space-y-1 w-24">
+                  <p className="text-[10.5px] font-bold text-slate-500">{lang === 'kk' ? 'Шегі, %' : 'До, %'}</p>
+                  <input value={form.bargain} inputMode="numeric" maxLength={2} placeholder="0"
+                    onChange={(e) => setForm({ ...form, bargain: e.target.value.replace(/\D/g, '') })} className={input} />
+                </div>
+                <div className="space-y-1 flex-1">
+                  <p className="text-[10.5px] font-bold text-slate-500">{lang === 'kk' ? 'Кемінде, ₸ (міндетті емес)' : 'Не ниже, ₸ (необязательно)'}</p>
+                  <input value={form.floor} inputMode="numeric" maxLength={12} placeholder="—" disabled={!parseInt(form.bargain || '0', 10)}
+                    onChange={(e) => setForm({ ...form, floor: e.target.value.replace(/\D/g, '') })} className={`${input} disabled:bg-slate-50`} />
+                </div>
               </div>
-            )}
+              {(() => {
+                const base = priceNum(form.price);
+                const bp = parseInt(form.bargain || '0', 10);
+                if (!base || !bp) return null;
+                const d = parseInt(form.discount || '0', 10);
+                const sp = d && d <= 90 ? salePrice(base, d) : base;
+                const low = Math.min(sp, Math.max(Math.round((sp * (100 - bp)) / 100 / 10) * 10, parseInt(form.floor || '0', 10)));
+                return <p className="text-[11px] font-semibold text-emerald-700">{lang === 'kk' ? 'Клиентке ең төмен баға' : 'Самая низкая цена для клиента'}: {formatMoney(low, currency, lang)}</p>;
+              })()}
+            </div>
             <div className="space-y-1">
               <p className="text-[11px] font-bold text-slate-500">{L.photo}</p>
               <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={onFile} />

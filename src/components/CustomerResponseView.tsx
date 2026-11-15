@@ -27,13 +27,14 @@ export interface CustomerResponseViewProps {
   storeContext?: { businessId?: string };
 }
 
-type Tab = 'hot' | 'attention' | 'comments' | 'direct' | 'funnel' | 'tone';
+type Tab = 'hot' | 'attention' | 'comments' | 'direct' | 'telegram' | 'funnel' | 'tone';
 
 const T = {
   ru: {
-    title: 'Ответы клиентам', comments: 'Комментарии', direct: 'Сообщения', tone: 'Тон AI',
+    title: 'Ответы клиентам', comments: 'Комментарии', direct: 'Direct', telegram: 'Telegram', tone: 'Тон AI',
+    emptyTelegram: 'Сообщений в Telegram пока нет. Когда клиент напишет вашему боту или в личный Telegram (Business), диалог появится здесь.',
     emptyComments: 'Комментариев пока нет. Когда клиенты прокомментируют посты в Instagram, AI ответит и они появятся здесь.',
-    emptyDirect: 'Сообщений пока нет. Когда клиенты напишут в Instagram Direct или Telegram-бот, диалоги появятся здесь.',
+    emptyDirect: 'Сообщений в Direct пока нет. Когда клиент напишет в Instagram Direct, диалог появится здесь.',
     customer: 'Клиент', ai: 'AI', operator: 'Вы', aiOn: 'AI отвечает', aiOff: 'Отвечаете вы',
     aiHint: 'Выключите, чтобы отвечать клиенту самим.', placeholder: 'Написать ответ…', sent: 'Отправлено',
     notSent: 'Ответ сохранён, но не доставлен: проверьте подключение Instagram/Telegram.',
@@ -50,9 +51,10 @@ const T = {
     errors: { network: 'Нет связи с сервером', generic: 'Что-то пошло не так. Попробуйте ещё раз.' },
   },
   kk: {
-    title: 'Клиенттерге жауап', comments: 'Пікірлер', direct: 'Хабарлар', tone: 'AI үні',
+    title: 'Клиенттерге жауап', comments: 'Пікірлер', direct: 'Direct', telegram: 'Telegram', tone: 'AI үні',
+    emptyTelegram: 'Telegram-да әзірге хабар жоқ. Клиент ботқа немесе жеке Telegram-ға (Business) жазғанда, диалог осында көрінеді.',
     emptyComments: 'Әзірге пікір жоқ. Клиенттер Instagram посттарына пікір жазғанда AI жауап береді және олар осында көрінеді.',
-    emptyDirect: 'Әзірге хабар жоқ. Клиенттер Instagram Direct немесе Telegram-ботқа жазғанда, диалогтар осында көрінеді.',
+    emptyDirect: 'Direct-те әзірге хабар жоқ. Клиент Instagram Direct-ке жазғанда, диалог осында көрінеді.',
     customer: 'Клиент', ai: 'AI', operator: 'Сіз', aiOn: 'AI жауап береді', aiOff: 'Өзіңіз жауап бересіз',
     aiHint: 'Клиентке өзіңіз жауап беру үшін өшіріңіз.', placeholder: 'Жауап жазу…', sent: 'Жіберілді',
     notSent: 'Жауап сақталды, бірақ жеткізілмеді: Instagram/Telegram қосылымын тексеріңіз.',
@@ -139,7 +141,8 @@ export const CustomerResponseView: React.FC<CustomerResponseViewProps> = ({ onBa
   const hotCount = (convs || []).filter(isHot).length;
   const attCount = (convs || []).filter((c) => needsMe(c.status_info)).length;
   const list = (convs || [])
-    .filter((c) => (tab === 'hot' ? isHot(c) : tab === 'attention' ? needsMe(c.status_info) : tab === 'comments' ? isComment(c) : !isComment(c)))
+    .filter((c) => (tab === 'hot' ? isHot(c) : tab === 'attention' ? needsMe(c.status_info) : tab === 'comments' ? isComment(c)
+      : tab === 'direct' ? (c.platform.startsWith('instagram') && !isComment(c)) : tab === 'telegram' ? c.platform.startsWith('telegram') : true))
     .map((c) => ({ c, last: c.messages[c.messages.length - 1] }))
     .sort((a, b) => (b.last?.timestamp || b.c.created_at).localeCompare(a.last?.timestamp || a.c.created_at));
 
@@ -229,7 +232,8 @@ export const CustomerResponseView: React.FC<CustomerResponseViewProps> = ({ onBa
               { id: 'hot' as const, label: hotCount ? `${L.hot} · ${hotCount}` : L.hot, icon: <Flame className="w-3.5 h-3.5" /> },
               { id: 'attention' as const, label: attCount ? `${L.attention} · ${attCount}` : L.attention, icon: <BellRing className="w-3.5 h-3.5" /> },
               { id: 'comments' as const, label: L.comments, icon: <MessageCircle className="w-3.5 h-3.5" /> },
-              { id: 'direct' as const, label: L.direct, icon: <Send className="w-3.5 h-3.5" /> },
+              { id: 'direct' as const, label: L.direct, icon: <Instagram className="w-3.5 h-3.5" /> },
+              { id: 'telegram' as const, label: L.telegram, icon: <Send className="w-3.5 h-3.5" /> },
               { id: 'funnel' as const, label: L.funnel, icon: <BarChart3 className="w-3.5 h-3.5" /> },
               { id: 'tone' as const, label: L.tone, icon: <SlidersHorizontal className="w-3.5 h-3.5" /> },
             ]).map((t) => (
@@ -266,7 +270,7 @@ export const CustomerResponseView: React.FC<CustomerResponseViewProps> = ({ onBa
           <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 text-purple-600 animate-spin" /></div>
         )}
         {!open && tab !== 'tone' && tab !== 'funnel' && convs && list.length === 0 && (
-          <p className="text-center text-[12px] text-slate-500 py-10 px-4">{tab === 'hot' ? L.emptyHot : tab === 'attention' ? L.emptyAttention : tab === 'comments' ? L.emptyComments : L.emptyDirect}</p>
+          <p className="text-center text-[12px] text-slate-500 py-10 px-4">{tab === 'hot' ? L.emptyHot : tab === 'attention' ? L.emptyAttention : tab === 'comments' ? L.emptyComments : tab === 'telegram' ? L.emptyTelegram : L.emptyDirect}</p>
         )}
         {!open && tab === 'hot' && list.length > 0 && (
           <p className="text-[11.5px] text-orange-800 bg-orange-50 border border-orange-100 rounded-2xl px-3 py-2 leading-snug flex gap-2">

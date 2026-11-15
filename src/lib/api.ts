@@ -852,6 +852,10 @@ export interface Product {
   discount_percent?: number | null;
   /** 4 tagacha rasm (1-chisi = image_url) — services/product_images.py */
   images?: string[];
+  /** Savdolashish (services/price_guard.py): AI necha foizgacha tushishi mumkin (0 — yo'q) */
+  bargain_percent?: number;
+  /** Savdolashishda eng past narx (ixtiyoriy) */
+  min_price?: number | null;
 }
 
 export interface ProductInput {
@@ -863,6 +867,8 @@ export interface ProductInput {
   is_active?: boolean;
   discount_percent?: number;
   images?: string[];
+  bargain_percent?: number;
+  min_price?: number;
 }
 
 export type PostPlatform = 'instagram' | 'telegram' | 'both';
