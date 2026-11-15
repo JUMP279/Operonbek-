@@ -56,6 +56,7 @@ import { BusinessAnalyzeView } from './BusinessAnalyzeView';
 import { BusinessMemoryView } from './BusinessMemoryView';
 import { MarketplaceReportView } from './MarketplaceReportView';
 import { GrowthView } from './GrowthView';
+import { SupportView } from './SupportView';
 import { CustomerResponseView } from './CustomerResponseView';
 
 export interface ToolDetailViewProps {
@@ -93,6 +94,8 @@ export const ToolDetailView: React.FC<ToolDetailViewProps> = ({
         return language === 'ru' ? 'Бизнес-анализ (AI)' : 'Бизнес талдауы (AI)';
       case 'growth':
         return language === 'ru' ? 'Рост подписчиков' : 'Жазылушы өсуі';
+      case 'support':
+        return language === 'ru' ? 'Поддержка' : 'Қолдау';
       case 'marketplaces':
         return language === 'ru' ? 'Маркетплейсы' : 'Маркетплейстер';
       case 'orders-manager':
@@ -150,6 +153,10 @@ export const ToolDetailView: React.FC<ToolDetailViewProps> = ({
 
   if (toolId === 'growth') {
     return <GrowthView onBack={onBack} storeContext={storeContext} />;
+  }
+
+  if (toolId === 'support') {
+    return <SupportView onBack={onBack} storeContext={storeContext} />;
   }
 
   if (toolId === 'marketplaces') {

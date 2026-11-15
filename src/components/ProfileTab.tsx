@@ -21,7 +21,8 @@ import {
   Brain,
   MessageSquareText,
   Store,
-  Rocket
+  Rocket,
+  LifeBuoy
 } from 'lucide-react';
 import { UserProfile, Language } from '../types';
 import { UserAvatarIcon } from './UserAvatar';
@@ -184,6 +185,19 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
       badgeKk: 'Тікелей ағын',
       badgeRu: 'Живой поток',
       badgeColor: 'bg-violet-100 text-violet-700'
+    },
+    {
+      id: 'support',
+      titleKk: 'Қолдау',
+      titleRu: 'Поддержка',
+      subtitleKk: 'Operon командасына жазу',
+      subtitleRu: 'Написать команде Operon',
+      icon: <LifeBuoy className="w-4 h-4 text-purple-600" />,
+      bg: 'bg-purple-50/80',
+      border: 'border-purple-100',
+      badgeKk: 'Чат',
+      badgeRu: 'Чат',
+      badgeColor: 'bg-purple-100 text-purple-700'
     },
     {
       id: 'growth',

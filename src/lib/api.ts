@@ -564,6 +564,12 @@ export const api = {
   experiments: (businessId: string) =>
     request<Experiments>(`/growth/${encodeURIComponent(businessId)}/experiments`),
 
+  // Operon qo'llab-quvvatlashi (services/support_desk.py)
+  supportThread: (businessId: string) => request<SupportThread>(`/support/business/${encodeURIComponent(businessId)}`),
+  supportUnread: (businessId: string) => request<{ unread: number }>(`/support/business/${encodeURIComponent(businessId)}/unread`),
+  supportSend: (businessId: string, message: string) =>
+    request<{ id: string; at: string }>(`/support/business/${encodeURIComponent(businessId)}`, { method: 'POST', body: JSON.stringify({ message }) }),
+
   // Telegram Business (services/tg_business.py): AI egasining shaxsiy akkaunti nomidan javob beradi
   telegramBusiness: (businessId: string) =>
     request<TelegramBusinessState>(`/business/${encodeURIComponent(businessId)}/telegram-business`),
@@ -1074,6 +1080,11 @@ export interface Experiments {
   recent: { topic: string | null; views: number | null; format: string | null; hour: string | null; seconds: number | null; cta: string | null; at: string | null }[];
   explore_share: number;
   min_samples: number;
+}
+
+export interface SupportThread {
+  messages: { id?: string; from: 'me' | 'operon'; text: string; at?: string }[];
+  unread: number;
 }
 
 export interface TelegramBusinessState {
