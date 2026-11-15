@@ -554,7 +554,30 @@ export const api = {
 
   // Mijozlar bilan suhbatlar (Instagram izoh/Direct, Telegram)
   conversations: (businessId: string) =>
-    request<{ conversations: Conversation[] }>(`/business/${encodeURIComponent(businessId)}/conversations`),
+    request<{ conversations: Conversation[]; counts?: ConvCounts }>(`/business/${encodeURIComponent(businessId)}/conversations`),
+
+  // Voronka + javob vaqti (services/conv_insights.py)
+  conversationInsights: (businessId: string, days: 7 | 30 | 90 = 30) =>
+    request<ConvInsights>(`/business/${encodeURIComponent(businessId)}/conversations/insights?days=${days}`),
+
+  // Narx himoyasi (services/price_guard.py): savdolashish, maksimal chegirma, minimal narxlar
+  priceRules: (businessId: string) =>
+    request<PriceRules>(`/products/${encodeURIComponent(businessId)}/price-rules`),
+  savePriceRules: (businessId: string, r: PriceRules) =>
+    request<PriceRules>(`/products/${encodeURIComponent(businessId)}/price-rules`, { method: 'PUT', body: JSON.stringify(r) }),
+
+  // Katalogni fayldan yuklash (services/catalog_import.py): avval ko'rib chiqish, keyin tasdiqlash
+  importPreview: (businessId: string, file: File) => {
+    const fd = new FormData();
+    fd.append('business_id', businessId);
+    fd.append('file', file);
+    return request<ImportPreview>('/products/import/preview', { method: 'POST', body: fd });
+  },
+  importCommit: (businessId: string, rows: ImportRow[], markupPercent = 0, updateExisting = true) =>
+    request<{ added: number; updated: number; skipped: number }>('/products/import/commit', {
+      method: 'POST',
+      body: JSON.stringify({ business_id: businessId, rows, markup_percent: markupPercent, update_existing: updateExisting }),
+    }),
 
   replyConversation: (businessId: string, convId: string, text: string) =>
     request<{ ok: boolean; sent: boolean; error: string | null }>(
@@ -997,6 +1020,56 @@ export interface Conversation {
   ai_enabled?: boolean | null;
   /** Bitim bosqichi (services/customer_chat.py): ready/ordered/paid — "Готовы купить" */
   deal?: ConversationDeal | null;
+  /** Joriy holat (services/conv_insights.py): muammoli / tiqilib qolgan / javob kutmoqda / ... */
+  status_info?: ConvStatusInfo;
+}
+
+export type ConvStatusKey = 'problem' | 'stuck' | 'waiting' | 'hot' | 'live' | 'active' | 'sleeping';
+
+export interface ConvStatusInfo {
+  key: ConvStatusKey;
+  tags: ConvStatusKey[];
+  waiting_min: number | null;
+  last_at: string | null;
+  handoff_reason?: string | null;
+}
+
+export type ConvCounts = Record<ConvStatusKey | 'all', number>;
+
+export interface ConvRespBlock { n: number; avg_s: number | null; p50_s: number | null; p95_s: number | null }
+
+export interface ConvInsights {
+  days: number;
+  funnel: { started: number; interest: number; bargain: number; ready: number; ordered: number; won: number };
+  conversion_pct: number | null;
+  handoffs: number;
+  response: { ai: ConvRespBlock; operator: ConvRespBlock };
+  channels: Record<string, { started: number; ordered: number; won: number }>;
+  tracked_since: string | null;
+}
+
+export interface PriceRules {
+  bargain: boolean;
+  max_discount: number;
+  floors: Record<string, number>;
+}
+
+export interface ImportRow {
+  name: string;
+  price: number | null;
+  stock: number | null;
+  description?: string | null;
+  category?: string | null;
+  colors?: string[];
+  exists?: boolean;
+}
+
+export interface ImportPreview {
+  source: 'table' | 'text' | 'image';
+  total: number;
+  rows: ImportRow[];
+  without_price: number;
+  existing: number;
 }
 
 export interface ConversationDeal {

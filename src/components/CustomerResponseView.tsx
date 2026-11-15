@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ArrowLeft,
+  BarChart3,
+  BellRing,
   Bot,
   Check,
   Flame,
@@ -16,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { api, ApiError, Conversation } from '../lib/api';
+import { FunnelPanel, needsMe, problemText, StatusChip } from './ConvInsightsPanel';
 
 // Mijozlarga javob — REAL (2026-11-08). Avval 1300 qatorlik soxta demo edi.
 // Ma'lumot: ai_conversations (webhook yozadi): instagram_comment — izohlar, instagram/telegram — xabarlar.
@@ -24,7 +27,7 @@ export interface CustomerResponseViewProps {
   storeContext?: { businessId?: string };
 }
 
-type Tab = 'hot' | 'comments' | 'direct' | 'tone';
+type Tab = 'hot' | 'attention' | 'comments' | 'direct' | 'funnel' | 'tone';
 
 const T = {
   ru: {
@@ -36,7 +39,8 @@ const T = {
     notSent: 'Ответ сохранён, но не доставлен: проверьте подключение Instagram/Telegram.',
     toneTitle: 'Как AI общается с клиентами', toneHint: 'Например: «вежливо на вы, коротко, без лишних эмодзи». Применяется к следующим ответам.',
     save: 'Сохранить', saved: 'Сохранено', back: 'Назад',
-    hot: 'Готовы купить',
+    hot: 'Готовы купить', attention: 'Ждут вас', funnel: 'Воронка',
+    emptyAttention: 'Никто не ждёт ответа. Здесь появятся клиенты, которым AI не смог ответить или которые долго ждут вас.',
     emptyHot: 'Пока нет клиентов, готовых купить. Когда клиент напишет «беру», спросит про оплату или оставит телефон — он появится здесь, а AI передаст разговор вам.',
     hotHint: 'Эти клиенты близки к покупке. AI остановился — оплату, предоплату и условия обсуждаете вы.',
     stage: { interest: 'Интересуется', ready: 'Хочет купить', ordered: 'Оформил заказ', paid: 'Пишет, что оплатил' },
@@ -54,7 +58,8 @@ const T = {
     notSent: 'Жауап сақталды, бірақ жеткізілмеді: Instagram/Telegram қосылымын тексеріңіз.',
     toneTitle: 'AI клиенттермен қалай сөйлеседі', toneHint: 'Мысалы: «сіз деп сыпайы, қысқа, эмодзисіз». Келесі жауаптарға қолданылады.',
     save: 'Сақтау', saved: 'Сақталды', back: 'Артқа',
-    hot: 'Сатып алуға дайын',
+    hot: 'Сатып алуға дайын', attention: 'Сізді күтуде', funnel: 'Воронка',
+    emptyAttention: 'Ешкім жауап күтпейді. AI жауап бере алмаған немесе сізді ұзақ күткен клиенттер осында шығады.',
     emptyHot: 'Сатып алуға дайын клиент әзірге жоқ. Клиент «аламын» деп жазса, төлем туралы сұраса немесе телефонын қалдырса — осында шығады, AI әңгімені сізге береді.',
     hotHint: 'Бұл клиенттер сатып алуға жақын. AI тоқтады — төлемді, алдын ала төлемді және шарттарды өзіңіз талқылайсыз.',
     stage: { interest: 'Қызығып отыр', ready: 'Сатып алғысы келеді', ordered: 'Тапсырыс берді', paid: 'Төледім деп жазды' },
@@ -132,8 +137,9 @@ export const CustomerResponseView: React.FC<CustomerResponseViewProps> = ({ onBa
   }, [openId, open?.messages.length]);
 
   const hotCount = (convs || []).filter(isHot).length;
+  const attCount = (convs || []).filter((c) => needsMe(c.status_info)).length;
   const list = (convs || [])
-    .filter((c) => (tab === 'hot' ? isHot(c) : tab === 'comments' ? isComment(c) : !isComment(c)))
+    .filter((c) => (tab === 'hot' ? isHot(c) : tab === 'attention' ? needsMe(c.status_info) : tab === 'comments' ? isComment(c) : !isComment(c)))
     .map((c) => ({ c, last: c.messages[c.messages.length - 1] }))
     .sort((a, b) => (b.last?.timestamp || b.c.created_at).localeCompare(a.last?.timestamp || a.c.created_at));
 
@@ -221,14 +227,16 @@ export const CustomerResponseView: React.FC<CustomerResponseViewProps> = ({ onBa
           <div className="flex items-center gap-1.5 mt-2.5 overflow-x-auto no-scrollbar">
             {([
               { id: 'hot' as const, label: hotCount ? `${L.hot} · ${hotCount}` : L.hot, icon: <Flame className="w-3.5 h-3.5" /> },
+              { id: 'attention' as const, label: attCount ? `${L.attention} · ${attCount}` : L.attention, icon: <BellRing className="w-3.5 h-3.5" /> },
               { id: 'comments' as const, label: L.comments, icon: <MessageCircle className="w-3.5 h-3.5" /> },
               { id: 'direct' as const, label: L.direct, icon: <Send className="w-3.5 h-3.5" /> },
+              { id: 'funnel' as const, label: L.funnel, icon: <BarChart3 className="w-3.5 h-3.5" /> },
               { id: 'tone' as const, label: L.tone, icon: <SlidersHorizontal className="w-3.5 h-3.5" /> },
             ]).map((t) => (
               <button key={t.id} onClick={() => setTab(t.id)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 active:scale-95 shrink-0 whitespace-nowrap ${
                   tab === t.id ? (t.id === 'hot' ? 'bg-orange-500 text-white' : 'bg-purple-600 text-white')
-                    : (t.id === 'hot' && hotCount ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-600')}`}>
+                    : (t.id === 'hot' && hotCount ? 'bg-orange-100 text-orange-700' : t.id === 'attention' && attCount ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600')}`}>
                 {t.icon}<span>{t.label}</span>
               </button>
             ))}
@@ -253,18 +261,19 @@ export const CustomerResponseView: React.FC<CustomerResponseViewProps> = ({ onBa
           <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-2xl px-3.5 py-2 text-xs font-semibold">{notice}</div>
         )}
 
-        {!open && tab !== 'tone' && convs === null && (
+        {!open && tab === 'funnel' && businessId && <FunnelPanel businessId={businessId} lang={lang} />}
+        {!open && tab !== 'tone' && tab !== 'funnel' && convs === null && (
           <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 text-purple-600 animate-spin" /></div>
         )}
-        {!open && tab !== 'tone' && convs && list.length === 0 && (
-          <p className="text-center text-[12px] text-slate-500 py-10 px-4">{tab === 'hot' ? L.emptyHot : tab === 'comments' ? L.emptyComments : L.emptyDirect}</p>
+        {!open && tab !== 'tone' && tab !== 'funnel' && convs && list.length === 0 && (
+          <p className="text-center text-[12px] text-slate-500 py-10 px-4">{tab === 'hot' ? L.emptyHot : tab === 'attention' ? L.emptyAttention : tab === 'comments' ? L.emptyComments : L.emptyDirect}</p>
         )}
         {!open && tab === 'hot' && list.length > 0 && (
           <p className="text-[11.5px] text-orange-800 bg-orange-50 border border-orange-100 rounded-2xl px-3 py-2 leading-snug flex gap-2">
             <Flame className="w-3.5 h-3.5 shrink-0 mt-0.5" />{L.hotHint}
           </p>
         )}
-        {!open && tab !== 'tone' && list.map(({ c, last }) => (
+        {!open && tab !== 'tone' && tab !== 'funnel' && list.map(({ c, last }) => (
           <button key={c.id} onClick={() => { setOpenId(c.id); setNotice(''); setError(''); }}
             className="w-full text-left bg-white border border-slate-200/90 rounded-2xl p-3 flex gap-3 active:scale-[0.99]">
             <div className="w-9 h-9 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center font-black text-sm shrink-0">
@@ -286,11 +295,17 @@ export const CustomerResponseView: React.FC<CustomerResponseViewProps> = ({ onBa
                   {c.deal.phone && <span className="text-slate-500">· {c.deal.phone}</span>}
                 </p>
               )}
+              {c.status_info && c.status_info.key !== 'active' && c.status_info.key !== 'hot' && (
+                <p className="mt-1"><StatusChip s={c.status_info} lang={lang} /></p>
+              )}
               {c.ai_enabled === false && <span className="text-[10px] font-bold text-amber-700">{L.aiOff}</span>}
             </div>
           </button>
         ))}
 
+        {open && open.status_info?.tags.includes('problem') && (
+          <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl px-3.5 py-2.5 text-[11.5px] font-semibold">{problemText(lang)}</div>
+        )}
         {open && open.deal && (
           <div className="bg-orange-50 border border-orange-200 rounded-2xl p-3 space-y-2">
             <div className="flex items-center gap-2">

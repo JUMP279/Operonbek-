@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   AlertCircle,
   ArrowLeft,
+  FileSpreadsheet,
   ImagePlus,
   Loader2,
   Package,
@@ -11,7 +12,8 @@ import {
   X,
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
-import { api, ApiError, Product } from '../lib/api';
+import { api, ApiError, PriceRules, Product } from '../lib/api';
+import { catalogText, ImportCatalogSheet, PriceRulesCard } from './CatalogTools';
 import { formatMoney } from '../lib/format';
 
 export interface ProductsManagerViewProps {
@@ -58,11 +60,13 @@ interface Form {
   images: string[];
   is_active: boolean;
   discount: string;
+  /** Savdolashishda eng past narx (services/price_guard.py) */
+  floor: string;
 }
 
 const MAX_PHOTOS = 4;
 
-const EMPTY: Form = { id: null, name: '', price: '', description: '', stock: '', images: [], is_active: true, discount: '' };
+const EMPTY: Form = { id: null, name: '', price: '', description: '', stock: '', images: [], is_active: true, discount: '', floor: '' };
 
 // Chegirmali narx — backend (services/pricing.py) bilan bir xil: 10 ga yaxlitlanadi
 const salePrice = (price: number, pct: number) => Math.round((price * (100 - pct)) / 100 / 10) * 10 || price;
@@ -82,6 +86,14 @@ export const ProductsManagerView: React.FC<ProductsManagerViewProps> = ({ onBack
   const [uploading, setUploading] = useState(false);
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [rules, setRules] = useState<PriceRules | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [notice, setNotice] = useState('');
+  const C = catalogText(lang);
+  useEffect(() => {
+    if (businessId) api.priceRules(businessId).then(setRules).catch(() => setRules(null));
+  }, [businessId]);
+  const saveRules = async (r: PriceRules) => { if (businessId) setRules(await api.savePriceRules(businessId, r)); };
 
   const errText = (e: unknown) => (e instanceof ApiError && e.status === 0 ? L.errors.network : L.errors.generic);
 
@@ -105,6 +117,7 @@ export const ProductsManagerView: React.FC<ProductsManagerViewProps> = ({ onBack
       id: p.id, name: p.name, price: p.price != null ? String(p.price) : '', description: p.description || '',
       stock: p.stock != null ? String(p.stock) : '', images: p.images?.length ? p.images : (p.image_url ? [p.image_url] : []), is_active: p.is_active,
       discount: p.discount_percent ? String(p.discount_percent) : '',
+      floor: rules?.floors?.[p.id] ? String(rules.floors[p.id]) : '',
     });
 
   const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -150,6 +163,13 @@ export const ProductsManagerView: React.FC<ProductsManagerViewProps> = ({ onBack
     };
     try {
       const res = form.id ? await api.updateProduct(form.id, body) : await api.createProduct(businessId, body);
+      const pid = (res as { product?: Product })?.product?.id || form.id;
+      const fl = parseInt(form.floor, 10) || 0;
+      if (rules && pid && (rules.floors[pid] || 0) !== fl) {
+        const floors = { ...rules.floors };
+        if (fl > 0) floors[pid] = fl; else delete floors[pid];
+        await saveRules({ ...rules, floors }).catch(() => {});
+      }
       setForm(null);
       await load();
       if (pct > 0 && (res as { discount_saved?: boolean })?.discount_saved === false) setError(L.discountNotSaved);
@@ -193,12 +213,30 @@ export const ProductsManagerView: React.FC<ProductsManagerViewProps> = ({ onBack
           </div>
         )}
 
-        {!form && (
+        {notice && (
+          <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-2xl px-3.5 py-2.5 text-xs font-semibold flex items-start gap-2">
+            <span className="flex-1">{notice}</span><button onClick={() => setNotice('')}><X className="w-3.5 h-3.5" /></button>
+          </div>
+        )}
+
+        {!form && importing && businessId && (
+          <ImportCatalogSheet lang={lang} businessId={businessId} currency={currency} onClose={() => setImporting(false)}
+            onDone={(msg) => { setImporting(false); setNotice(msg); load(); }} />
+        )}
+
+        {!form && !importing && (
           <>
-            <button onClick={() => setForm({ ...EMPTY })} disabled={!businessId}
-              className="w-full py-2.5 rounded-xl bg-purple-600 text-white text-[13px] font-bold flex items-center justify-center gap-2 active:scale-[0.99] disabled:opacity-60">
-              <Plus className="w-4 h-4" />{L.add}
-            </button>
+            <div className="flex gap-2">
+              <button onClick={() => setForm({ ...EMPTY })} disabled={!businessId}
+                className="flex-1 py-2.5 rounded-xl bg-purple-600 text-white text-[13px] font-bold flex items-center justify-center gap-2 active:scale-[0.99] disabled:opacity-60">
+                <Plus className="w-4 h-4" />{L.add}
+              </button>
+              <button onClick={() => setImporting(true)} disabled={!businessId}
+                className="flex-1 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-800 text-[13px] font-bold flex items-center justify-center gap-2 active:scale-[0.99] disabled:opacity-60">
+                <FileSpreadsheet className="w-4 h-4" />{C.importBtn}
+              </button>
+            </div>
+            {items && items.length > 0 && <PriceRulesCard lang={lang} rules={rules} onChange={saveRules} />}
 
             {items === null && (
               <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 text-purple-600 animate-spin" /></div>
@@ -285,6 +323,15 @@ export const ProductsManagerView: React.FC<ProductsManagerViewProps> = ({ onBack
                 </p>
               );
             })()}
+            {rules?.bargain && (
+              <div className="space-y-1">
+                <p className="text-[11px] font-bold text-slate-500">{lang === 'kk' ? 'Саудаласудағы ең төменгі баға' : 'Минимальная цена при торге'}</p>
+                <input value={form.floor} inputMode="numeric" maxLength={12}
+                  placeholder={lang === 'kk' ? `берілмеген — −${rules.max_discount}%-ға дейін` : `не задана — до −${rules.max_discount}%`}
+                  onChange={(e) => setForm({ ...form, floor: e.target.value.replace(/\D/g, '') })} className={input} />
+                <p className="text-[10.5px] text-slate-400">{lang === 'kk' ? 'Клиент мұны көрмейді. AI одан төмен түспейді.' : 'Клиент этого не видит. AI не опустится ниже.'}</p>
+              </div>
+            )}
             <div className="space-y-1">
               <p className="text-[11px] font-bold text-slate-500">{L.photo}</p>
               <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={onFile} />
