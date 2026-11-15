@@ -6,6 +6,8 @@ import { armLabel, DIM_LABEL, STATUS_LABEL } from '../lib/expLabels';
 // Saytdagi cabinet/GrowthExtras.tsx bilan bir xil: GET /growth/{id}/profile-tips va /experiments.
 type Lang = 'ru' | 'kk';
 
+const MISS: Record<string, [string, string]> = { city: ['город', 'қала'], delivery: ['доставка', 'жеткізу'], payment: ['оплата', 'төлем'], returns: ['возврат/обмен', 'қайтару/айырбас'] };
+
 const CopyBtn: React.FC<{ text: string; lang: Lang }> = ({ text, lang }) => {
   const [ok, setOk] = useState(false);
   return (
@@ -44,6 +46,26 @@ export const ProfileTipsCard: React.FC<{ businessId: string; lang: Lang }> = ({ 
       {busy && !tips && <p className="text-[11.5px] text-slate-400">{k ? 'AI профильді жазып жатыр…' : 'AI пишет профиль…'}</p>}
       {tips && (
         <>
+          {tips.username_issue === 'uz_domain' && (
+            <div className="rounded-xl bg-rose-50 border border-rose-200 p-2.5 space-y-1">
+              <p className="text-[11.5px] font-bold text-rose-700">{k
+                ? `@${tips.username} — «.uz» Өзбекстанды білдіреді, ал аудитория Қазақстанда. Username іздеудегі ең күшті белгі.`
+                : `@${tips.username} — «.uz» говорит «Узбекистан», а покупатели в Казахстане. Username — самый сильный сигнал в поиске.`}</p>
+              {(tips.username_ideas || []).length > 0 && (
+                <p className="text-[11px] text-rose-700">{k ? 'Ұсыныс' : 'Варианты'}: {(tips.username_ideas || []).map((u) => '@' + u).join(' · ')}</p>
+              )}
+            </div>
+          )}
+          {(tips.missing || []).length > 0 && (
+            <p className="rounded-xl bg-amber-50 border border-amber-200 p-2.5 text-[11px] text-amber-800">{k
+              ? `Профильге сенім қосу үшін жазыңыз: ${(tips.missing || []).map((m) => (MISS[m] || [m, m])[1]).join(', ')} — «Бизнес жады» бөлімінде. Сонда био мен AI-сатушы оларды қолданады.`
+              : `Чтобы bio вызывало доверие, укажите: ${(tips.missing || []).map((m) => (MISS[m] || [m, m])[0]).join(', ')} — в разделе «Память бизнеса». Тогда bio и AI-продавец будут их использовать.`}</p>
+          )}
+          {tips.dm_keyword && (
+            <p className="text-[11px] text-slate-600">💬 {k
+              ? `Direct-ке «${tips.dm_keyword}» деп жазған адамға AI-сатушы бірден каталог пен бағаны жібереді.`
+              : `Кто напишет «${tips.dm_keyword}» в Direct — AI-продавец сразу пришлёт каталог и цены.`}</p>
+          )}
           <div className="rounded-xl bg-slate-50 p-2.5 space-y-1">
             <div className="flex items-center justify-between"><span className="text-[10.5px] font-bold text-slate-500">{k ? 'Аты (іздеуде табылу үшін)' : 'Имя (чтобы находили в поиске)'}</span><CopyBtn text={tips.name} lang={lang} /></div>
             <p className="text-[12.5px] font-semibold">{tips.name}</p>

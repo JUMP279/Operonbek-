@@ -1045,6 +1045,11 @@ export interface ProfileTips {
   link_label: string;
   highlights: { title: string; emoji: string; stories: string }[];
   pinned: string[];
+  dm_keyword?: string;
+  username?: string | null;
+  username_ideas?: string[];
+  username_issue?: 'uz_domain' | null;
+  missing?: ('city' | 'delivery' | 'payment' | 'returns')[];
   generated_at: string;
 }
 
