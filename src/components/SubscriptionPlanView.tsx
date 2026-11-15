@@ -42,8 +42,8 @@ const T = {
         'Все функции Operon',
       ],
       business: [
-        'Каждый день: 2 AI-видео + 3 поста',
-        '3 поста в день в Instagram и Telegram',
+        'Каждый день: 3 AI-видео + 3 поста',
+        'Reels в 12:30, 18:30 и 21:30 — когда смотрят больше всего',
         'Все функции + все 3 маркетплейса',
         'Новости Operon и ранний доступ к новым функциям',
         'Прямой контакт для связи с администраторами Operon',
@@ -76,8 +76,8 @@ const T = {
         'Operon-ның барлық мүмкіндіктері',
       ],
       business: [
-        'Күн сайын: 2 AI-бейне + 3 пост',
-        'Instagram мен Telegram-ға күніне 3 пост',
+        'Күн сайын: 3 AI-бейне + 3 пост',
+        'Reels 12:30, 18:30 және 21:30-да — ең көп қарайтын уақытта',
         'Барлық мүмкіндік + 3 маркетплейс',
         'Operon жаңалықтары және жаңа мүмкіндіктерге алғашқы қолжетімділік',
         'Operon әкімшілерімен байланысуға тікелей контакт',
@@ -186,6 +186,31 @@ export const SubscriptionPlanView: React.FC<SubscriptionPlanViewProps> = ({ onBa
           </div>
         )}
 
+        {/* Bepul sinov — alohida kartochka (sayt va landing bilan bir xil) */}
+        <div className={`bg-white rounded-2xl p-3.5 space-y-2 border-2 border-dashed ${usage?.state === 'trial' ? 'border-emerald-500' : 'border-emerald-200'}`}>
+          <div className="flex items-center justify-between">
+            <p className="text-[14px] font-black">{lang === 'kk' ? 'Тегін' : 'Бесплатно'}</p>
+            {usage?.state === 'trial'
+              ? <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">{L.active}</span>
+              : <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">🎁</span>}
+          </div>
+          <p className="text-[11px] text-slate-500">{lang === 'kk' ? 'Operon-ды өз бизнесіңізде байқап көру' : 'Попробовать Operon на своём бизнесе'}</p>
+          <p className="text-[20px] font-black">$0 <span className="text-[12px] font-semibold text-slate-500">/ {lang === 'kk' ? '14 күн' : '14 дней'}</span></p>
+          <ul className="space-y-1">
+            {(lang === 'kk'
+              ? ['Күн сайын: 1 бейне + 1 пост', 'Instagram және Telegram', '24/7 AI-сатушы клиенттерге жауап береді', 'Барлық мүмкіндік, шектеусіз', 'Картасыз, міндеттемесіз']
+              : ['Каждый день: 1 видео + 1 пост', 'Instagram и Telegram', 'AI-продавец отвечает клиентам 24/7', 'Все функции, без ограничений', 'Без карты и обязательств']
+            ).map((f) => (
+              <li key={f} className="text-[12px] text-slate-600 flex gap-1.5"><Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />{f}</li>
+            ))}
+          </ul>
+          <p className="w-full h-10 rounded-xl text-[12.5px] font-bold flex items-center justify-center bg-emerald-50 text-emerald-700">
+            {usage?.state === 'trial'
+              ? (lang === 'kk' ? `Белсенді · ${usage.days_left ?? '—'} күн қалды` : `Активен · осталось ${usage.days_left ?? '—'} дн.`)
+              : (lang === 'kk' ? 'Сынақ мерзімі пайдаланылды' : 'Пробный период использован')}
+          </p>
+        </div>
+
         {(['starter', 'growth', 'business'] as PlanId[]).map((p) => (
           <div key={p} className={`bg-white rounded-2xl p-3.5 space-y-2 border ${currentId === p ? 'border-purple-500' : 'border-slate-200/90'}`}>
             <div className="flex items-center justify-between">
@@ -193,11 +218,6 @@ export const SubscriptionPlanView: React.FC<SubscriptionPlanViewProps> = ({ onBa
               {currentId === p && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">{L.active}</span>}
             </div>
             <p className="text-[20px] font-black">${PRICES[p]} <span className="text-[12px] font-semibold text-slate-500">{L.perMonth}</span></p>
-            {usage?.state !== 'paid' && !expired && (
-              <p className="inline-flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-bold px-2.5 py-1">
-                🎁 {lang === 'kk' ? 'Алғашқы 14 күн — тегін' : 'Первые 14 дней — бесплатно'}
-              </p>
-            )}
             <ul className="space-y-1">
               {L.features(p).map((f) => (
                 <li key={f} className="text-[12px] text-slate-600 flex gap-1.5"><Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />{f}</li>

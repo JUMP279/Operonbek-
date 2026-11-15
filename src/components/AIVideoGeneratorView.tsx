@@ -66,8 +66,8 @@ const T = {
     save: 'Сохранить', saving: 'Сохраняем…',
     timesTitle: 'Когда публиковать?',
     cadence: (c: VideoPlan['cadence']) =>
-      `Ваш тариф: ${c.monthly} видео в месяц — ${c.per_day === 2 ? '2 в день' : c.every_days === 2 ? 'каждые 2 дня' : 'каждый день'}.`,
-    timesHint: 'Видео создаётся заранее и выходит в Instagram (Reels + Stories) в выбранное время.',
+      `Ваш тариф: ${c.monthly} видео в месяц — ${c.per_day > 1 ? `${c.per_day} в день` : c.every_days === 2 ? 'каждые 2 дня' : 'каждый день'}.`,
+    timesHint: 'Видео создаётся заранее и выходит в Instagram (Reels + Stories) в выбранное время. Лучшее время в Казахстане: 12:30, 18:30, 21:30. Ночное время (00:00–07:00) Operon заменит — ночью Reels почти не показывают.',
     time: 'Время', start: 'Запустить план', starting: 'Создаём план…',
     upcoming: 'Ближайшие видео', editStyle: 'Изменить стиль и настройки', stop: 'Остановить план',
     stopConfirm: 'Точно остановить? Будущие видео удалятся.',
@@ -109,8 +109,8 @@ const T = {
     save: 'Сақтау', saving: 'Сақталуда…',
     timesTitle: 'Қашан жариялау керек?',
     cadence: (c: VideoPlan['cadence']) =>
-      `Тарифіңіз: айына ${c.monthly} бейне — ${c.per_day === 2 ? 'күніне 2' : c.every_days === 2 ? '2 күнде 1' : 'күн сайын'}.`,
-    timesHint: 'Бейне алдын ала жасалып, таңдалған уақытта Instagram-ға (Reels + Stories) шығады.',
+      `Тарифіңіз: айына ${c.monthly} бейне — ${c.per_day > 1 ? `күніне ${c.per_day}` : c.every_days === 2 ? '2 күнде 1' : 'күн сайын'}.`,
+    timesHint: 'Бейне алдын ала жасалып, таңдалған уақытта Instagram-ға (Reels + Stories) шығады. Қазақстандағы ең жақсы уақыт: 12:30, 18:30, 21:30. Түнгі уақытты (00:00–07:00) Operon ауыстырады — түнде Reels-ті аз көрсетеді.',
     time: 'Уақыт', start: 'Жоспарды бастау', starting: 'Жоспар жасалуда…',
     upcoming: 'Жақын бейнелер', editStyle: 'Стиль мен баптауды өзгерту', stop: 'Жоспарды тоқтату',
     stopConfirm: 'Шынымен тоқтатасыз ба? Болашақ бейнелер өшеді.',
@@ -176,7 +176,7 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
   const [charErr, setCharErr] = useState('');
 
   // vaqtlar
-  const [times, setTimes] = useState<string[]>(['18:00', '11:00']);
+  const [times, setTimes] = useState<string[]>(['12:30', '18:30', '21:30']);
   const [starting, setStarting] = useState(false);
 
   // "boshqa tuz"
@@ -216,7 +216,7 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
         setSeconds(([10, 15, 20] as const).includes(pr.profile.seconds as 10) ? (pr.profile.seconds as 0 | 10 | 15 | 20) : 0);
         setArtStyle((['realistic', 'cartoon', 'pixel'] as const).includes(pr.profile.art_style as 'realistic') ? (pr.profile.art_style as 'realistic' | 'cartoon' | 'pixel') : 'realistic');
       }
-      if (pl.settings?.times?.length) setTimes((t) => pl.settings!.times!.concat(t).slice(0, 2));
+      if (pl.settings?.times?.length) setTimes((t) => pl.settings!.times!.concat(t.filter((x) => !pl.settings!.times!.includes(x))).slice(0, 3));
     } catch (e) {
       setError(errText(e));
     } finally {

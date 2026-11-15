@@ -556,6 +556,14 @@ export const api = {
   conversations: (businessId: string) =>
     request<{ conversations: Conversation[]; counts?: ConvCounts }>(`/business/${encodeURIComponent(businessId)}/conversations`),
 
+  // Instagram profil maslahatlari: nom, BIO, Актуальное, qadab qo'yish (services/profile_tips.py)
+  profileTips: (businessId: string, lang: 'ru' | 'kk', refresh = false) =>
+    request<ProfileTips>(`/growth/${encodeURIComponent(businessId)}/profile-tips?lang=${lang}${refresh ? '&refresh=1' : ''}`),
+
+  // Operon o'z videolarida nimani sinayapti (services/format_stats.summary)
+  experiments: (businessId: string) =>
+    request<Experiments>(`/growth/${encodeURIComponent(businessId)}/experiments`),
+
   // Telegram Business (services/tg_business.py): AI egasining shaxsiy akkaunti nomidan javob beradi
   telegramBusiness: (businessId: string) =>
     request<TelegramBusinessState>(`/business/${encodeURIComponent(businessId)}/telegram-business`),
@@ -1026,6 +1034,35 @@ export interface Conversation {
   deal?: ConversationDeal | null;
   /** Joriy holat (services/conv_insights.py): muammoli / tiqilib qolgan / javob kutmoqda / ... */
   status_info?: ConvStatusInfo;
+}
+
+export interface ProfileTips {
+  name: string;
+  bio: string[];
+  bio_text: string;
+  bio_len: number;
+  link: string | null;
+  link_label: string;
+  highlights: { title: string; emoji: string; stories: string }[];
+  pinned: string[];
+  generated_at: string;
+}
+
+export interface ExperimentArm {
+  key: string;
+  videos: number;
+  avg_views: number | null;
+  score: number | null;
+  status: 'winner' | 'ok' | 'weak' | 'retired' | 'testing';
+}
+
+export interface Experiments {
+  samples: number;
+  avg_views: number | null;
+  dims: Record<'format' | 'delivery' | 'hook' | 'seconds' | 'hour' | 'cta', ExperimentArm[]>;
+  recent: { topic: string | null; views: number | null; format: string | null; hour: string | null; seconds: number | null; cta: string | null; at: string | null }[];
+  explore_share: number;
+  min_samples: number;
 }
 
 export interface TelegramBusinessState {

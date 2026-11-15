@@ -3,6 +3,7 @@ import { AlertTriangle, ArrowLeft, Check, ChevronDown, Download, Loader2, Sparkl
 import QRCode from 'qrcode';
 import { useLanguage } from '../context/LanguageContext';
 import { api, GrowthChecklist } from '../lib/api';
+import { ExperimentsCard, ProfileTipsCard } from './GrowthExtras';
 
 // "Рост подписчиков" (2026-11-14) — saytdagi bilan bir manba: GET /growth/{id} (services/growth_playbook.py).
 export const GrowthView: React.FC<{ onBack?: () => void; storeContext?: { businessId?: string } }> = ({ onBack, storeContext }) => {
@@ -77,7 +78,9 @@ export const GrowthView: React.FC<{ onBack?: () => void; storeContext?: { busine
               </div>
             )}
 
-                        {groups.map((g) => {
+                        {businessId && <ProfileTipsCard businessId={businessId} lang={ru ? 'ru' : 'kk'} />}
+            {businessId && <ExperimentsCard businessId={businessId} lang={ru ? 'ru' : 'kk'} />}
+            {groups.map((g) => {
               const items = data.items.filter((i) => i.group === g.id);
               if (!items.length) return null;
               return (
