@@ -186,7 +186,9 @@ export const SubscriptionPlanView: React.FC<SubscriptionPlanViewProps> = ({ onBa
           </div>
         )}
 
-        {/* Bepul sinov — alohida kartochka (sayt va landing bilan bir xil) */}
+        {/* Bepul sinov — alohida kartochka (sayt va landing bilan bir xil). 2026-11-15: sinov bir marta beriladi —
+            faqat sinov FAOL bo'lganda ko'rinadi; tugagach yoki pullik tarifda kartochka chiqmaydi. */}
+        {usage?.state === 'trial' && (
         <div className={`bg-white rounded-2xl p-3.5 space-y-2 border-2 border-dashed ${usage?.state === 'trial' ? 'border-emerald-500' : 'border-emerald-200'}`}>
           <div className="flex items-center justify-between">
             <p className="text-[14px] font-black">{lang === 'kk' ? 'Тегін' : 'Бесплатно'}</p>
@@ -210,6 +212,7 @@ export const SubscriptionPlanView: React.FC<SubscriptionPlanViewProps> = ({ onBa
               : (lang === 'kk' ? 'Сынақ мерзімі пайдаланылды' : 'Пробный период использован')}
           </p>
         </div>
+        )}
 
         {(['starter', 'growth', 'business'] as PlanId[]).map((p) => (
           <div key={p} className={`bg-white rounded-2xl p-3.5 space-y-2 border ${currentId === p ? 'border-purple-500' : 'border-slate-200/90'}`}>

@@ -97,11 +97,28 @@ async function tryRefresh(): Promise<boolean> {
   }
 }
 
+// Qurilma ID (2026-11-15): bepul sinov bitta tadbirkorga bir marta — backend services/trial_guard.py.
+// localStorage'dagi tasodifiy UUID; hech qanday shaxsiy ma'lumot emas.
+function clientId(): string {
+  try {
+    let v: string = localStorage.getItem('operon_cid') || '';
+    if (!v || !/^[A-Za-z0-9_-]{16,80}$/.test(v)) {
+      v = (crypto as any).randomUUID ? (crypto as any).randomUUID().replace(/-/g, '') : `${Date.now().toString(36)}${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`;
+      localStorage.setItem('operon_cid', v);
+    }
+    return v;
+  } catch {
+    return '';
+  }
+}
+
 async function request<T>(path: string, init: RequestInit = {}, retry = true): Promise<T> {
   // FormData (fayl yuklash) — Content-Type'ni brauzer o'zi qo'yadi (boundary bilan)
   const headers: Record<string, string> = init.body instanceof FormData ? {} : { 'Content-Type': 'application/json' };
   const access = tokens.access;
   if (access) headers.Authorization = `Bearer ${access}`;
+  const cid = clientId();
+  if (cid) headers['X-Client-Id'] = cid;
 
   // O'qish (GET) so'rovlari 30s dan ortiq osilib qolmasin — aks holda ekran abadiy aylanadi.
   // AI so'rovlari (POST) uzoq davom etishi mumkin, ularga cheklov qo'yilmaydi.
