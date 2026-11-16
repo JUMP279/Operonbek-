@@ -9,7 +9,7 @@ interface BusinessMemoryViewProps {
   storeContext?: { businessId?: string };
 }
 
-// Biznes xotira (2026-11-13, user talabi): faqat Operon biznesni QANDAY tushungani ko'rsatiladi
+// Biznes xotira (2026-11-13, user talabi): faqat FindLead biznesni QANDAY tushungani ko'rsatiladi
 // ("bu do'kon kiyim-kechak sotadi..."). Adashsa — tadbirkor "bunday emas, bunday" deb yozadi va tushuncha
 // fonda ~3 daqiqada qayta yoziladi. Bu AI CHAT EMAS: yozilganga javob berilmaydi.
 // Eski "Профиль / Анкета / Правила / Акции / Выводы" tablari olib tashlandi (bazadagi yozuvlar o'chirilmadi).
@@ -96,8 +96,8 @@ export const BusinessMemoryView: React.FC<BusinessMemoryViewProps> = ({ onBack, 
       <div className="flex-1 overflow-y-auto px-4 pb-6 space-y-3 no-scrollbar">
         <p className="text-[11.5px] text-slate-500 leading-relaxed">
           {ru
-            ? 'Так Operon понимает ваш бизнес. На это опираются видео, посты и ответы клиентам.'
-            : 'Operon бизнесіңізді осылай түсінеді. Видео, пост және клиентке жауап осыған сүйенеді.'}
+            ? 'Так FindLead понимает ваш бизнес. На это опираются видео, посты и ответы клиентам.'
+            : 'FindLead бизнесіңізді осылай түсінеді. Видео, пост және клиентке жауап осыған сүйенеді.'}
         </p>
 
         {error && <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs">{error}</div>}
@@ -113,7 +113,7 @@ export const BusinessMemoryView: React.FC<BusinessMemoryViewProps> = ({ onBack, 
             <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-100">
               <div className="flex items-center justify-between gap-2 mb-2">
                 <span className="text-[10.5px] font-bold uppercase tracking-wide text-blue-600">
-                  {ru ? 'Operon понимает так' : 'Operon былай түсінеді'}
+                  {ru ? 'FindLead понимает так' : 'FindLead былай түсінеді'}
                 </span>
                 {updating ? (
                   <span className="inline-flex items-center gap-1 text-[10.5px] font-semibold text-blue-600">
@@ -127,7 +127,7 @@ export const BusinessMemoryView: React.FC<BusinessMemoryViewProps> = ({ onBack, 
                 <p className={`text-[14px] text-slate-800 leading-relaxed ${updating ? 'opacity-60' : ''}`}>{data.summary}</p>
               ) : (
                 <p className="text-xs text-slate-500 leading-relaxed">
-                  {ru ? 'Operon изучает ваш бизнес — это займёт до 3 минут.' : 'Operon бизнесіңізді зерттеп жатыр — 3 минутқа дейін.'}
+                  {ru ? 'FindLead изучает ваш бизнес — это займёт до 3 минут.' : 'FindLead бизнесіңізді зерттеп жатыр — 3 минутқа дейін.'}
                 </p>
               )}
               {data.facts.length > 0 && (
@@ -173,7 +173,7 @@ export const BusinessMemoryView: React.FC<BusinessMemoryViewProps> = ({ onBack, 
                 </p>
               )}
               <p className="text-[10.5px] text-slate-400">
-                {ru ? 'Это не чат: Operon не отвечает здесь, а меняет своё понимание бизнеса.' : 'Бұл чат емес: Operon мұнда жауап бермейді, бизнес туралы түсінігін өзгертеді.'}
+                {ru ? 'Это не чат: FindLead не отвечает здесь, а меняет своё понимание бизнеса.' : 'Бұл чат емес: FindLead мұнда жауап бермейді, бизнес туралы түсінігін өзгертеді.'}
               </p>
             </div>
 

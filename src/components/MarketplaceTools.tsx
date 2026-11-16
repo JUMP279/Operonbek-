@@ -6,7 +6,7 @@ import { formatDay } from '../lib/format';
 // Marketplace asboblari (2026-11-15) — sayt kabinetidagi «Маркетплейсы» bilan bir xil (ilova + sayt QONUNI):
 //  • Отзывы  — o'z sharhlari (WB API + Kaspi ochiq sahifa), AI javob qoralamasi, WB'ga yuborish / Kaspi'ga nusxa
 //  • Карточки — Kaspi/WB/Uzum kartochkasi: nom, SEO tavsif, xususiyatlar, infografika rasmlari
-//  • Связки   — marketplace tovari ↔ Operon mahsuloti, qoldiqni avtomatik kamaytirish
+//  • Связки   — marketplace tovari ↔ FindLead mahsuloti, qoldiqni avtomatik kamaytirish
 //  • Правила  — o'rganilgan qoidalar (services/mp_playbook.py)
 // Saytdagi nusxa: operon/src/components/cabinet/MarketplaceTools.tsx (faqat uslub konstantalari farq qiladi).
 type L = 'ru' | 'kk';
@@ -131,7 +131,7 @@ export const MpReviewsPanel: React.FC<{ businessId: string; l: L }> = ({ busines
       not_connected: tr(l, 'WB не подключён — подключите токен с доступом «Вопросы и отзывы».', 'WB қосылмаған — «Сұрақтар мен пікірлер» рұқсаты бар токенді қосыңыз.'),
       wb_scope: tr(l, 'Токену WB не хватает доступа «Вопросы и отзывы» — создайте новый токен с этой категорией.', 'WB токеніне «Сұрақтар мен пікірлер» рұқсаты жетіспейді — осы санатпен жаңа токен құрыңыз.'),
       no_kaspi_ids: tr(l, 'Kaspi: укажите ID товара Kaspi во вкладке «Связки» (число из ссылки kaspi.kz/shop/p/…-123456/) — или он появится сам после первого заказа.', 'Kaspi: «Байланыстар» қойындысында Kaspi тауар ID-ін көрсетіңіз (kaspi.kz/shop/p/…-123456/ сілтемесіндегі сан) — немесе алғашқы тапсырыстан кейін өзі шығады.'),
-      no_api: tr(l, 'Uzum не отдаёт отзывы через открытый API — отвечайте в приложении Uzum Sellers. Operon может подготовить текст ответа, если вставите отзыв в чат.', 'Uzum ашық API арқылы пікір бермейді — Uzum Sellers қосымшасында жауап беріңіз.'),
+      no_api: tr(l, 'Uzum не отдаёт отзывы через открытый API — отвечайте в приложении Uzum Sellers. FindLead может подготовить текст ответа, если вставите отзыв в чат.', 'Uzum ашық API арқылы пікір бермейді — Uzum Sellers қосымшасында жауап беріңіз.'),
     };
     return <p key={s} className={`text-[11px] ${MUTED} leading-snug`}>• {m[st.error || ''] || tr(l, `${NAME[s]}: сейчас недоступно.`, `${NAME[s]}: қазір қолжетімсіз.`)}</p>;
   };
@@ -295,7 +295,7 @@ export const MpCardsPanel: React.FC<{ businessId: string; l: L }> = ({ businessI
         <button onClick={gen} disabled={busy || !pid} className={`w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl text-[13px] font-bold ${PRIMARY} disabled:opacity-60`}>
           <Wand2 className="w-4 h-4" />{busy ? tr(l, 'Создаю карточку и слайды… (до 1 мин)', 'Карточка мен слайдтарды жасап жатырмын… (1 мин дейін)') : card ? tr(l, `Пересоздать для ${NAME[plat]}`, `${NAME[plat]} үшін қайта жасау`) : tr(l, `Создать карточку для ${NAME[plat]}`, `${NAME[plat]} үшін карточка жасау`)}
         </button>
-        <p className={`text-[10.5px] ${MUTED} leading-snug`}>{tr(l, 'Operon пишет по правилам площадки: название по формуле, ключи в начале описания, без запрещённых слов, слайды-инфографика. Загрузка в кабинет — вручную (копируйте и скачивайте).', 'Operon алаң ережесімен жазады: формула бойынша атау, сипаттама басында кілттер, тыйым сөздерсіз, инфографика слайдтары. Кабинетке жүктеу — қолмен (көшіріп, жүктеп алыңыз).')}</p>
+        <p className={`text-[10.5px] ${MUTED} leading-snug`}>{tr(l, 'FindLead пишет по правилам площадки: название по формуле, ключи в начале описания, без запрещённых слов, слайды-инфографика. Загрузка в кабинет — вручную (копируйте и скачивайте).', 'FindLead алаң ережесімен жазады: формула бойынша атау, сипаттама басында кілттер, тыйым сөздерсіз, инфографика слайдтары. Кабинетке жүктеу — қолмен (көшіріп, жүктеп алыңыз).')}</p>
       </div>
       {err && <Err text={err} />}
       {card && <CardView c={card} l={l} />}
@@ -356,14 +356,14 @@ export const MpLinksPanel: React.FC<{ businessId: string; l: L }> = ({ businessI
     <div className="space-y-3">
       <div className={`p-3 ${BOX}`}>
         <div className="text-[13px] font-black">{tr(l, 'Списывать остаток при заказе', 'Тапсырыс кезінде қалдықты азайту')}</div>
-        <p className={`mt-0.5 text-[11px] ${MUTED} leading-snug`}>{tr(l, 'Заказ с маркетплейса уменьшает остаток товара в Operon, отмена/возврат — возвращает. Считаются только заказы после включения. WB по умолчанию выключен: при FBO товар лежит на складе WB.', 'Маркетплейс тапсырысы Operon-дағы қалдықты азайтады, бас тарту/қайтару — қайтарады. Тек қосылғаннан кейінгі тапсырыстар. WB әдепкіде өшірулі: FBO кезінде тауар WB қоймасында.')}</p>
+        <p className={`mt-0.5 text-[11px] ${MUTED} leading-snug`}>{tr(l, 'Заказ с маркетплейса уменьшает остаток товара в FindLead, отмена/возврат — возвращает. Считаются только заказы после включения. WB по умолчанию выключен: при FBO товар лежит на складе WB.', 'Маркетплейс тапсырысы FindLead-дағы қалдықты азайтады, бас тарту/қайтару — қайтарады. Тек қосылғаннан кейінгі тапсырыстар. WB әдепкіде өшірулі: FBO кезінде тауар WB қоймасында.')}</p>
         <div className="mt-2 flex gap-1.5">
           {(['kaspi', 'wb', 'uzum'] as const).map((p) => (
             <button key={p} onClick={() => toggle(p)} disabled={!data} className={`flex-1 py-2 rounded-xl text-[12px] font-bold border ${data?.stock_sync[p] ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-500 border-slate-200'}`}>{NAME[p]} {data?.stock_sync[p] ? tr(l, 'вкл', 'қосулы') : tr(l, 'выкл', 'өшік')}</button>
           ))}
         </div>
       </div>
-      <p className={`text-[11px] ${MUTED} leading-snug px-1`}>{tr(l, 'Operon сам связывает заказы с товарами по названию и запоминает артикул. Если связал неверно или не связал — укажите артикул вручную.', 'Operon тапсырыстарды тауарлармен атауы бойынша өзі байланыстырып, артикулды есте сақтайды. Қате болса — артикулды қолмен көрсетіңіз.')}</p>
+      <p className={`text-[11px] ${MUTED} leading-snug px-1`}>{tr(l, 'FindLead сам связывает заказы с товарами по названию и запоминает артикул. Если связал неверно или не связал — укажите артикул вручную.', 'FindLead тапсырыстарды тауарлармен атауы бойынша өзі байланыстырып, артикулды есте сақтайды. Қате болса — артикулды қолмен көрсетіңіз.')}</p>
       {err && <Err text={err} />}
       {data && (
         <div className={`${BOX} divide-y divide-slate-100`}>
@@ -390,7 +390,7 @@ export const MpGuidePanel: React.FC<{ businessId: string; l: L }> = ({ businessI
   );
   return (
     <div className="space-y-3">
-      <p className={`text-[11px] ${MUTED} leading-snug px-1`}>{tr(l, 'Эти правила Operon изучил по урокам продавцов Kaspi, WB и Uzum и официальным гидам площадок — по ним он пишет карточки и ответы на отзывы.', 'Бұл ережелерді Operon Kaspi, WB және Uzum сатушыларының сабақтары мен ресми гидтерінен үйренді — карточка мен жауаптарды солар бойынша жазады.')}</p>
+      <p className={`text-[11px] ${MUTED} leading-snug px-1`}>{tr(l, 'Эти правила FindLead изучил по урокам продавцов Kaspi, WB и Uzum и официальным гидам площадок — по ним он пишет карточки и ответы на отзывы.', 'Бұл ережелерді FindLead Kaspi, WB және Uzum сатушыларының сабақтары мен ресми гидтерінен үйренді — карточка мен жауаптарды солар бойынша жазады.')}</p>
       <div className="flex gap-1.5">
         {(['kaspi', 'wb', 'uzum'] as const).map((x) => <button key={x} onClick={() => setPlat(x)} className={`flex-1 py-2 rounded-xl text-[12px] font-bold border ${plat === x ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-600 border-slate-200'}`}>{NAME[x]}</button>)}
       </div>

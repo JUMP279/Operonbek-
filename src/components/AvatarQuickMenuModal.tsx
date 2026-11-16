@@ -87,7 +87,7 @@ export const AvatarQuickMenuModal: React.FC<AvatarQuickMenuModalProps> = ({
               <div className="flex items-center gap-1.5 flex-wrap">
                 <h3 className="text-[17px] font-black text-white truncate flex items-center gap-1.5">
                   <Store className="w-4 h-4 shrink-0" />
-                  {userProfile?.storeName || 'Operon'}
+                  {userProfile?.storeName || 'FindLead'}
                 </h3>
                 <ShieldCheck className="w-4 h-4 text-emerald-300 shrink-0" />
               </div>
@@ -255,7 +255,7 @@ export const AvatarQuickMenuModal: React.FC<AvatarQuickMenuModalProps> = ({
 
         {/* Footer */}
         <div className="px-4 py-2.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
-          <span>Operon OS • 2026</span>
+          <span>FindLead OS • 2026</span>
           <button
             onClick={onClose}
             className="font-bold text-slate-600 hover:text-slate-900 transition-colors"

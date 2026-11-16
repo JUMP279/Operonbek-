@@ -95,7 +95,7 @@ export const TelegramConnectCard: React.FC<{ businessId?: string | null }> = ({ 
 
   if (!businessId) return null;
   const connected = !!info?.connected;
-  const bot = info?.bot_username ? `@${info.bot_username}` : (ru ? 'бота Operon' : 'Operon ботын');
+  const bot = info?.bot_username ? `@${info.bot_username}` : (ru ? 'бота FindLead' : 'FindLead ботын');
 
   const Step: React.FC<{ done: boolean; n: number; children: React.ReactNode }> = ({ done, n, children }) => (
     <div className="flex gap-2 items-start">

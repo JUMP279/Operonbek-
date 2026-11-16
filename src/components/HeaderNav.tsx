@@ -14,7 +14,7 @@ interface HeaderNavProps {
   userProfile?: UserProfile | null;
 }
 
-// Operon belgisi — HAMMA joyda bir xil (2026-11-13): ko'k gradient fon, o'rtasi oq olti burchak.
+// FindLead belgisi — HAMMA joyda bir xil (2026-11-13): ko'k gradient fon, o'rtasi oq olti burchak.
 // Telefon ikonkasi, web/icon.svg, Telegram bot rasmi bilan aynan bir xil.
 export const OperonMark: React.FC<{ size?: number }> = ({ size = 26 }) => (
   <svg width={size} height={size} viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" className="shrink-0" aria-hidden="true">
@@ -32,7 +32,7 @@ export const OperonLogo: React.FC<{ size?: number; className?: string }> = ({ si
   return (
     <div className={`flex items-center gap-2.5 ${className}`}>
       <OperonMark size={size} />
-      <span className="text-[20px] font-bold tracking-tight text-slate-900 font-sans">Operon</span>
+      <span className="text-[20px] font-bold tracking-tight text-slate-900 font-sans">FindLead</span>
     </div>
   );
 };

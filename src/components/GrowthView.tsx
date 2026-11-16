@@ -54,12 +54,12 @@ export const GrowthView: React.FC<{ onBack?: () => void; storeContext?: { busine
             <div className="p-3.5 rounded-2xl bg-slate-900 text-white">
               <div className="flex items-center justify-between text-[12px] text-white/60"><span>{ru ? 'Выполнено' : 'Орындалды'}</span><b className="text-white text-[15px]">{data.done}/{data.total}</b></div>
               <div className="mt-2 h-2 rounded-full bg-white/10 overflow-hidden"><div className="h-full rounded-full bg-emerald-400" style={{ width: `${(data.done / Math.max(1, data.total)) * 100}%` }} /></div>
-              <p className="mt-2 text-[11px] text-white/60 leading-snug">{ru ? 'План на основе 27 видео и интервью (блогеры СНГ, глава Instagram, MrBeast, Hormozi, GaryVee и др.). Operon уже пишет контент по этим правилам.' : '27 видео мен сұхбат негізіндегі жоспар (ТМД блогерлері, Instagram басшысы, MrBeast, Hormozi, GaryVee т.б.). Operon контентті осы ережелермен жазады.'}</p>
+              <p className="mt-2 text-[11px] text-white/60 leading-snug">{ru ? 'План на основе 27 видео и интервью (блогеры СНГ, глава Instagram, MrBeast, Hormozi, GaryVee и др.). FindLead уже пишет контент по этим правилам.' : '27 видео мен сұхбат негізіндегі жоспар (ТМД блогерлері, Instagram басшысы, MrBeast, Hormozi, GaryVee т.б.). FindLead контентті осы ережелермен жазады.'}</p>
             </div>
             {data.ai_actions && data.ai_actions.length > 0 && (
               <div className="p-3.5 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white space-y-2.5">
-                <div className="flex items-center gap-1.5 text-[12.5px] font-black"><Sparkles className="w-4 h-4" />{ru ? 'Operon делает это за вас' : 'Operon мұны сіз үшін жасайды'}</div>
-                <div className="text-[11px] text-white/70 -mt-1">{ru ? 'Пока вы заняты бизнесом — Operon растит подписчиков автоматически.' : 'Сіз бизнеспен айналысқанда — Operon жазылушыны автоматты өсіреді.'}</div>
+                <div className="flex items-center gap-1.5 text-[12.5px] font-black"><Sparkles className="w-4 h-4" />{ru ? 'FindLead делает это за вас' : 'FindLead мұны сіз үшін жасайды'}</div>
+                <div className="text-[11px] text-white/70 -mt-1">{ru ? 'Пока вы заняты бизнесом — FindLead растит подписчиков автоматически.' : 'Сіз бизнеспен айналысқанда — FindLead жазылушыны автоматты өсіреді.'}</div>
                 {data.ai_actions.map((a, i) => (
                   <div key={i} className="flex items-start gap-2.5 rounded-xl bg-white/10 p-2.5">
                     <div className={`mt-0.5 w-5 h-5 rounded-md flex items-center justify-center shrink-0 ${a.active ? 'bg-emerald-400 text-emerald-950' : 'bg-white/20 text-white/60'}`}>

@@ -1,3 +1,4 @@
+import { isAndroidApp } from '../lib/platform';
 import React, { useEffect, useState } from 'react';
 import { ArrowLeft, Check, Crown, Loader2 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
@@ -6,7 +7,7 @@ import { api, PlanUsage } from '../lib/api';
 // Tarif — REAL (2026-11-08): joriy tarif va shu oydagi foydalanish backend'dan.
 // Avval o'ylab topilgan imkoniyatlar (bank integratsiyasi, VIP menejer, raqobatchi radari...)
 // va hech narsa saqlamaydigan "faollashtirish" bor edi. Onlayn to'lov hali ulanmagan.
-// 2026-11-13: "Подключить" → POST /auth/plan (so'rov) → Operon admini Telegram'da tasdiqlaydi.
+// 2026-11-13: "Подключить" → POST /auth/plan (so'rov) → FindLead admini Telegram'da tasdiqlaydi.
 export interface SubscriptionPlanViewProps {
   onBack: () => void;
   storeContext?: { businessId?: string };
@@ -39,17 +40,17 @@ const T = {
         'Instagram и Telegram вместе',
         'Анализ бизнеса и конкурентов',
         'Kaspi, Wildberries, Uzum — все 3 маркетплейса',
-        'Все функции Operon',
+        'Все функции FindLead',
       ],
       business: [
         'Каждый день: 3 AI-видео + 3 поста',
         'Reels в 12:30, 18:30 и 21:30 — когда смотрят больше всего',
         'Все функции + все 3 маркетплейса',
-        'Новости Operon и ранний доступ к новым функциям',
-        'Прямой контакт для связи с администраторами Operon',
+        'Новости FindLead и ранний доступ к новым функциям',
+        'Прямой контакт для связи с администраторами FindLead',
       ],
     }[p]),
-    adminContact: 'Связь с администраторами Operon',
+    adminContact: 'Связь с администраторами FindLead',
     error: 'Не удалось загрузить данные тарифа',
   },
   kk: {
@@ -73,17 +74,17 @@ const T = {
         'Instagram және Telegram бірге',
         'Бизнес пен бәсекелестер талдауы',
         'Kaspi, Wildberries, Uzum — 3 маркетплейс',
-        'Operon-ның барлық мүмкіндіктері',
+        'FindLead-ның барлық мүмкіндіктері',
       ],
       business: [
         'Күн сайын: 3 AI-бейне + 3 пост',
         'Reels 12:30, 18:30 және 21:30-да — ең көп қарайтын уақытта',
         'Барлық мүмкіндік + 3 маркетплейс',
-        'Operon жаңалықтары және жаңа мүмкіндіктерге алғашқы қолжетімділік',
-        'Operon әкімшілерімен байланысуға тікелей контакт',
+        'FindLead жаңалықтары және жаңа мүмкіндіктерге алғашқы қолжетімділік',
+        'FindLead әкімшілерімен байланысуға тікелей контакт',
       ],
     }[p]),
-    adminContact: 'Operon әкімшілерімен байланыс',
+    adminContact: 'FindLead әкімшілерімен байланыс',
     error: 'Тариф деректері жүктелмеді',
   },
 };
@@ -196,7 +197,7 @@ export const SubscriptionPlanView: React.FC<SubscriptionPlanViewProps> = ({ onBa
               ? <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">{L.active}</span>
               : <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">🎁</span>}
           </div>
-          <p className="text-[11px] text-slate-500">{lang === 'kk' ? 'Operon-ды өз бизнесіңізде байқап көру' : 'Попробовать Operon на своём бизнесе'}</p>
+          <p className="text-[11px] text-slate-500">{lang === 'kk' ? 'FindLead-ды өз бизнесіңізде байқап көру' : 'Попробовать FindLead на своём бизнесе'}</p>
           <p className="text-[20px] font-black">$0 <span className="text-[12px] font-semibold text-slate-500">/ {lang === 'kk' ? '14 күн' : '14 дней'}</span></p>
           <ul className="space-y-1">
             {(lang === 'kk'
@@ -214,7 +215,9 @@ export const SubscriptionPlanView: React.FC<SubscriptionPlanViewProps> = ({ onBa
         </div>
         )}
 
-        {(['starter', 'growth', 'business'] as PlanId[]).map((p) => (
+        {/* Google Play to'lov qoidasi (2026-11-16): Android ilovada raqamli xizmat tarifi sotilmaydi va tashqi
+            to'lovga yo'naltirilmaydi — faqat joriy tarif holati ko'rinadi. Tariflar saytda (brauzerda) ulanadi. */}
+        {!isAndroidApp() && (['starter', 'growth', 'business'] as PlanId[]).map((p) => (
           <div key={p} className={`bg-white rounded-2xl p-3.5 space-y-2 border ${currentId === p ? 'border-purple-500' : 'border-slate-200/90'}`}>
             <div className="flex items-center justify-between">
               <p className="text-[14px] font-black">{NAMES[p]}</p>
@@ -239,7 +242,7 @@ export const SubscriptionPlanView: React.FC<SubscriptionPlanViewProps> = ({ onBa
           </div>
         ))}
 
-        <p className="text-center text-[11px] text-slate-500">{L.soon}</p>
+        {!isAndroidApp() && <p className="text-center text-[11px] text-slate-500">{L.soon}</p>}
       </div>
     </div>
   );

@@ -17,6 +17,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { AiReportButton } from './AiReportButton';
 import { NicheGate } from './NicheGate';
 import { PostPlanPanel } from './PostPlanPanel';
 import { api, ApiError, GeneratedPost, PostPlatform, PostRow, PublishResult, PublishTarget } from '../lib/api';
@@ -443,6 +444,7 @@ export const AIPostGeneratorView: React.FC<AIPostGeneratorViewProps> = ({ onBack
               {p.image_url && <img src={p.image_url} alt="" className="w-16 h-16 rounded-lg object-cover shrink-0" />}
               <p className="text-[12px] leading-snug text-slate-700 line-clamp-4 whitespace-pre-line">{p.content}</p>
             </div>
+            <AiReportButton businessId={businessId} kind="post" refId={p.id} excerpt={p.content} lang={lang} />
           </div>
         ))}
       </div>

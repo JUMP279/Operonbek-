@@ -22,7 +22,8 @@ import {
   MessageSquareText,
   Store,
   Rocket,
-  LifeBuoy
+  LifeBuoy,
+  Handshake
 } from 'lucide-react';
 import { UserProfile, Language } from '../types';
 import { UserAvatarIcon } from './UserAvatar';
@@ -95,6 +96,19 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
   ];
 
   const allTools = [
+    {
+      id: 'deals',
+      titleKk: 'Мәмілелер',
+      titleRu: 'Сделки',
+      subtitleKk: '«Аламын» дегендер: сатылды / алмады',
+      subtitleRu: 'Кто сказал «беру»: продано / не купили',
+      icon: <Handshake className="w-4 h-4 text-blue-600" />,
+      bg: 'bg-blue-50/80',
+      border: 'border-blue-100',
+      badgeKk: 'Сатылым',
+      badgeRu: 'Продажи',
+      badgeColor: 'bg-blue-100 text-blue-700'
+    },
     {
       id: 'customer-response',
       titleKk: 'Клиенттерге жауап',
@@ -190,8 +204,8 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
       id: 'support',
       titleKk: 'Қолдау',
       titleRu: 'Поддержка',
-      subtitleKk: 'Operon командасына жазу',
-      subtitleRu: 'Написать команде Operon',
+      subtitleKk: 'FindLead командасына жазу',
+      subtitleRu: 'Написать команде FindLead',
       icon: <LifeBuoy className="w-4 h-4 text-purple-600" />,
       bg: 'bg-purple-50/80',
       border: 'border-purple-100',
@@ -302,7 +316,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
               {/* Faqat do'kon nomi (kirgan biznes) — gmail ko'rsatilmaydi */}
               <div className="flex items-center gap-1.5">
                 <span className="text-[19px] leading-tight font-black text-slate-900 group-hover:text-blue-600 transition-colors truncate tracking-tight">
-                  {userProfile?.storeName || 'Operon'}
+                  {userProfile?.storeName || 'FindLead'}
                 </span>
                 <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
               </div>

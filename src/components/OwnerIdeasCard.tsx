@@ -29,7 +29,7 @@ export const OwnerIdeasCard: React.FC<{ businessId: string; kind: 'video' | 'pos
     try {
       setIdeas((await api.addOwnerIdea(businessId, kind, v)).ideas);
       setText('');
-      setMsg(ru ? `Идея добавлена — следующее ${what} Operon сделает по ней.` : `Идея қосылды — Operon келесі ${what}ты соған сай жасайды.`);
+      setMsg(ru ? `Идея добавлена — следующее ${what} FindLead сделает по ней.` : `Идея қосылды — FindLead келесі ${what}ты соған сай жасайды.`);
     } catch (e) {
       setMsg(e instanceof ApiError && e.message === 'too_many' ? (ru ? 'Слишком много идей в очереди.' : 'Кезекте идея тым көп.') : (ru ? 'Не удалось сохранить.' : 'Сақталмады.'));
     } finally {
@@ -74,7 +74,7 @@ export const OwnerIdeasCard: React.FC<{ businessId: string; kind: 'video' | 'pos
         <span className="flex-1 min-w-0">
           <span className="block text-[13px] font-black text-slate-900">{ru ? 'Мои идеи' : 'Менің идеяларым'}{pending.length ? ` · ${pending.length}` : ''}</span>
           <span className="block text-[11px] text-slate-600 leading-snug">
-            {ru ? `Есть идея для ${kind === 'video' ? 'видео' : 'поста'}? Напишите — Operon сделает по ней.` : `${kind === 'video' ? 'Видеоға' : 'Постқа'} идеяңыз бар ма? Жазыңыз — Operon соған сай жасайды.`}
+            {ru ? `Есть идея для ${kind === 'video' ? 'видео' : 'поста'}? Напишите — FindLead сделает по ней.` : `${kind === 'video' ? 'Видеоға' : 'Постқа'} идеяңыз бар ма? Жазыңыз — FindLead соған сай жасайды.`}
           </span>
         </span>
         <Plus className={`w-4 h-4 text-amber-700 transition-transform ${open ? 'rotate-45' : ''}`} />

@@ -286,8 +286,8 @@ export const BusinessAnalyzeView: React.FC<{ onBack: () => void; storeContext?: 
           <div className="bg-white border border-slate-200 rounded-2xl p-5 text-center space-y-2">
             <p className="text-[14px] font-black">{lang === 'kk' ? 'Бизнес талдауы — Growth және Business тарифтерінде' : 'Анализ бизнеса — в тарифах Growth и Business'}</p>
             <p className="text-[12px] text-slate-600 leading-snug">{lang === 'kk'
-              ? 'Operon Kaspi, WB, Instagram және Telegram-дағы бәсекелестерді бақылап, бизнесіңіздің жағдайын бағалайды. «Тариф» бөлімінен қосыңыз.'
-              : 'Operon будет следить за конкурентами на Kaspi, WB, в Instagram и Telegram и оценивать состояние бизнеса. Подключите в разделе «Тариф».'}</p>
+              ? 'FindLead Kaspi, WB, Instagram және Telegram-дағы бәсекелестерді бақылап, бизнесіңіздің жағдайын бағалайды. «Тариф» бөлімінен қосыңыз.'
+              : 'FindLead будет следить за конкурентами на Kaspi, WB, в Instagram и Telegram и оценивать состояние бизнеса. Подключите в разделе «Тариф».'}</p>
           </div>
         </div>
       </div>

@@ -62,7 +62,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       // Previously the picker was cosmetic: every format downloaded a .csv file.
       if (format === 'json') {
         const payload = {
-          report: 'Operon Analytics',
+          report: 'FindLead Analytics',
           dateRange,
           generatedAt: new Date().toISOString(),
           rows: rows.map((r) => ({
@@ -88,7 +88,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
           )
           .join('');
         const html = `<!doctype html><html><head><meta charset="utf-8">
-<title>Operon Analytics — ${dateRange}</title>
+<title>FindLead Analytics — ${dateRange}</title>
 <style>
 body{font-family:system-ui,sans-serif;padding:32px;color:#0f172a}
 h1{font-size:20px;margin:0 0 4px}p{color:#64748b;margin:0 0 20px;font-size:13px}
@@ -97,7 +97,7 @@ th,td{border:1px solid #e2e8f0;padding:8px 10px;text-align:left}
 th{background:#f1f5f9}
 @media print{@page{margin:16mm}}
 </style></head><body>
-<h1>Operon Analytics Report</h1><p>${dateRange}</p>
+<h1>FindLead Analytics Report</h1><p>${dateRange}</p>
 <table><thead><tr>${header.map((h) => `<th>${h}</th>`).join('')}</tr></thead>
 <tbody>${tableRows}</tbody></table>
 <script>window.onload=function(){window.print()}</script>
@@ -128,7 +128,7 @@ th{background:#f1f5f9}
   };
 
   const handleCopy = async () => {
-    const summary = `📊 Operon Analytics Report (${dateRange})\n` +
+    const summary = `📊 FindLead Analytics Report (${dateRange})\n` +
       `• Revenue: ${totalProfit}\n` +
       metrics.map((m) => `• ${m.label}: ${m.value} (${m.change})`).join('\n') +
       `\n• Repeat Customer Rate: ${retention ?? 0}%`;

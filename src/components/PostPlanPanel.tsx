@@ -2,6 +2,7 @@ import { OwnerIdeasCard } from './OwnerIdeasCard';
 import React, { useEffect, useRef, useState } from 'react';
 import { CalendarClock, Clock, Loader2, RefreshCw, Sparkles } from 'lucide-react';
 import { api, ApiError, ContentLang, PostPlan, PostPlanItem } from '../lib/api';
+import { ApprovalSwitch, ReviewActions } from './ApprovalSwitch';
 
 // Kunlik post rejasi: har kuni 1 post, tanlangan vaqtda. Matn+rasm faqat eng yaqin post uchun
 // oldindan tayyorlanadi; ҚАЗ/РУС bilan til almashtiriladi.
@@ -76,7 +77,7 @@ export const PostPlanPanel: React.FC<{ businessId: string; lang: 'ru' | 'kk' }> 
   const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
   const upcoming = (plan?.items || [])
     .filter((i) => i.status !== 'published' && i.status !== 'failed'
-      && (!i.past || new Date(i.scheduled_at) >= todayStart))
+      && (i.needs_approval || !i.past || new Date(i.scheduled_at) >= todayStart))
     .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime());
   const nextDraft = upcoming.find((i) => i.status === 'draft');
   waiting.current = !!nextDraft && !nextDraft.text;
@@ -136,9 +137,19 @@ export const PostPlanPanel: React.FC<{ businessId: string; lang: 'ru' | 'kk' }> 
     }
   };
 
-  const badge = (s: PostPlanItem['status'], hasText: boolean) => {
+  // Yarim avtomat (2026-11-16): tayyor post tadbirkor «Опубликовать» bosmaguncha chiqmaydi
+  const approval = plan?.settings?.approval || 'auto';
+  const act = async (id: string, f: () => Promise<unknown>) => {
+    setBusy(id);
+    setError('');
+    try { await f(); await load(); } catch (e) { setError(errText(e)); } finally { setBusy(null); }
+  };
+
+  const badge = (s: PostPlanItem['status'], hasText: boolean, review?: boolean) => {
     const [label, cls] =
-      s === 'published' ? [L.published, 'bg-emerald-50 text-emerald-700']
+      review ? [lang === 'ru' ? 'Ждёт вашего ОК' : 'Келісіміңізді күтеді', 'bg-amber-50 text-amber-700']
+      : s === 'skipped' ? [lang === 'ru' ? 'Не выйдет' : 'Шықпайды', 'bg-slate-100 text-slate-500']
+      : s === 'published' ? [L.published, 'bg-emerald-50 text-emerald-700']
       : s === 'scheduled' ? [L.ready, 'bg-sky-50 text-sky-700']
       : s === 'failed' ? [L.failed, 'bg-rose-50 text-rose-700']
       : [hasText ? L.draft : '…', 'bg-slate-100 text-slate-600'];
@@ -184,13 +195,23 @@ export const PostPlanPanel: React.FC<{ businessId: string; lang: 'ru' | 'kk' }> 
         </div>
       )}
 
+      {active && (
+        <ApprovalSwitch value={approval} kind="post" lang={lang}
+          onChange={async (m) => {
+            try {
+              const r = await api.setPostApproval(businessId, m);
+              setPlan((p) => (p ? { ...p, settings: { ...(p.settings || {}), approval: r.approval }, items: r.items } : p));
+            } catch (e) { setError(errText(e)); }
+          }} />
+      )}
+
       {active && upcoming.map((it) => (
         <div key={it.id} className="bg-white border border-slate-200/90 rounded-2xl p-3 space-y-2">
           <div className="flex items-center justify-between gap-2">
             <span className="text-[11.5px] font-bold text-purple-700 flex items-center gap-1.5">
               <CalendarClock className="w-3.5 h-3.5" />{when(it.scheduled_at, lang)}
             </span>
-            {badge(it.status, !!it.text)}
+            {badge(it.status, !!it.text, it.needs_approval)}
           </div>
 
           {it.text ? (
@@ -213,6 +234,25 @@ export const PostPlanPanel: React.FC<{ businessId: string; lang: 'ru' | 'kk' }> 
                     <RefreshCw className="w-3.5 h-3.5" />{L.other}
                   </button>
                 </div>
+              )}
+              {it.needs_approval && (
+                <ReviewActions lang={lang} past={it.past} busy={busy === it.id}
+                  redoLabel={lang === 'ru' ? 'Переписать' : 'Қайта жазу'} redoGo={lang === 'ru' ? 'Переписать пост' : 'Постты қайта жазу'}
+                  onApprove={() => act(it.id, () => api.approvePostItem(it.id))}
+                  onRedo={(w) => act(it.id, () => api.regeneratePostItem(it.id, w))}
+                  onSkip={() => act(it.id, () => api.skipPostItem(it.id))} />
+              )}
+              {it.status === 'skipped' && (
+                <button onClick={() => act(it.id, () => api.approvePostItem(it.id))} disabled={busy === it.id}
+                  className="w-full py-2 rounded-xl text-[11.5px] font-bold bg-slate-100 text-slate-700 flex items-center justify-center gap-1.5 disabled:opacity-50">
+                  <RefreshCw className="w-3.5 h-3.5" />{lang === 'ru' ? 'Вернуть и опубликовать' : 'Қайтарып жариялау'}
+                </button>
+              )}
+              {approval === 'semi' && it.status === 'scheduled' && (
+                <button onClick={() => act(it.id, () => api.skipPostItem(it.id))} disabled={busy === it.id}
+                  className="w-full py-2 rounded-xl text-[11.5px] font-bold bg-slate-100 text-slate-600 disabled:opacity-50">
+                  {lang === 'ru' ? 'Отменить выход' : 'Шығуды болдырмау'}
+                </button>
               )}
             </>
           ) : (

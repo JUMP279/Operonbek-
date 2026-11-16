@@ -3,7 +3,7 @@ import { ArrowLeft, LifeBuoy, Loader2, Send } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { api, SupportThread } from '../lib/api';
 
-// Operon qo'llab-quvvatlashi (services/support_desk.py) — saytdagi cabinet/Support.tsx bilan bir xil.
+// FindLead qo'llab-quvvatlashi (services/support_desk.py) — saytdagi cabinet/Support.tsx bilan bir xil.
 export const SupportView: React.FC<{ onBack: () => void; storeContext?: { businessId?: string } }> = ({ onBack, storeContext }) => {
   const { language } = useLanguage();
   const k = language === 'kk';
@@ -47,12 +47,12 @@ export const SupportView: React.FC<{ onBack: () => void; storeContext?: { busine
         <h1 className="text-sm font-black flex items-center gap-1.5"><LifeBuoy className="w-4 h-4 text-purple-600" />{k ? 'Қолдау' : 'Поддержка'}</h1>
       </div>
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
-        <p className="text-[11px] text-slate-500 text-center">{k ? 'Operon командасына жазыңыз — осында және Telegram-да жауап береміз.' : 'Напишите команде Operon — ответим здесь и в Telegram.'}</p>
+        <p className="text-[11px] text-slate-500 text-center">{k ? 'FindLead командасына жазыңыз — осында және Telegram-да жауап береміз.' : 'Напишите команде FindLead — ответим здесь и в Telegram.'}</p>
         {!th && <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 text-purple-600 animate-spin" /></div>}
         {th?.messages.map((m) => (
           <div key={m.id || m.at} className={`flex ${m.from === 'me' ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-[82%] rounded-2xl px-3 py-2 text-[12.5px] leading-relaxed whitespace-pre-line ${m.from === 'me' ? 'bg-slate-800 text-white' : 'bg-purple-50 border border-purple-100'}`}>
-              {m.from !== 'me' && <p className="text-[10px] font-bold text-purple-700 mb-0.5">Operon</p>}
+              {m.from !== 'me' && <p className="text-[10px] font-bold text-purple-700 mb-0.5">FindLead</p>}
               {m.text}
               <p className={`text-[9.5px] mt-0.5 ${m.from === 'me' ? 'text-white/50' : 'text-slate-400'}`}>{when(m.at)}</p>
             </div>
@@ -64,7 +64,7 @@ export const SupportView: React.FC<{ onBack: () => void; storeContext?: { busine
         {err && <p className="text-[11px] text-rose-600 mb-1.5">{err}</p>}
         <div className="flex gap-2">
           <input value={text} onChange={(e) => setText(e.target.value)} maxLength={2000} onKeyDown={(e) => { if (e.key === 'Enter') send(); }}
-            placeholder={k ? 'Operon командасына хабар…' : 'Сообщение для команды Operon…'}
+            placeholder={k ? 'FindLead командасына хабар…' : 'Сообщение для команды FindLead…'}
             className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-[12.5px] outline-none focus:border-purple-400" />
           <button onClick={send} disabled={busy || !text.trim()} className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center disabled:opacity-50">
             {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}

@@ -1,13 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { lazy, Suspense, useState, useEffect, useRef } from 'react';
 import { Download, Calendar, LayoutGrid } from 'lucide-react';
 import { HeaderNav } from './components/HeaderNav';
 import { BottomNavBar } from './components/BottomNavBar';
 import { MetricCards } from './components/MetricCards';
-import { ProfitChart } from './components/ProfitChart';
+import { RevenueCard } from './components/RevenueCard';
 import { CustomerBreakdown } from './components/CustomerBreakdown';
 import { DayActiveChart } from './components/DayActiveChart';
 import { RetentionGauge } from './components/RetentionGauge';
-import { ProfileTab } from './components/ProfileTab';
 import { ToolDetailView } from './components/ToolDetailView';
 import { UserAvatarIcon } from './components/UserAvatar';
 
@@ -20,7 +19,10 @@ import { CustomerDetailsModal } from './components/CustomerDetailsModal';
 import { RetentionDetailsModal } from './components/RetentionDetailsModal';
 import { FilterModal } from './components/FilterModal';
 import { ProfileModal } from './components/ProfileModal';
-import { AuthFlow, AuthStep } from './components/AuthFlow';
+import type { AuthStep } from './components/AuthFlow';
+// Kirish oynasi va Profil alohida yuklanadi (2026-11-16): kirgan foydalanuvchi AuthFlow kodini yuklamaydi.
+const AuthFlow = lazy(() => import('./components/AuthFlow').then((m) => ({ default: m.AuthFlow })));
+const ProfileTab = lazy(() => import('./components/ProfileTab').then((m) => ({ default: m.ProfileTab })));
 import { ConsentGate } from './components/LegalConsent';
 import { api, ApiError, tokens, MeResponse, BusinessProfile, consumeOAuthReturn } from './lib/api';
 
@@ -38,7 +40,6 @@ import { DashboardData } from './lib/api';
 import {
   buildMetrics,
   buildNotifications,
-  buildRevenueSeries,
   buildSegments,
   buildStoreContext,
   buildWeekdays
@@ -50,7 +51,7 @@ import { CustomerSegment, ActiveTab, UserProfile } from './types';
 const GUEST_PROFILE: UserProfile = {
   id: '',
   uniqueCode: '',
-  name: 'Operon',
+  name: 'FindLead',
   email: '',
   storeName: '',
   businessType: 'Retailer',
@@ -67,7 +68,7 @@ function profileFromMe(me: MeResponse, prev: UserProfile, profile?: BusinessProf
     ...prev,
     id: me.id,
     uniqueCode: code,
-    name: prev.email === me.email && prev.name && prev.name !== 'Operon' ? prev.name : me.email.split('@')[0],
+    name: prev.email === me.email && prev.name && prev.name !== 'FindLead' ? prev.name : me.email.split('@')[0],
     email: me.email,
     storeName: me.business?.brand_name || profile?.brand_name || prev.storeName,
     isVerified: true,
@@ -222,7 +223,6 @@ function DashboardApp() {
   }, [onOverview]);
 
   const metrics = dash ? buildMetrics(dash, language) : [];
-  const revenueSeries = dash ? buildRevenueSeries(dash, language) : [];
   const customerData = dash ? buildSegments(dash, language) : [];
   const dayActiveData = dash ? buildWeekdays(dash, language) : [];
   const notifications = dash ? buildNotifications(dash, language) : [];
@@ -431,12 +431,10 @@ function DashboardApp() {
                     </div>
                   )}
 
-                  <ProfitChart
-                    data={revenueSeries}
-                    total={dash.metrics.revenue}
-                    change={dash.metrics.revenue_change}
+                  <RevenueCard
+                    dash={dash}
                     currency={currencyCode}
-                    onOpenDetails={() => setActiveTab('analytics')}
+                    onOpenDeals={() => setActivePhoneTool('deals')}
                   />
 
                   {/* "Сегменты клиентов" (CustomerBreakdown) 2026-11-14 user so'rovi bilan olib tashlandi */}
@@ -455,6 +453,7 @@ function DashboardApp() {
           )}
 
           {activeTab === 'profile' && (
+            <Suspense fallback={null}>
             <ProfileTab
               onOpenNotifications={() => setIsNotificationsOpen(true)}
               onOpenProfile={() => setIsProfileOpen(true)}
@@ -465,6 +464,7 @@ function DashboardApp() {
               userProfile={userProfile}
               storeContext={storeContext}
             />
+            </Suspense>
           )}
         </div>
       )}
@@ -558,11 +558,13 @@ function DashboardApp() {
 
       {/* Kirish → Ro'yxatdan o'tish → (Biznesni qo'shish | Biznes yaratish) → AI intervyu */}
       {authStep && session !== 'checking' && (
-        <AuthFlow
-          initialStep={authStep}
-          onReady={(me) => enterDashboard(me)}
-          onClose={session === 'ready' ? () => setAuthStep(null) : undefined}
-        />
+        <Suspense fallback={null}>
+          <AuthFlow
+            initialStep={authStep}
+            onReady={(me) => enterDashboard(me)}
+            onClose={session === 'ready' ? () => setAuthStep(null) : undefined}
+          />
+        </Suspense>
       )}
 
       {session === 'ready' && !authStep && consentVersion && (

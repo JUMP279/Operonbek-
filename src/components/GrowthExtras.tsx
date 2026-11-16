@@ -118,7 +118,7 @@ export const ExperimentsCard: React.FC<{ businessId: string; lang: Lang }> = ({ 
     <div className="p-3.5 rounded-2xl bg-white border border-slate-200/90 space-y-2.5">
       <div className="flex items-center gap-2">
         <FlaskConical className="w-4 h-4 text-violet-600" />
-        <p className="text-[13px] font-black">{k ? 'Operon эксперименттері' : 'Эксперименты Operon'}</p>
+        <p className="text-[13px] font-black">{k ? 'FindLead эксперименттері' : 'Эксперименты FindLead'}</p>
       </div>
       <p className="text-[11px] text-slate-500 leading-snug">{k
         ? `Әр 4 бейненің біреуі — жаңа нұсқа (формат, ілмек, ұзындық, уақыт). Көп қаралғаны жиірек, көрмегені сирек қолданылады. Әр нұсқа ${d.min_samples}+ бейнеден кейін бағаланады.`
@@ -128,8 +128,8 @@ export const ExperimentsCard: React.FC<{ businessId: string; lang: Lang }> = ({ 
         {d.avg_views != null && <span className="px-2 py-1 rounded-lg bg-slate-100 font-bold">{k ? 'Орташа қаралым' : 'Среднее просмотров'}: {Math.round(d.avg_views)}</span>}
       </div>
       {d.samples < 3 && <p className="text-[11px] text-amber-700 bg-amber-50 rounded-xl px-2.5 py-2">{k
-        ? 'Әзірге дерек аз — Operon әр түрлі нұсқаны сынап жатыр. Статистика бейне шыққаннан 24 сағаттан кейін жиналады.'
-        : 'Пока мало данных — Operon пробует разные варианты. Статистика собирается через 24 часа после выхода видео.'}</p>}
+        ? 'Әзірге дерек аз — FindLead әр түрлі нұсқаны сынап жатыр. Статистика бейне шыққаннан 24 сағаттан кейін жиналады.'
+        : 'Пока мало данных — FindLead пробует разные варианты. Статистика собирается через 24 часа после выхода видео.'}</p>}
       {dims.map((dim) => (
         <div key={dim} className="space-y-1">
           <p className="text-[11px] font-bold text-slate-500">{DIM_LABEL[dim][lang]}</p>

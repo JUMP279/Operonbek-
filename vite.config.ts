@@ -6,6 +6,14 @@ import {defineConfig} from 'vite';
 export default defineConfig(() => {
   return {
     plugins: [react(), tailwindcss()],
+    // React va ikonlar alohida fayl: kod o'zgarganda ham telefon keshidan olinadi (2026-11-16)
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: { react: ['react', 'react-dom', 'react-dom/client', 'scheduler'], icons: ['lucide-react'] },
+        },
+      },
+    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

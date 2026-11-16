@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { lazy, Suspense, useState, useRef } from 'react';
 import {
   ArrowLeft,
   Bot,
@@ -46,18 +46,31 @@ import {
 import { useLanguage } from '../context/LanguageContext';
 import { CustomerBreakdown } from './CustomerBreakdown';
 import { RetentionGauge } from './RetentionGauge';
-import { SubscriptionPlanView } from './SubscriptionPlanView';
-import { AIVideoGeneratorView } from './AIVideoGeneratorView';
-import { AIPostGeneratorView } from './AIPostGeneratorView';
-import { ProductsManagerView } from './ProductsManagerView';
-import { OrdersManagerView } from './OrdersManagerView';
-import { AnalyticsView } from './AnalyticsView';
-import { BusinessAnalyzeView } from './BusinessAnalyzeView';
-import { BusinessMemoryView } from './BusinessMemoryView';
-import { MarketplaceReportView } from './MarketplaceReportView';
-import { GrowthView } from './GrowthView';
-import { SupportView } from './SupportView';
-import { CustomerResponseView } from './CustomerResponseView';
+
+// Har bir vosita alohida faylda yuklanadi (2026-11-16): ilova ochilganda 12 ta ekran kodi birdan kelmaydi,
+// faqat foydalanuvchi ochgan vosita yuklanadi.
+const ViewLoading = () => (
+  <div className="flex-1 flex items-center justify-center py-20">
+    <div className="w-8 h-8 rounded-full border-2 border-[#2f55f4]/20 border-t-[#2f55f4] animate-spin" />
+  </div>
+);
+function lazyView<K extends string>(load: () => Promise<Record<K, React.ComponentType<any>>>, k: K) {
+  const C = lazy(() => load().then((m) => ({ default: m[k] })));
+  return (props: any) => <Suspense fallback={<ViewLoading />}><C {...props} /></Suspense>;
+}
+const SubscriptionPlanView = lazyView(() => import('./SubscriptionPlanView'), 'SubscriptionPlanView');
+const AIVideoGeneratorView = lazyView(() => import('./AIVideoGeneratorView'), 'AIVideoGeneratorView');
+const AIPostGeneratorView = lazyView(() => import('./AIPostGeneratorView'), 'AIPostGeneratorView');
+const ProductsManagerView = lazyView(() => import('./ProductsManagerView'), 'ProductsManagerView');
+const OrdersManagerView = lazyView(() => import('./OrdersManagerView'), 'OrdersManagerView');
+const AnalyticsView = lazyView(() => import('./AnalyticsView'), 'AnalyticsView');
+const BusinessAnalyzeView = lazyView(() => import('./BusinessAnalyzeView'), 'BusinessAnalyzeView');
+const BusinessMemoryView = lazyView(() => import('./BusinessMemoryView'), 'BusinessMemoryView');
+const MarketplaceReportView = lazyView(() => import('./MarketplaceReportView'), 'MarketplaceReportView');
+const GrowthView = lazyView(() => import('./GrowthView'), 'GrowthView');
+const SupportView = lazyView(() => import('./SupportView'), 'SupportView');
+const DealsView = lazyView(() => import('./DealsView'), 'DealsView');
+const CustomerResponseView = lazyView(() => import('./CustomerResponseView'), 'CustomerResponseView');
 
 export interface ToolDetailViewProps {
   toolId: string;
@@ -119,6 +132,10 @@ export const ToolDetailView: React.FC<ToolDetailViewProps> = ({
 
   if (toolId === 'customer-response' || toolId === 'client-response' || toolId === 'customer_reply') {
     return <CustomerResponseView onBack={onBack} storeContext={storeContext} />;
+  }
+
+  if (toolId === 'deals') {
+    return <DealsView onBack={onBack} storeContext={storeContext} />;
   }
 
   if (toolId === 'subscription') {

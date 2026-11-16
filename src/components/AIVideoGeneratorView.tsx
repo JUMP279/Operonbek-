@@ -18,6 +18,8 @@ import {
   Clock,
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { AiReportButton } from './AiReportButton';
+import { ApprovalSwitch, ReviewActions } from './ApprovalSwitch';
 import { api, ApiError, CharacterCandidate, VideoItem, VideoPlan, VideoPlanItem, VideoProfile } from '../lib/api';
 import { formatDay } from '../lib/format';
 import { NicheGate } from './NicheGate';
@@ -42,18 +44,18 @@ const T = {
   ru: {
     title: 'AI видео', back: 'Назад', plan: 'План', library: 'Мои видео',
     wizTitle: 'Настроим ваши видео (один раз)',
-    wizHint: 'Operon будет делать каждое видео по этим правилам.',
+    wizHint: 'FindLead будет делать каждое видео по этим правилам.',
     q1: 'О чём должны быть видео?', q2: 'В каком жанре?', q3: 'Кто будет героем видео? Видео снимаются в стиле UGC — как будто настоящий покупатель снял на телефон.',
     q4: 'Длительность видео', sec: (n: number) => (n === 0 ? 'Авто' : `${n} сек`),
     q5: 'Стиль видео', styleReal: 'Реалистичный', styleCartoon: 'Мультик', stylePixel: 'Пиксельный', styleHint: 'Как выглядят персонаж и видео.',
-    secHint: 'Авто — Operon сам выбирает длину под идею и формат (5-20 сек), поэтому видео получаются разной длины. Или задайте максимум вручную.',
+    secHint: 'Авто — FindLead сам выбирает длину под идею и формат (5-20 сек), поэтому видео получаются разной длины. Или задайте максимум вручную.',
     styleSilent: 'Без слов · музыка', styleCloseup: 'Крупный план', styleWide: 'В полный рост',
     own: 'Свой вариант…', yes: 'Выберу сам', no: 'Пусть AI подберёт',
     photo: 'Фото героя', photoHint: 'Загрузите фото — AI опишет героя и будет показывать его в видео.',
     note: 'Какой герой нужен?', notePh: 'Например: пожилой добрый бариста / весёлая девушка / смешной кот',
     oneHero: 'Во всех видео будет ОДИН и тот же герой.',
     findPin: 'Найти в Pinterest', pinLink: 'Ссылка Pinterest', upload: 'Своё фото', noPhoto: 'Создать по описанию (AI)',
-    aiHint: 'Operon сам подберёт героя под ваш магазин и покажет его. Не нравится — нажмите «Ещё вариант».',
+    aiHint: 'FindLead сам подберёт героя под ваш магазин и покажет его. Не нравится — нажмите «Ещё вариант».',
     aiAnother: 'Ещё вариант', aiMaking: 'AI создаёт героя (до 1 минуты)…',
     pinLinkPh: 'https://pin.it/… или pinterest.com/pin/…', usePin: 'Взять',
     searching: 'Ищем героев в Pinterest…', pickOne: 'Выберите героя:', nothing: 'Ничего не нашлось — уточните описание.',
@@ -67,7 +69,7 @@ const T = {
     timesTitle: 'Когда публиковать?',
     cadence: (c: VideoPlan['cadence']) =>
       `Ваш тариф: ${c.monthly} видео в месяц — ${c.per_day > 1 ? `${c.per_day} в день` : c.every_days === 2 ? 'каждые 2 дня' : 'каждый день'}.`,
-    timesHint: 'Видео создаётся заранее и выходит в Instagram (Reels + Stories) в выбранное время. Лучшее время в Казахстане: 12:30, 18:30, 21:30. Ночное время (00:00–07:00) Operon заменит — ночью Reels почти не показывают.',
+    timesHint: 'Видео создаётся заранее и выходит в Instagram (Reels + Stories) в выбранное время. Лучшее время в Казахстане: 12:30, 18:30, 21:30. Ночное время (00:00–07:00) FindLead заменит — ночью Reels почти не показывают.',
     time: 'Время', start: 'Запустить план', starting: 'Создаём план…',
     upcoming: 'Ближайшие видео', editStyle: 'Изменить стиль и настройки', stop: 'Остановить план',
     stopConfirm: 'Точно остановить? Будущие видео удалятся.',
@@ -85,18 +87,18 @@ const T = {
   kk: {
     title: 'AI бейне', back: 'Артқа', plan: 'Жоспар', library: 'Бейнелерім',
     wizTitle: 'Бейнелеріңізді баптайық (бір рет)',
-    wizHint: 'Operon әр бейнені осы ережелер бойынша жасайды.',
+    wizHint: 'FindLead әр бейнені осы ережелер бойынша жасайды.',
     q1: 'Бейнелер не туралы болсын?', q2: 'Қандай жанрда?', q3: 'Бейне кейіпкері кім болады? Бейнелер UGC стилінде — нағыз сатып алушы телефонға түсіргендей.',
     q4: 'Бейне ұзақтығы', sec: (n: number) => (n === 0 ? 'Авто' : `${n} сек`),
     q5: 'Бейне стилі', styleReal: 'Шынайы', styleCartoon: 'Мультфильм', stylePixel: 'Пиксельді', styleHint: 'Кейіпкер мен бейне қалай көрінеді.',
-    secHint: 'Авто — Operon идея мен форматқа қарай ұзақтықты өзі таңдайды (5-20 сек), сондықтан бейнелер әртүрлі ұзақтықта болады. Немесе ең ұзақ шекті қолмен қойыңыз.',
+    secHint: 'Авто — FindLead идея мен форматқа қарай ұзақтықты өзі таңдайды (5-20 сек), сондықтан бейнелер әртүрлі ұзақтықта болады. Немесе ең ұзақ шекті қолмен қойыңыз.',
     styleSilent: 'Сөзсіз · музыка', styleCloseup: 'Жақын план', styleWide: 'Толық бойымен',
     own: 'Өз нұсқаңыз…', yes: 'Өзім таңдаймын', no: 'AI таңдасын',
     photo: 'Кейіпкер суреті', photoHint: 'Сурет жүктеңіз — AI кейіпкерді сипаттап, бейнеде көрсетеді.',
     note: 'Қандай кейіпкер керек?', notePh: 'Мысалы: қарт мейірімді бариста / көңілді қыз / күлкілі мысық',
     oneHero: 'Барлық бейнеде БІР ғана кейіпкер болады.',
     findPin: 'Pinterest-тен табу', pinLink: 'Pinterest сілтемесі', upload: 'Өз суретім', noPhoto: 'Сипаттама бойынша жасау (AI)',
-    aiHint: 'Operon дүкеніңізге сай кейіпкерді өзі таңдап, көрсетеді. Ұнамаса — «Басқа нұсқа» басыңыз.',
+    aiHint: 'FindLead дүкеніңізге сай кейіпкерді өзі таңдап, көрсетеді. Ұнамаса — «Басқа нұсқа» басыңыз.',
     aiAnother: 'Басқа нұсқа', aiMaking: 'AI кейіпкер жасап жатыр (1 минутқа дейін)…',
     pinLinkPh: 'https://pin.it/… немесе pinterest.com/pin/…', usePin: 'Алу',
     searching: 'Pinterest-тен кейіпкер іздеп жатырмыз…', pickOne: 'Кейіпкерді таңдаңыз:', nothing: 'Ештеңе табылмады — сипаттаманы нақтылаңыз.',
@@ -110,7 +112,7 @@ const T = {
     timesTitle: 'Қашан жариялау керек?',
     cadence: (c: VideoPlan['cadence']) =>
       `Тарифіңіз: айына ${c.monthly} бейне — ${c.per_day > 1 ? `күніне ${c.per_day}` : c.every_days === 2 ? '2 күнде 1' : 'күн сайын'}.`,
-    timesHint: 'Бейне алдын ала жасалып, таңдалған уақытта Instagram-ға (Reels + Stories) шығады. Қазақстандағы ең жақсы уақыт: 12:30, 18:30, 21:30. Түнгі уақытты (00:00–07:00) Operon ауыстырады — түнде Reels-ті аз көрсетеді.',
+    timesHint: 'Бейне алдын ала жасалып, таңдалған уақытта Instagram-ға (Reels + Stories) шығады. Қазақстандағы ең жақсы уақыт: 12:30, 18:30, 21:30. Түнгі уақытты (00:00–07:00) FindLead ауыстырады — түнде Reels-ті аз көрсетеді.',
     time: 'Уақыт', start: 'Жоспарды бастау', starting: 'Жоспар жасалуда…',
     upcoming: 'Жақын бейнелер', editStyle: 'Стиль мен баптауды өзгерту', stop: 'Жоспарды тоқтату',
     stopConfirm: 'Шынымен тоқтатасыз ба? Болашақ бейнелер өшеді.',
@@ -329,7 +331,7 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
     }
   };
 
-  // "Пусть AI подберёт" — Operon qahramonni o'zi tanlab, rasmini chizib ko'rsatadi
+  // "Пусть AI подберёт" — FindLead qahramonni o'zi tanlab, rasmini chizib ko'rsatadi
   const autoHero = async () => {
     if (!businessId || charBusy) return;
     setCharBusy('text');
@@ -472,11 +474,20 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
     }
   };
 
-  const upcoming = (plan?.items || []).filter((i) => !i.past || i.status === 'draft' || i.status === 'scheduled');
+  // Yarim avtomat (2026-11-16): 'review' — tayyor video tadbirkor tasdig'ini kutmoqda (vaqti o'tgan bo'lsa ham ko'rinadi)
+  const approval = plan?.settings?.approval || 'auto';
+  const [itemBusy, setItemBusy] = useState<string | null>(null);
+  const itemAct = async (id: string, f: () => Promise<unknown>) => {
+    if (!businessId) return;
+    setItemBusy(id);
+    setError('');
+    try { await f(); setPlan(await api.videoPlan(businessId)); } catch (e) { setError(errText(e)); } finally { setItemBusy(null); }
+  };
+  const upcoming = (plan?.items || []).filter((i) => !i.past || i.status === 'draft' || i.status === 'scheduled' || i.status === 'review');
   // Ekranda faqat bugungi va kelgusi rejalar; eski kunlar ko'rinmaydi, eng yaqini doim tepada (2026-11-13)
   const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
   const visiblePlan = upcoming
-    .filter((i) => !i.past || new Date(i.scheduled_at).getTime() >= todayStart.getTime())
+    .filter((i) => i.status === 'review' || !i.past || new Date(i.scheduled_at).getTime() >= todayStart.getTime())
     .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime());
   // Ssenariy faqat eng yaqin draft uchun yoziladi — spinner ham faqat unda
   const nextDraft = upcoming.find((i) => i.status === 'draft');
@@ -759,6 +770,16 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
               </div>
             </div>
 
+            {businessId && (
+              <ApprovalSwitch value={approval} kind="video" lang={lang}
+                onChange={async (m) => {
+                  try {
+                    const r = await api.setVideoApproval(businessId, m);
+                    setPlan((p) => (p ? { ...p, settings: { ...(p.settings || {}), approval: r.approval }, items: r.items } : p));
+                  } catch (e) { setError(errText(e)); }
+                }} />
+            )}
+
             {visiblePlan.map((it) => {
               const isOpen = open === it.id;
               return (
@@ -770,8 +791,11 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                       it.status === 'published' ? 'bg-emerald-50 text-emerald-700'
                         : it.status === 'scheduled' ? 'bg-sky-50 text-sky-700'
+                        : it.status === 'review' ? 'bg-amber-50 text-amber-700'
                         : it.status === 'failed' ? 'bg-rose-50 text-rose-700' : 'bg-slate-100 text-slate-600'}`}>
                       {it.status === 'published' ? L.published : it.status === 'scheduled' ? L.ready
+                        : it.status === 'review' ? (lang === 'ru' ? 'Ждёт вашего ОК' : 'Келісіміңізді күтеді')
+                        : it.status === 'skipped' ? (lang === 'ru' ? 'Не выйдет' : 'Шықпайды')
                         : it.status === 'failed' ? L.failed : it.scenario ? L.scenario : '…'}
                     </span>
                   </div>
@@ -816,6 +840,30 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
                       <p className="text-[11px] text-slate-500 text-center">{L.videoLang}: <b className="text-slate-700">{(it.lang || 'kk') === 'ru' ? L.langRu : L.langKk}</b></p>
                     </>
                   )}
+                  {(it.scenario || it.video_url) && (
+                    <AiReportButton businessId={businessId} kind={it.video_url ? 'video' : 'script'} refId={it.id}
+                      excerpt={it.caption || it.scenario || ''} lang={lang} />
+                  )}
+
+                  {it.status === 'review' && (
+                    <ReviewActions lang={lang} past={it.past} busy={itemBusy === it.id}
+                      redoLabel={lang === 'ru' ? 'Переделать' : 'Қайта жасау'} redoGo={lang === 'ru' ? 'Переснять видео' : 'Бейнені қайта түсіру'}
+                      onApprove={() => itemAct(it.id, () => api.approveVideoItem(it.id))}
+                      onRedo={(w) => itemAct(it.id, () => api.redoVideoItem(it.id, w))}
+                      onSkip={() => itemAct(it.id, () => api.skipVideoItem(it.id))} />
+                  )}
+                  {it.status === 'skipped' && (
+                    <button disabled={itemBusy === it.id} onClick={() => itemAct(it.id, () => api.approveVideoItem(it.id))}
+                      className="w-full py-2 rounded-xl text-[11.5px] font-bold bg-slate-100 text-slate-700 flex items-center justify-center gap-1.5 disabled:opacity-50">
+                      <RefreshCw className="w-3.5 h-3.5" />{lang === 'ru' ? 'Вернуть в план' : 'Жоспарға қайтару'}
+                    </button>
+                  )}
+                  {approval === 'semi' && it.status === 'scheduled' && !it.past && (
+                    <button disabled={itemBusy === it.id} onClick={() => itemAct(it.id, () => api.skipVideoItem(it.id))}
+                      className="w-full py-2 rounded-xl text-[11.5px] font-bold bg-slate-100 text-slate-600 disabled:opacity-50">
+                      {lang === 'ru' ? 'Отменить выход' : 'Шығуды болдырмау'}
+                    </button>
+                  )}
 
                   {it.status === 'draft' && it.scenario && (
                     <div className="flex items-center gap-2 flex-wrap">
@@ -858,6 +906,7 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
                   <div className="p-2">
                     <p className="text-[11px] font-semibold text-slate-800 line-clamp-2">{v.content}</p>
                     <p className="text-[10px] text-slate-400 mt-0.5">{formatDay(v.created_at, language)}</p>
+                    <AiReportButton businessId={businessId} kind="video" refId={v.id} excerpt={v.content} lang={lang} />
                   </div>
                 </div>
               ))}

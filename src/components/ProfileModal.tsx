@@ -3,6 +3,7 @@ import { X, ShieldCheck, LogOut, Globe, UserPlus, Mail, Phone, Edit2, Check, Cop
 import { UserAvatarIcon, AVATAR_LIST } from './UserAvatar';
 import { UserProfile, Language } from '../types';
 import { useLanguage } from '../context/LanguageContext';
+import { DeleteAccountSection } from './DeleteAccountSection';
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -127,7 +128,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                   <>
                     <h4 className="text-lg font-black text-slate-900 truncate flex items-center gap-1.5 tracking-tight">
                       <Store className="w-4 h-4 text-blue-600 shrink-0" />
-                      {currentProfile.storeName || 'Operon'}
+                      {currentProfile.storeName || 'FindLead'}
                     </h4>
                     <div className="flex items-center gap-1 text-[10.5px] text-emerald-600 font-semibold mt-0.5">
                       <ShieldCheck className="w-3.5 h-3.5 shrink-0" /> {t.verifiedMerchant}
@@ -297,6 +298,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
             {t.done}
           </button>
         </div>
+        {onLogout && (
+          <DeleteAccountSection lang={language === 'ru' ? 'ru' : 'kk'} onDeleted={() => { onLogout(); onClose(); }} />
+        )}
       </div>
     </div>
   );

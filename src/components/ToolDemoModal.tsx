@@ -46,7 +46,7 @@ export const ToolDemoModal: React.FC<ToolDemoModalProps> = ({
             <span className="w-2.5 h-2.5 rounded-full bg-red-500 cursor-pointer" onClick={onClose} />
             <span className="w-2.5 h-2.5 rounded-full bg-yellow-500" />
             <span className="w-2.5 h-2.5 rounded-full bg-green-500" onClick={() => setIsFullscreen(!isFullscreen)} />
-            <span className="text-slate-300 ml-2">OPERON OS - Full Tool View</span>
+            <span className="text-slate-300 ml-2">FINDLEAD OS - Full Tool View</span>
           </div>
 
           <div className="flex items-center gap-2">

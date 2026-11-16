@@ -1,6 +1,6 @@
 {
-  "name": "Operon",
-  "short_name": "Operon",
+  "name": "FindLead",
+  "short_name": "FindLead",
   "description": "AI-оператор для вашего бизнеса",
   "start_url": "/",
   "scope": "/",

@@ -1,4 +1,5 @@
-// Operon backend (FastAPI) bilan aloqa qatlami.
+import { isAndroidApp } from './platform';
+// FindLead backend (FastAPI) bilan aloqa qatlami.
 // Manzil: VITE_API_URL; berilmasa — ilova backend'ning o'zidan (localhost:8000) tarqatilsa
 // shu origin, aks holda (dev: localhost:3000) lokal backend.
 
@@ -58,6 +59,8 @@ export function consumeOAuthReturn(): null | 'login' | 'reset' | 'error' {
   const p = new URLSearchParams(h.replace(/^#/, ''));
   history.replaceState(null, '', window.location.pathname + window.location.search);
   let purpose: 'login' | 'reset' = 'login';
+  // Android ilovasi: Google telefon brauzerida ochilgan, maqsad sessionStorage'da emas — URL'da (?oauth_p=reset)
+  if (new URLSearchParams(window.location.search).get('oauth_p') === 'reset') purpose = 'reset';
   try {
     if (sessionStorage.getItem('operon_oauth_purpose') === 'reset') purpose = 'reset';
     sessionStorage.removeItem('operon_oauth_purpose');
@@ -321,7 +324,9 @@ export interface DashboardData {
     products_active: number;
     products_total: number;
   };
-  series: { date: string; revenue: number; orders: number; inquiries: number }[];
+  series: { date: string; revenue: number; orders: number; inquiries: number; prev_revenue?: number }[];
+  /** 2026-11-16: o'rtacha chek, o'tgan davr, eng yaxshi kun */
+  revenue_stats?: RevenueStats;
   segments: { returning: number; new: number; inquiry_only: number };
   retention: number;
   retention_detail?: RetentionDetail;
@@ -374,7 +379,11 @@ export const api = {
     } catch {
       /* ignore */
     }
-    const back = window.location.origin + window.location.pathname;
+    // Android ilovasi (2026-11-16): Google o'rnatilgan WebView'da kirishni bloklaydi — MainActivity Supabase
+    // havolasini telefon brauzerida ochadi, qaytish /app-return → findlead://auth orqali ilovaga keladi.
+    const back = isAndroidApp()
+      ? `${window.location.origin}/app-return?oauth_p=${purpose}`
+      : window.location.origin + window.location.pathname;
     const r = await request<{ url: string }>(`/auth/google/url?redirect_to=${encodeURIComponent(back)}`);
     window.location.href = r.url;
   },
@@ -494,7 +503,7 @@ export const api = {
       body: JSON.stringify({ business_id: businessId, ...src, wish: wish || null }),
     }),
 
-  // Rasm bo'lmasa — Operon qahramonni (tavsifdan yoki o'zi tanlab) yaratadi va rasmini chizadi
+  // Rasm bo'lmasa — FindLead qahramonni (tavsifdan yoki o'zi tanlab) yaratadi va rasmini chizadi
   characterGenerate: (businessId: string, wish: string) =>
     request<{ character_json: Record<string, string | string[]>; character_image_url: string | null; character_status: string }>(
       '/videos/profile/character/generate',
@@ -566,6 +575,28 @@ export const api = {
       { method: 'POST', body: JSON.stringify({ wish: wish || null }) },
     ),
 
+  // 2026-11-16: avtomat / yarim avtomat (har video/post tadbirkor tasdig'idan keyin chiqadi)
+  setVideoApproval: (businessId: string, mode: ApprovalMode) =>
+    request<{ approval: ApprovalMode; items: VideoPlanItem[] }>(`/videos/plan/${encodeURIComponent(businessId)}/approval`, {
+      method: 'PUT', body: JSON.stringify({ mode }),
+    }),
+  approveVideoItem: (postId: string) =>
+    request<{ id: string; status: string }>(`/videos/plan/items/${encodeURIComponent(postId)}/approve`, { method: 'POST' }),
+  skipVideoItem: (postId: string) =>
+    request<{ id: string; status: string }>(`/videos/plan/items/${encodeURIComponent(postId)}/skip`, { method: 'POST' }),
+  redoVideoItem: (postId: string, wish?: string) =>
+    request<{ id: string; status: string }>(`/videos/plan/items/${encodeURIComponent(postId)}/redo`, {
+      method: 'POST', body: JSON.stringify({ wish: wish || null }),
+    }),
+  setPostApproval: (businessId: string, mode: ApprovalMode) =>
+    request<{ approval: ApprovalMode; items: PostPlanItem[] }>(`/post-plan/${encodeURIComponent(businessId)}/approval`, {
+      method: 'PUT', body: JSON.stringify({ mode }),
+    }),
+  approvePostItem: (postId: string) =>
+    request<{ id: string; status: string }>(`/post-plan/items/${encodeURIComponent(postId)}/approve`, { method: 'POST' }),
+  skipPostItem: (postId: string) =>
+    request<{ id: string; status: string }>(`/post-plan/items/${encodeURIComponent(postId)}/skip`, { method: 'POST' }),
+
   stopPostPlan: (businessId: string) =>
     request<{ ok: boolean }>(`/post-plan/${encodeURIComponent(businessId)}`, { method: 'DELETE' }),
 
@@ -577,13 +608,18 @@ export const api = {
   profileTips: (businessId: string, lang: 'ru' | 'kk', refresh = false) =>
     request<ProfileTips>(`/growth/${encodeURIComponent(businessId)}/profile-tips?lang=${lang}${refresh ? '&refresh=1' : ''}`),
 
-  // Operon o'z videolarida nimani sinayapti (services/format_stats.summary)
+  // FindLead o'z videolarida nimani sinayapti (services/format_stats.summary)
   experiments: (businessId: string) =>
     request<Experiments>(`/growth/${encodeURIComponent(businessId)}/experiments`),
 
-  // Operon qo'llab-quvvatlashi (services/support_desk.py)
+  // FindLead qo'llab-quvvatlashi (services/support_desk.py)
   supportThread: (businessId: string) => request<SupportThread>(`/support/business/${encodeURIComponent(businessId)}`),
   supportUnread: (businessId: string) => request<{ unread: number }>(`/support/business/${encodeURIComponent(businessId)}/unread`),
+  /** Akkauntni butunlay o'chirish (Google Play talabi). */
+  deleteAccount: () => request<{ deleted: boolean }>('/auth/account/delete', { method: 'POST', body: JSON.stringify({ confirm: 'DELETE' }) }),
+  /** ИИ-контентга shikoyat (Google Play: generativ AI). */
+  aiReport: (businessId: string, body: { kind: string; ref?: string; reason?: string; excerpt?: string }) =>
+    request<{ id: string }>(`/support/business/${encodeURIComponent(businessId)}/ai-report`, { method: 'POST', body: JSON.stringify(body) }),
   supportSend: (businessId: string, message: string) =>
     request<{ id: string; at: string }>(`/support/business/${encodeURIComponent(businessId)}`, { method: 'POST', body: JSON.stringify({ message }) }),
 
@@ -619,6 +655,9 @@ export const api = {
       `/business/${encodeURIComponent(businessId)}/conversations/${encodeURIComponent(convId)}/reply`,
       { method: 'POST', body: JSON.stringify({ text }) },
     ),
+
+  /** «Сделки»: хотят купить / продано / не купили */
+  deals: (businessId: string) => request<DealsBoard>(`/business/${encodeURIComponent(businessId)}/deals`),
 
   closeDeal: (businessId: string, convId: string, action: 'won' | 'lost' | 'ai') =>
     request<{ ok: boolean }>(
@@ -660,7 +699,7 @@ export const api = {
 
   planUsage: (businessId: string) => request<PlanUsage>(`/brand/${encodeURIComponent(businessId)}/usage`),
 
-  // Tarif so'rovi: tarifni O'ZI yoqmaydi — Operon to'lovni qabul qilib tasdiqlaydi (services/billing.py)
+  // Tarif so'rovi: tarifni O'ZI yoqmaydi — FindLead to'lovni qabul qilib tasdiqlaydi (services/billing.py)
   requestPlan: (plan: 'starter' | 'growth' | 'business') =>
     request<{ status: 'pending'; plan: string }>('/auth/plan', { method: 'POST', body: JSON.stringify({ plan }) }),
 
@@ -732,7 +771,7 @@ export const api = {
     return request<{ image_url: string }>('/products/upload-image', { method: 'POST', body: fd });
   },
 
-  // Biznes tushunchasi (2026-11-13): Operon biznesni qanday tushungani + tadbirkor tuzatishlari.
+  // Biznes tushunchasi (2026-11-13): FindLead biznesni qanday tushungani + tadbirkor tuzatishlari.
   // AI chat EMAS — tuzatishdan keyin tushuncha fonda ~3 daqiqada qayta yoziladi.
   understanding: (businessId: string) =>
     request<BusinessUnderstanding>(`/memory/${encodeURIComponent(businessId)}/understanding`),
@@ -1030,7 +1069,7 @@ export interface CharacterCandidate {
 export interface VideoPlanItem {
   id: string;
   scheduled_at: string;
-  status: 'draft' | 'scheduled' | 'published' | 'failed';
+  status: 'draft' | 'review' | 'scheduled' | 'published' | 'failed' | 'skipped';
   topic: string | null;
   scenario: string | null;
   caption: string | null;
@@ -1046,7 +1085,7 @@ export interface VideoPlanItem {
 export interface VideoPlan {
   plan: string;
   cadence: { every_days: number; per_day: number; monthly: number };
-  settings: { times?: string[]; stopped_at?: string } | null;
+  settings: { times?: string[]; stopped_at?: string; approval?: ApprovalMode } | null;
   items: VideoPlanItem[];
 }
 
@@ -1062,7 +1101,9 @@ export interface BrandStatus {
 export interface PostPlanItem {
   id: string;
   scheduled_at: string;
-  status: 'draft' | 'scheduled' | 'published' | 'failed';
+  status: 'draft' | 'scheduled' | 'published' | 'failed' | 'skipped';
+  /** yarim avtomat: tayyor, tasdiqlashni kutmoqda */
+  needs_approval?: boolean;
   text: string | null;
   hashtags: string[];
   image_url: string | null;
@@ -1073,7 +1114,7 @@ export interface PostPlanItem {
 
 export interface PostPlan {
   cadence?: { every_days: number; per_day: number; monthly: number };
-  settings: { time?: string; script_lang?: ContentLang; stopped_at?: string } | null;
+  settings: { time?: string; script_lang?: ContentLang; stopped_at?: string; approval?: ApprovalMode } | null;
   items: PostPlanItem[];
 }
 
@@ -1193,6 +1234,33 @@ export interface ImportPreview {
   rows: ImportRow[];
   without_price: number;
   existing: number;
+}
+
+export type ApprovalMode = 'auto' | 'semi';
+
+export interface RevenueStats {
+  avg_check: number;
+  prev_avg_check: number;
+  prev_revenue: number;
+  best_day: { date: string; revenue: number } | null;
+  sale_days: number;
+  per_day: number;
+}
+
+export interface DealRow extends ConversationDeal {
+  conversation_id: string;
+  customer_name?: string | null;
+  platform?: string | null;
+  outcome?: 'won' | 'lost';
+  closed_by?: 'owner' | 'customer';
+  closed_at?: string;
+}
+
+export interface DealsBoard {
+  active: DealRow[];
+  won: DealRow[];
+  lost: DealRow[];
+  counts: { active: number; won: number; lost: number };
 }
 
 export interface ConversationDeal {

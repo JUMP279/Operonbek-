@@ -55,7 +55,7 @@ const TEXT = {
     addDesc: 'Менің жұмыс істеп тұрған бизнесім бар — Kaspi, WB, Uzum немесе Instagram-да сатамын.',
     createTitle: 'Бизнес құру',
     createDesc: 'Менде идея бар, бизнесті нөлден бастағым келеді.',
-    finishing: 'Operon бизнесіңізді ашып жатыр...',
+    finishing: 'FindLead бизнесіңізді ашып жатыр...',
     resetTitle: 'Құпиясөзді қалпына келтіру',
     resetSub: 'Тіркелген Google аккаунтыңыз арқылы растаңыз — содан кейін жаңа құпиясөз қоясыз.',
     resetBtn: 'Google арқылы растау',
@@ -97,7 +97,7 @@ const TEXT = {
     addDesc: 'У меня уже есть бизнес — продаю на Kaspi, WB, Uzum или в Instagram.',
     createTitle: 'Создать бизнес',
     createDesc: 'У меня есть идея, хочу запустить бизнес с нуля.',
-    finishing: 'Operon открывает ваш бизнес...',
+    finishing: 'FindLead открывает ваш бизнес...',
     resetTitle: 'Восстановление пароля',
     resetSub: 'Подтвердите вход через Google-аккаунт, с которым вы регистрировались, — затем задайте новый пароль.',
     resetBtn: 'Подтвердить через Google',
@@ -431,7 +431,7 @@ export const AuthFlow: React.FC<AuthFlowProps> = ({ initialStep = 'login', onRea
       <form onSubmit={handleLogin} className="space-y-4">
         <div className="flex flex-col items-center text-center gap-2 pt-1 pb-1">
           <Logo size={52} />
-          <h1 className="text-2xl font-black tracking-tight text-slate-900">Operon</h1>
+          <h1 className="text-2xl font-black tracking-tight text-slate-900">FindLead</h1>
           <p className="text-sm text-slate-500">{T.tagline}</p>
         </div>
         {ErrorBox}
