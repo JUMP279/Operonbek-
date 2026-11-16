@@ -139,7 +139,12 @@ export const PostPlanPanel: React.FC<{ businessId: string; lang: 'ru' | 'kk' }> 
 
   // Yarim avtomat (2026-11-16): tayyor post tadbirkor «Опубликовать» bosmaguncha chiqmaydi
   const approval = plan?.settings?.approval || 'auto';
-  const act = async (id: string, f: () => Promise<unknown>) => {
+  const act = async (id: string, f: () => Promise<unknown>, next?: PostPlanItem['status']) => {
+    if (next) {      // silliq: darhol ko'rinadi, server javobi orqada
+      setPlan((p) => (p ? { ...p, items: p.items.map((x) => (x.id === id ? { ...x, status: next, needs_approval: false } : x)) } : p));
+      f().catch((e) => { setError(errText(e)); load(); });
+      return;
+    }
     setBusy(id);
     setError('');
     try { await f(); await load(); } catch (e) { setError(errText(e)); } finally { setBusy(null); }
@@ -198,10 +203,11 @@ export const PostPlanPanel: React.FC<{ businessId: string; lang: 'ru' | 'kk' }> 
       {active && (
         <ApprovalSwitch value={approval} kind="post" lang={lang}
           onChange={async (m) => {
-            try {
-              const r = await api.setPostApproval(businessId, m);
-              setPlan((p) => (p ? { ...p, settings: { ...(p.settings || {}), approval: r.approval }, items: r.items } : p));
-            } catch (e) { setError(errText(e)); }
+            const prev = plan;
+            setPlan((p) => (p ? { ...p, settings: { ...(p.settings || {}), approval: m } } : p));
+            api.setPostApproval(businessId, m)
+              .then((r) => setPlan((p) => (p ? { ...p, settings: { ...(p.settings || {}), approval: r.approval }, items: r.items } : p)))
+              .catch((e) => { setError(errText(e)); setPlan(prev); });
           }} />
       )}
 
@@ -238,18 +244,18 @@ export const PostPlanPanel: React.FC<{ businessId: string; lang: 'ru' | 'kk' }> 
               {it.needs_approval && (
                 <ReviewActions lang={lang} past={it.past} busy={busy === it.id}
                   redoLabel={lang === 'ru' ? 'Переписать' : 'Қайта жазу'} redoGo={lang === 'ru' ? 'Переписать пост' : 'Постты қайта жазу'}
-                  onApprove={() => act(it.id, () => api.approvePostItem(it.id))}
+                  onApprove={() => act(it.id, () => api.approvePostItem(it.id), 'scheduled')}
                   onRedo={(w) => act(it.id, () => api.regeneratePostItem(it.id, w))}
-                  onSkip={() => act(it.id, () => api.skipPostItem(it.id))} />
+                  onSkip={() => act(it.id, () => api.skipPostItem(it.id), 'skipped')} />
               )}
               {it.status === 'skipped' && (
-                <button onClick={() => act(it.id, () => api.approvePostItem(it.id))} disabled={busy === it.id}
+                <button onClick={() => act(it.id, () => api.approvePostItem(it.id), 'scheduled')} disabled={busy === it.id}
                   className="w-full py-2 rounded-xl text-[11.5px] font-bold bg-slate-100 text-slate-700 flex items-center justify-center gap-1.5 disabled:opacity-50">
                   <RefreshCw className="w-3.5 h-3.5" />{lang === 'ru' ? 'Вернуть и опубликовать' : 'Қайтарып жариялау'}
                 </button>
               )}
               {approval === 'semi' && it.status === 'scheduled' && (
-                <button onClick={() => act(it.id, () => api.skipPostItem(it.id))} disabled={busy === it.id}
+                <button onClick={() => act(it.id, () => api.skipPostItem(it.id), 'skipped')} disabled={busy === it.id}
                   className="w-full py-2 rounded-xl text-[11.5px] font-bold bg-slate-100 text-slate-600 disabled:opacity-50">
                   {lang === 'ru' ? 'Отменить выход' : 'Шығуды болдырмау'}
                 </button>

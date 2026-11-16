@@ -477,8 +477,14 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
   // Yarim avtomat (2026-11-16): 'review' — tayyor video tadbirkor tasdig'ini kutmoqda (vaqti o'tgan bo'lsa ham ko'rinadi)
   const approval = plan?.settings?.approval || 'auto';
   const [itemBusy, setItemBusy] = useState<string | null>(null);
-  const itemAct = async (id: string, f: () => Promise<unknown>) => {
+  // 2026-11-16 silliq: tasdiqlash/o'tkazish darhol ko'rinadi, server javobi orqada (xato bo'lsa qaytadi)
+  const itemAct = async (id: string, f: () => Promise<unknown>, next?: VideoPlanItem['status']) => {
     if (!businessId) return;
+    if (next) {
+      setPlan((p) => (p ? { ...p, items: p.items.map((x) => (x.id === id ? { ...x, status: next } : x)) } : p));
+      f().catch(async (e) => { setError(errText(e)); try { setPlan(await api.videoPlan(businessId)); } catch { /* ignore */ } });
+      return;
+    }
     setItemBusy(id);
     setError('');
     try { await f(); setPlan(await api.videoPlan(businessId)); } catch (e) { setError(errText(e)); } finally { setItemBusy(null); }
@@ -773,10 +779,11 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
             {businessId && (
               <ApprovalSwitch value={approval} kind="video" lang={lang}
                 onChange={async (m) => {
-                  try {
-                    const r = await api.setVideoApproval(businessId, m);
-                    setPlan((p) => (p ? { ...p, settings: { ...(p.settings || {}), approval: r.approval }, items: r.items } : p));
-                  } catch (e) { setError(errText(e)); }
+                  const prev = plan;
+                  setPlan((p) => (p ? { ...p, settings: { ...(p.settings || {}), approval: m } } : p));
+                  api.setVideoApproval(businessId, m)
+                    .then((r) => setPlan((p) => (p ? { ...p, settings: { ...(p.settings || {}), approval: r.approval }, items: r.items } : p)))
+                    .catch((e) => { setError(errText(e)); setPlan(prev); });
                 }} />
             )}
 
@@ -848,18 +855,18 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
                   {it.status === 'review' && (
                     <ReviewActions lang={lang} past={it.past} busy={itemBusy === it.id}
                       redoLabel={lang === 'ru' ? 'Переделать' : 'Қайта жасау'} redoGo={lang === 'ru' ? 'Переснять видео' : 'Бейнені қайта түсіру'}
-                      onApprove={() => itemAct(it.id, () => api.approveVideoItem(it.id))}
+                      onApprove={() => itemAct(it.id, () => api.approveVideoItem(it.id), 'scheduled')}
                       onRedo={(w) => itemAct(it.id, () => api.redoVideoItem(it.id, w))}
-                      onSkip={() => itemAct(it.id, () => api.skipVideoItem(it.id))} />
+                      onSkip={() => itemAct(it.id, () => api.skipVideoItem(it.id), 'skipped')} />
                   )}
                   {it.status === 'skipped' && (
-                    <button disabled={itemBusy === it.id} onClick={() => itemAct(it.id, () => api.approveVideoItem(it.id))}
+                    <button disabled={itemBusy === it.id} onClick={() => itemAct(it.id, () => api.approveVideoItem(it.id), it.video_url ? 'scheduled' : 'draft')}
                       className="w-full py-2 rounded-xl text-[11.5px] font-bold bg-slate-100 text-slate-700 flex items-center justify-center gap-1.5 disabled:opacity-50">
                       <RefreshCw className="w-3.5 h-3.5" />{lang === 'ru' ? 'Вернуть в план' : 'Жоспарға қайтару'}
                     </button>
                   )}
                   {approval === 'semi' && it.status === 'scheduled' && !it.past && (
-                    <button disabled={itemBusy === it.id} onClick={() => itemAct(it.id, () => api.skipVideoItem(it.id))}
+                    <button disabled={itemBusy === it.id} onClick={() => itemAct(it.id, () => api.skipVideoItem(it.id), 'skipped')}
                       className="w-full py-2 rounded-xl text-[11.5px] font-bold bg-slate-100 text-slate-600 disabled:opacity-50">
                       {lang === 'ru' ? 'Отменить выход' : 'Шығуды болдырмау'}
                     </button>
