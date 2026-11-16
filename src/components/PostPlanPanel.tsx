@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { CalendarClock, Clock, Loader2, RefreshCw, Sparkles } from 'lucide-react';
 import { api, ApiError, ContentLang, PostPlan, PostPlanItem } from '../lib/api';
 import { ApprovalSwitch, ReviewActions } from './ApprovalSwitch';
+import { nearFirst } from '../lib/format';
 
 // Kunlik post rejasi: har kuni 1 post, tanlangan vaqtda. Matn+rasm faqat eng yaqin post uchun
 // oldindan tayyorlanadi; ҚАЗ/РУС bilan til almashtiriladi.
@@ -211,7 +212,7 @@ export const PostPlanPanel: React.FC<{ businessId: string; lang: 'ru' | 'kk' }> 
           }} />
       )}
 
-      {active && upcoming.map((it) => (
+      {active && nearFirst(upcoming).map((it) => (
         <div key={it.id} className="bg-white border border-slate-200/90 rounded-2xl p-3 space-y-2">
           <div className="flex items-center justify-between gap-2">
             <span className="text-[11.5px] font-bold text-purple-700 flex items-center gap-1.5">

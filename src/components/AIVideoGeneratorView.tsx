@@ -21,7 +21,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { AiReportButton } from './AiReportButton';
 import { ApprovalSwitch, ReviewActions } from './ApprovalSwitch';
 import { api, ApiError, CharacterCandidate, VideoItem, VideoPlan, VideoPlanItem, VideoProfile } from '../lib/api';
-import { formatDay } from '../lib/format';
+import { formatDay, nearFirst } from '../lib/format';
 import { NicheGate } from './NicheGate';
 
 export interface AIVideoGeneratorViewProps {
@@ -787,7 +787,7 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
                 }} />
             )}
 
-            {visiblePlan.map((it) => {
+            {nearFirst(visiblePlan).map((it) => {
               const isOpen = open === it.id;
               return (
                 <div key={it.id} className="bg-white border border-slate-200/90 rounded-2xl p-3 space-y-2">

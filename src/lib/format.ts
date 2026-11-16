@@ -53,3 +53,10 @@ export function timeAgo(iso: string, lang: string): string {
   if (days < 7) return ru ? `${days} дн назад` : `${days} күн бұрын`;
   return formatDay(iso, lang);
 }
+
+// Reja ro'yxati: kelgusi 7 kun to'liq (kamida 8 ta). Sayt (cabinet/Content.tsx) ham shu qoida (2026-11-17).
+const WEEK_MS = 7 * 24 * 3600 * 1000;
+export function nearFirst<T extends { scheduled_at: string }>(items: T[]): T[] {
+  const limit = Date.now() + WEEK_MS;
+  return items.filter((i, idx) => idx < 8 || +new Date(i.scheduled_at) <= limit);
+}
