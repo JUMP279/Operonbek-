@@ -43,11 +43,23 @@ export const RevenueCard: React.FC<{ dash: DashboardData; currency: string; onOp
   const cw = W - L - R, chh = H - T - B;
   const top = niceMax(Math.max(1, ...bars.map((b) => Math.max(b.revenue, b.prev))));
   const slot = cw / Math.max(1, bars.length);
-  const bw = Math.max(2, Math.min(16, slot * 0.62));
   const y = (v: number) => T + chh - (v / top) * chh;
   const cx = (i: number) => L + slot * i + slot / 2;
   const hasPrev = bars.some((b) => b.prev > 0);
-  const prevLine = bars.map((b, i) => `${i ? 'L' : 'M'}${cx(i).toFixed(1)} ${y(b.prev).toFixed(1)}`).join(' ');
+  // Silliq chiziq (monoton kubik: qiymatdan oshib ketmaydi)
+  const smooth = (p: (readonly [number, number])[]) => {
+    if (p.length < 3) return p.map((q, i) => `${i ? 'L' : 'M'}${q[0].toFixed(1)} ${q[1].toFixed(1)}`).join(' ');
+    let d = `M${p[0][0].toFixed(1)} ${p[0][1].toFixed(1)}`;
+    for (let i = 0; i < p.length - 1; i++) {
+      const mx = (p[i][0] + p[i + 1][0]) / 2;
+      d += ` C${mx.toFixed(1)} ${p[i][1].toFixed(1)} ${mx.toFixed(1)} ${p[i + 1][1].toFixed(1)} ${p[i + 1][0].toFixed(1)} ${p[i + 1][1].toFixed(1)}`;
+    }
+    return d;
+  };
+  const pts = bars.map((b, i) => [cx(i), y(b.revenue)] as const);
+  const line = smooth(pts);
+  const area = pts.length ? `${line} L${pts[pts.length - 1][0].toFixed(1)} ${T + chh} L${pts[0][0].toFixed(1)} ${T + chh} Z` : '';
+  const prevLine = smooth(bars.map((b, i) => [cx(i), y(b.prev)] as const));
   const hv = hover !== null ? bars[hover] : null;
   const ch = formatChange(dash.metrics.revenue_change ?? null);
   const label = (b: Bar) => (b.from === b.to ? formatDay(b.from, language) : `${formatDay(b.from, language)}–${formatDay(b.to, language)}`);
@@ -67,7 +79,7 @@ export const RevenueCard: React.FC<{ dash: DashboardData; currency: string; onOp
       <div className="flex items-center justify-between mb-1">
         <span className="text-[13px] font-medium text-slate-500">{ru ? 'Выручка' : 'Түсім'}</span>
         <div className="flex items-center gap-2 text-[9.5px] text-slate-400">
-          <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-blue-600" />{bars.length > 0 && dash.series.length > 45 ? (ru ? 'недели' : 'апталар') : (ru ? 'дни' : 'күндер')}</span>
+          <span className="inline-flex items-center gap-1"><span className="w-3 border-t-2 border-blue-600" />{bars.length > 0 && dash.series.length > 45 ? (ru ? 'недели' : 'апталар') : (ru ? 'дни' : 'күндер')}</span>
           {hasPrev && <span className="inline-flex items-center gap-1"><span className="w-3 border-t-2 border-dashed border-orange-400" />{ru ? 'раньше' : 'бұрын'}</span>}
         </div>
       </div>
@@ -94,11 +106,21 @@ export const RevenueCard: React.FC<{ dash: DashboardData; currency: string; onOp
               <text x={L - 5} y={y(top * f) + 3} textAnchor="end" fontSize="8.5" fill="#94A3B8">{f ? formatCompact(top * f, language) : '0'}</text>
             </g>
           ))}
-          {bars.map((b, i) => {
-            const h = Math.max(b.revenue > 0 ? 2 : 0, (b.revenue / top) * chh);
-            return <rect key={i} x={cx(i) - bw / 2} y={T + chh - h} width={bw} height={h} rx={Math.min(3, bw / 2)} fill="#2563EB" fillOpacity={hover === null || hover === i ? 1 : 0.35} />;
-          })}
+          <defs>
+            <linearGradient id="revCardGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#2563EB" stopOpacity="0.22" />
+              <stop offset="100%" stopColor="#60A5FA" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          <path d={area} fill="url(#revCardGrad)" />
+          <path d={line} fill="none" stroke="#2563EB" strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round" />
           {hasPrev && <path d={prevLine} fill="none" stroke="#FB923C" strokeWidth="1.4" strokeDasharray="4 3" />}
+          {hover !== null && pts[hover] && (
+            <>
+              <line x1={pts[hover][0]} x2={pts[hover][0]} y1={T} y2={T + chh} stroke="#2563EB" strokeDasharray="2 2" opacity="0.5" />
+              <circle cx={pts[hover][0]} cy={pts[hover][1]} r="4" fill="#fff" stroke="#2563EB" strokeWidth="2" />
+            </>
+          )}
           {bars.map((_, i) => (
             <rect key={`h${i}`} x={L + slot * i} y={0} width={slot} height={H} fill="transparent"
               onMouseEnter={() => setHover(i)} onTouchStart={() => setHover(i)} onClick={() => setHover(i)} />
