@@ -20,9 +20,10 @@ import {
 import { useLanguage } from '../context/LanguageContext';
 import { AiReportButton } from './AiReportButton';
 import { ApprovalSwitch, ReviewActions } from './ApprovalSwitch';
-import { api, ApiError, CharacterCandidate, VideoItem, VideoPlan, VideoPlanItem, VideoProfile } from '../lib/api';
+import { api, ApiError, CharacterCandidate, VideoItem, VideoOnboarding, VideoPlan, VideoPlanItem, VideoProfile } from '../lib/api';
 import { formatDay, nearFirst } from '../lib/format';
 import { NicheGate } from './NicheGate';
+import { TrialStartCard } from './TrialStartCard';
 
 export interface AIVideoGeneratorViewProps {
   onBack: () => void;
@@ -176,6 +177,8 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
   const [charBusy, setCharBusy] = useState<'search' | 'pick' | 'text' | null>(null);
   const [pinLink, setPinLink] = useState('');
   const [charErr, setCharErr] = useState('');
+  // 2026-11-18: real odam surati — faqat o'zi yoki yozma roziligi bilan (Правила использования /aup; to'lov provayderi talabi)
+  const [photoOk, setPhotoOk] = useState(false);
 
   // vaqtlar
   const [times, setTimes] = useState<string[]>(['12:30', '18:30', '21:30']);
@@ -189,6 +192,8 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
   const refreshUntil = useRef(0);
   const waitingScript = useRef(false);
   const [needsNiche, setNeedsNiche] = useState(false);
+  // Bepul sinov: 14 video paketi shartlari (2026-11-19)
+  const [onb, setOnb] = useState<VideoOnboarding | null>(null);
   const [langBusy, setLangBusy] = useState<string | null>(null);  // eng yaqin video ssenariysi hali yozilmagan
 
   const errText = (e: unknown) => {
@@ -204,6 +209,7 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
     setLoading(true);
     setError('');
     api.brand(businessId).then((b) => setNeedsNiche(b.needs_niche)).catch(() => {});
+    api.videoOnboarding(businessId).then(setOnb).catch(() => {});
     try {
       const [pr, pl] = await Promise.all([api.videoProfile(businessId), api.videoPlan(businessId)]);
       setProfile(pr.profile);
@@ -301,10 +307,16 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
 
   const uploadHero = async (f: File) => {
     if (!businessId || charBusy || f.size > 5_000_000) return;
+    if (!photoOk) {
+      setCharErr(lang === 'kk'
+        ? 'Алдымен төмендегі белгіні қойыңыз: бұл сіздің фотоңыз немесе адамның жазбаша келісімі бар.'
+        : 'Сначала отметьте галочку ниже: это ваше фото или у вас есть письменное согласие человека.');
+      return;
+    }
     setCharBusy('pick');
     setCharErr('');
     try {
-      await api.uploadCharacter(businessId, await fileToBase64(f), f.type || 'image/jpeg');
+      await api.uploadCharacter(businessId, await fileToBase64(f), f.type || 'image/jpeg', true);
       setCandidates(null);
       setCharMode(null);
       setProfile((await api.videoProfile(businessId)).profile);
@@ -645,6 +657,12 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
                       {L.noPhoto}
                     </button>
                   </div>
+                  <label className="flex items-start gap-2 text-[10.5px] leading-snug text-slate-500">
+                    <input type="checkbox" checked={photoOk} onChange={(e) => setPhotoOk(e.target.checked)} className="mt-0.5" />
+                    <span>{lang === 'kk'
+                      ? 'Жүктейтін фото — менікі немесе адамның жазбаша келісімі бар; бұл белгілі тұлға немесе бала емес (Пайдалану ережелері).'
+                      : 'Загружаемое фото — моё или у меня есть письменное согласие этого человека; это не знаменитость и не ребёнок (Правила использования).'}</span>
+                  </label>
 
                   {charMode === 'link' && (
                     <div className="flex gap-1.5">
@@ -731,7 +749,13 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
         )}
 
         {/* ── 2. Vaqt tanlash (reja yo'q) ── */}
-        {tab === 'plan' && !loading && !needsNiche && !showWizard && plan && !planActive && (
+        {/* ── 2a. Bepul sinov: Instagram + savollar → 14 video birdan (vaqt tanlash yo'q) ── */}
+        {tab === 'plan' && !loading && !needsNiche && !showWizard && onb?.trial && !planActive && businessId && (
+          <TrialStartCard businessId={businessId} lang={lang} status={onb}
+            onChange={async (st) => { setOnb(st); if (st.started) { try { setPlan(await api.videoPlan(businessId)); } catch { /* ignore */ } } }} />
+        )}
+
+        {tab === 'plan' && !loading && !needsNiche && !showWizard && plan && !planActive && !onb?.trial && (
           <div className="bg-white border border-slate-200/90 rounded-2xl p-3.5 space-y-3">
             <h2 className="text-sm font-black flex items-center gap-1.5"><Clock className="w-4 h-4 text-purple-600" />{L.timesTitle}</h2>
             <p className="text-[11.5px] text-slate-700 font-semibold">{L.cadence(plan.cadence)}</p>
@@ -785,6 +809,14 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
                     .then((r) => setPlan((p) => (p ? { ...p, settings: { ...(p.settings || {}), approval: r.approval }, items: r.items } : p)))
                     .catch((e) => { setError(errText(e)); setPlan(prev); });
                 }} />
+            )}
+
+            {(plan.upcoming_hidden || 0) > 0 && (
+              <div className="bg-purple-50 border border-purple-100 rounded-2xl px-3 py-2.5 text-[11.5px] font-semibold text-purple-800">
+                {lang === 'ru'
+                  ? `Ещё ${plan.upcoming_hidden} видео уже в календаре — каждое откроется в свой день.`
+                  : `Тағы ${plan.upcoming_hidden} бейне күнтізбеде — әрқайсысы өз күнінде ашылады.`}
+              </div>
             )}
 
             {nearFirst(visiblePlan).map((it) => {

@@ -81,7 +81,38 @@ export class ApiError extends Error {
   }
 }
 
-async function tryRefresh(): Promise<boolean> {
+/** JWT payload'idagi `exp` (soniya). Imzo TEKSHIRILMAYDI — faqat "muddati o'tganmi" taxmini; tekshiruv backend'da. */
+function tokenExp(token: string | null): number | null {
+  if (!token) return null;
+  try {
+    const b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const exp = JSON.parse(atob(b64 + '='.repeat((4 - (b64.length % 4)) % 4))).exp;
+    return typeof exp === 'number' ? exp : null;
+  } catch {
+    return null;
+  }
+}
+
+// TEZLIK (2026-11-17, sayt bilan bir xil): bir nechta so'rov bir vaqtda 401 olsa ham /auth/refresh BIR marta chaqiriladi.
+let refreshing: Promise<boolean> | null = null;
+
+function tryRefresh(): Promise<boolean> {
+  if (!refreshing) {
+    refreshing = doRefresh().finally(() => {
+      refreshing = null;
+    });
+  }
+  return refreshing;
+}
+
+/** Access token muddati tugagan (yoki 30 s ichida tugaydigan) bo'lsa — so'rovdan OLDIN yangilaydi
+ *  ("401 → refresh → qayta so'rov" zanjiri o'rniga). */
+export async function ensureFreshToken(): Promise<void> {
+  const exp = tokenExp(tokens.access);
+  if (exp !== null && exp - Date.now() / 1000 < 30 && safeGet(REFRESH_KEY)) await tryRefresh();
+}
+
+async function doRefresh(): Promise<boolean> {
   const refresh = safeGet(REFRESH_KEY);
   if (!refresh) return false;
   try {
@@ -118,6 +149,7 @@ function clientId(): string {
 async function request<T>(path: string, init: RequestInit = {}, retry = true): Promise<T> {
   // FormData (fayl yuklash) — Content-Type'ni brauzer o'zi qo'yadi (boundary bilan)
   const headers: Record<string, string> = init.body instanceof FormData ? {} : { 'Content-Type': 'application/json' };
+  if (retry) await ensureFreshToken();
   const access = tokens.access;
   if (access) headers.Authorization = `Bearer ${access}`;
   const cid = clientId();
@@ -525,13 +557,20 @@ export const api = {
       body: JSON.stringify({ business_id: businessId, ...p }),
     }),
 
-  uploadCharacter: (businessId: string, imageBase64: string, mime: string) =>
+  uploadCharacter: (businessId: string, imageBase64: string, mime: string, consent = false) =>
     request<{ character_image_url: string; character_desc: string | null }>('/videos/profile/character', {
       method: 'POST',
-      body: JSON.stringify({ business_id: businessId, image_base64: imageBase64, mime }),
+      body: JSON.stringify({ business_id: businessId, image_base64: imageBase64, mime, consent }),
     }),
 
   videoPlan: (businessId: string) => request<VideoPlan>(`/videos/plan/${encodeURIComponent(businessId)}`),
+  videoOnboarding: (businessId: string) =>
+    request<VideoOnboarding>(`/videos/onboarding/${encodeURIComponent(businessId)}`),
+  videoProductsStep: (businessId: string, skipped: boolean) =>
+    request<VideoOnboarding>('/videos/onboarding/products-step', {
+      method: 'POST',
+      body: JSON.stringify({ business_id: businessId, skipped }),
+    }),
 
   createVideoPlan: (businessId: string, times: string[]) =>
     request<{ created: number; items: VideoPlanItem[] }>('/videos/plan', {
@@ -703,6 +742,16 @@ export const api = {
   requestPlan: (plan: 'starter' | 'growth' | 'business') =>
     request<{ status: 'pending'; plan: string }>('/auth/plan', { method: 'POST', body: JSON.stringify({ plan }) }),
 
+  // Referal dasturi (2026-11-17) — sayt bilan bir xil: routers/referral.py
+  referral: () => request<ReferralInfo>('/referral'),
+  referralCheck: (code: string) => request<{ valid: boolean; code: string }>(`/referral/check/${encodeURIComponent(code)}`),
+  referralApply: (code: string) =>
+    request<{ ok: boolean; code: string }>('/referral/apply', { method: 'POST', body: JSON.stringify({ code }) }),
+  referralPayout: (amount: number, method: string, account: string, holder: string) =>
+    request<{ ok: boolean }>('/referral/payout', { method: 'POST', body: JSON.stringify({ amount, method, account, holder }) }),
+  referralPayPlan: (plan: 'starter' | 'growth' | 'business') =>
+    request<{ ok: boolean; plan: string }>('/referral/pay-plan', { method: 'POST', body: JSON.stringify({ plan }) }),
+
   // Brend: kontent yo'nalishi + logotip
   brand: (businessId: string) => request<BrandStatus>(`/brand/${encodeURIComponent(businessId)}`),
 
@@ -806,6 +855,12 @@ export const api = {
       method: 'POST', body: JSON.stringify({ id, text }),
     }),
   mpGuide: (businessId: string) => request<MpGuide>(`/marketplaces/${encodeURIComponent(businessId)}/guide`),
+  mpCalcPresets: (businessId: string) =>
+    request<{ presets: Record<MpPlat, MpCalcPreset>; uzum_logistics: Record<'s' | 'm' | 'l', number>; target_margin: number }>(
+      `/marketplaces/${encodeURIComponent(businessId)}/calc`),
+  mpCalc: (businessId: string, body: MpCalcInput) =>
+    request<MpCalcResult>(`/marketplaces/${encodeURIComponent(businessId)}/calc`, { method: 'POST', body: JSON.stringify(body) }),
+  mpOrdersWatch: (businessId: string) => request<MpOrdersWatch>(`/marketplaces/${encodeURIComponent(businessId)}/orders-watch`),
   mpCards: (businessId: string, productId: string) =>
     request<{ cards: Partial<Record<'kaspi' | 'wb' | 'uzum', MpCard>> }>(`/marketplaces/${encodeURIComponent(businessId)}/cards/${encodeURIComponent(productId)}`),
   mpCardGenerate: (businessId: string, productId: string, platform: 'kaspi' | 'wb' | 'uzum', extra = '', images = true) =>
@@ -1087,6 +1142,22 @@ export interface VideoPlan {
   cadence: { every_days: number; per_day: number; monthly: number };
   settings: { times?: string[]; stopped_at?: string; approval?: ApprovalMode } | null;
   items: VideoPlanItem[];
+  /** 2026-11-19: kelgusi kunlarga tayyorlangan, hali ko'rsatilmaydigan videolar soni */
+  upcoming_hidden?: number;
+}
+
+/** Bepul sinov: 14 video paketini boshlash shartlari (services/video_plan.onboarding_status) */
+export interface VideoOnboarding {
+  trial: boolean;
+  instagram: boolean;
+  niche: boolean;
+  profile: boolean;
+  products: boolean;
+  products_count: number;
+  products_skipped: boolean;
+  ready: boolean;
+  started: boolean;
+  batch_size: number;
 }
 
 export type ContentLang = 'kk' | 'ru';
@@ -1349,9 +1420,27 @@ export interface MarketReport {
     genres?: { genre?: string; count?: number; views_signal?: string; goal?: string; why_works?: string; example_link?: string }[];
   };
   telegram?: { summary?: string; discount_tactics?: string[]; sales_tactics?: string[] };
-  competitors?: { name: string; platform?: string; strengths?: string[]; weaknesses?: string[] }[];
+  competitors?: MarketCompetitor[];
   opportunities?: string[];
-  actions?: { action: string; why?: string; expected?: string }[];
+  actions?: MarketAction[];
+  /** 2026-11-20 ixcham format (v: 2) */
+  v?: number;
+  verdict?: string;
+  gaps?: { topic?: string; them?: string; us?: string }[];
+  content_hooks?: string[];
+}
+
+export interface MarketCompetitor {
+  name: string; platform?: string; link?: string;
+  strengths?: string[]; weaknesses?: string[];
+  strong?: string; weak?: string; adapt?: string;
+  level?: 'direct' | 'near' | 'leader' | 'channel';
+  price?: number; price_vs_ours_pct?: number; reviews_total?: number; reviews_30d?: number; reviews_30d_capped?: boolean;
+  rating?: number; installment?: boolean; delivery?: string; ads_url?: string; shop?: string;
+}
+
+export interface MarketAction {
+  action?: string; task?: string; why?: string; expected?: string; check?: string; where?: string; priority?: number;
 }
 
 export interface MarketState {
@@ -1471,10 +1560,48 @@ export interface MpCard {
 }
 export interface MpGuide {
   platforms: Record<'kaspi' | 'wb' | 'uzum', { name: string; langs: string[]; title_max: number; title_rule: string;
-    photo: { min: number; max: number; size: string; main: string }; video: string; moderation: string; tips: string[] }>;
-  infographic: string[]; reviews: string[]; description: string[];
+    photo: { min: number; max: number; size: string; main: string }; video: string; moderation: string; tips: string[];
+    // 2026-11-19: iqtisod / buyurtma / qo'shish / reyting / xatolar + 15 ta manba video
+    economics?: string[]; orders?: string[]; adding?: string[]; ranking?: string[]; mistakes?: string[];
+    sources?: { id: string; title: string; topic: string; url: string }[] }>;
+  infographic: string[]; reviews: string[]; description: string[]; as_of?: string;
 }
+export type MpPlat = 'kaspi' | 'wb' | 'uzum';
+export interface MpCalcInput {
+  platform: MpPlat; price: number; cost: number;
+  commission_pct?: number | null; promo_pct?: number | null; tax_pct?: number | null; ads_pct?: number | null;
+  defect_pct?: number | null; buyout_pct?: number | null; logistics?: number | null; return_fee?: number | null;
+  storage?: number | null; other?: number | null; size?: 's' | 'm' | 'l'; scheme?: 'fbo' | 'fbs' | 'dbs';
+  zone?: 'city' | 'kz'; stock?: number | null; daily_sales?: number | null; lead_days?: number | null;
+}
+export interface MpCalcPreset {
+  currency: string; commission_pct: number; promo_pct: number; tax_pct: number; ads_pct: number; defect_pct: number;
+  buyout_pct: number; logistics: number | null; return_fee: number; storage: number;
+}
+export interface MpCalcResult {
+  platform: MpPlat; currency: string;
+  lines: { commission: number; logistics: number; storage: number; ads: number; tax: number; defect: number; other: number };
+  logistics_auto: boolean; payout: number; profit: number; margin_pct: number; roi_pct: number | null; markup_x: number;
+  breakeven_price: number | null; price_for_30: number | null; verdict: 'loss' | 'thin' | 'ok' | 'good';
+  warnings: { code: string; ru: string; kk: string }[];
+  stock: { days_left: number; reorder_now: boolean; reorder_qty: number | null } | null;
+}
+export interface MpWatchItem {
+  source: MpPlat; id: string; title: string | null; amount: number | null; currency: string | null; ordered_at: string;
+  hours: number; left_h: number | null; stage: string; level: 'info' | 'warn' | 'danger'; deadline_h: number | null;
+  ru: string; kk: string;
+}
+export interface MpOrdersWatch { items: MpWatchItem[]; connected: Record<MpPlat, boolean>; checked_at: string }
 export interface MpLinks {
   items: { id: string; name: string; stock: number | null; kaspi: string[]; wb: string[]; uzum: string[]; auto: boolean }[];
   stock_sync: Record<'kaspi' | 'wb' | 'uzum', boolean>;
+}
+
+export interface ReferralInfo {
+  code: string; rate: number; months: number; hold_days: number; min_payout: number;
+  available: number; pending: number; earned: number; withdrawn: number;
+  invited: number; paying: number; active: number;
+  people: { name: string; joined: string; status: 'invited' | 'active' | 'finished'; bonus_until: string | null; earned: number }[];
+  history: { kind: string; amount: number; status: string; plan?: string | null; at: string; available_at?: string | null; name?: string }[];
+  my_referrer_code: string | null; can_apply_code: boolean; payout_pending: boolean;
 }

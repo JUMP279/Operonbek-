@@ -1,4 +1,5 @@
 import { OwnerIdeasCard } from './OwnerIdeasCard';
+import { ProductStepCard } from './TrialStartCard';
 import React, { useEffect, useRef, useState } from 'react';
 import { CalendarClock, Clock, Loader2, RefreshCw, Sparkles } from 'lucide-react';
 import { api, ApiError, ContentLang, PostPlan, PostPlanItem } from '../lib/api';
@@ -47,6 +48,8 @@ export const PostPlanPanel: React.FC<{ businessId: string; lang: 'ru' | 'kk' }> 
   const [error, setError] = useState('');
   const [confirmStop, setConfirmStop] = useState(false);
   const waiting = useRef(false);
+  // 2026-11-19: post rejasidan oldin mahsulot so'raladi (qo'shish yoki o'tkazib yuborish)
+  const [needProduct, setNeedProduct] = useState(false);
 
   const errText = (e: unknown) => {
     if (e instanceof ApiError) {
@@ -60,6 +63,7 @@ export const PostPlanPanel: React.FC<{ businessId: string; lang: 'ru' | 'kk' }> 
     try {
       const p = await api.postPlan(businessId);
       setPlan(p);
+      api.videoOnboarding(businessId).then((o) => setNeedProduct(o.products_count === 0 && !o.products_skipped)).catch(() => {});
       if (p.settings?.time) setTime(p.settings.time);
     } catch (e) {
       setError(errText(e));
@@ -175,6 +179,9 @@ export const PostPlanPanel: React.FC<{ businessId: string; lang: 'ru' | 'kk' }> 
       {!active && (
         <div className="bg-white border border-slate-200/90 rounded-2xl p-3.5 space-y-3">
           <p className="text-[12px] text-slate-600">{L.intro}</p>
+          {needProduct ? (
+            <ProductStepCard businessId={businessId} lang={lang} purpose="post" onDone={() => setNeedProduct(false)} />
+          ) : (<>
           <div className="space-y-1">
             <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">{L.time}</p>
             <input type="time" value={time} onChange={(e) => setTime(e.target.value)}
@@ -185,6 +192,7 @@ export const PostPlanPanel: React.FC<{ businessId: string; lang: 'ru' | 'kk' }> 
             {starting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
             {starting ? L.starting : L.start}
           </button>
+          </>)}
         </div>
       )}
 

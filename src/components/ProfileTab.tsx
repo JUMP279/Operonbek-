@@ -97,24 +97,11 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
 
   const allTools = [
     {
-      id: 'deals',
-      titleKk: 'Мәмілелер',
-      titleRu: 'Сделки',
-      subtitleKk: '«Аламын» дегендер: сатылды / алмады',
-      subtitleRu: 'Кто сказал «беру»: продано / не купили',
-      icon: <Handshake className="w-4 h-4 text-blue-600" />,
-      bg: 'bg-blue-50/80',
-      border: 'border-blue-100',
-      badgeKk: 'Сатылым',
-      badgeRu: 'Продажи',
-      badgeColor: 'bg-blue-100 text-blue-700'
-    },
-    {
       id: 'customer-response',
       titleKk: 'Клиенттерге жауап',
       titleRu: 'Ответ клиентам',
-      subtitleKk: 'Пікірлер және Direct жауаптары',
-      subtitleRu: 'Ответы на комментарии и Direct',
+      subtitleKk: 'Direct, пікірлер және мәмілелер',
+      subtitleRu: 'Direct, комментарии и сделки',
       icon: <MessageSquareText className="w-4 h-4 text-indigo-600" />,
       bg: 'bg-indigo-50/80',
       border: 'border-indigo-100',

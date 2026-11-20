@@ -1,8 +1,10 @@
 import React from 'react';
-import { Compass, Clapperboard, BarChart3, User } from 'lucide-react';
+import { BarChart3, Compass, Package, Store, User } from 'lucide-react';
 import { ActiveTab } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 
+// Pastki menyu (2026-11-19, user so'rovi): Обзор · Аналитика · Маркетплейс · Товары · Профиль.
+// Video yaratish — Профиль ichidagi asboblarda. Saytda telefon menyusi xuddi shunday, oxirgisi «Ещё».
 interface BottomNavBarProps {
   activeTab: ActiveTab;
   onChangeTab: (tab: ActiveTab) => void;
@@ -10,83 +12,34 @@ interface BottomNavBarProps {
 
 export const BottomNavBar: React.FC<BottomNavBarProps> = ({ activeTab, onChangeTab }) => {
   const { t, language } = useLanguage();
+  const ru = language === 'ru';
+  const tabs: { id: ActiveTab; label: string; icon: React.ElementType }[] = [
+    { id: 'overview', label: t.navOverview || (ru ? 'Обзор' : 'Шолу'), icon: Compass },
+    { id: 'analytics', label: ru ? 'Аналитика' : 'Аналитика', icon: BarChart3 },
+    { id: 'marketplaces', label: ru ? 'Маркетплейс' : 'Маркетплейс', icon: Store },
+    { id: 'products', label: ru ? 'Товары' : 'Тауарлар', icon: Package },
+    { id: 'profile', label: t.navProfile || (ru ? 'Профиль' : 'Профиль'), icon: User },
+  ];
 
   return (
-    <div className="w-full bg-white border-t border-slate-100/90 px-7 pt-2.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] flex flex-col items-center select-none shrink-0 z-20">
-      <div className="w-full flex items-center justify-between py-0.5">
-        {/* Tab 1: Overview / Compass */}
-        <button
-          id="tab-overview"
-          onClick={() => onChangeTab('overview')}
-          className="relative flex flex-col items-center justify-center p-2 text-slate-700 hover:text-blue-600 transition-all active:scale-95"
-          title={t.navOverview}
-        >
-          <Compass
-            className={`w-[22px] h-[22px] transition-colors ${
-              activeTab === 'overview' ? 'text-blue-600' : 'text-slate-400'
-            }`}
-            strokeWidth={activeTab === 'overview' ? 2.3 : 1.8}
-          />
-          {activeTab === 'overview' && (
-            <div className="absolute -bottom-1 w-5 h-[2.5px] bg-blue-600 rounded-full transition-all" />
-          )}
-        </button>
-
-        {/* Tab 2: Video yaratish */}
-        <button
-          id="tab-video"
-          onClick={() => onChangeTab('video')}
-          className="relative flex flex-col items-center justify-center p-2 text-slate-700 hover:text-blue-600 transition-all active:scale-95"
-          title={language === 'ru' ? 'Видео' : 'Бейне'}
-        >
-          <Clapperboard
-            className={`w-[22px] h-[22px] transition-colors ${
-              activeTab === 'video' ? 'text-blue-600' : 'text-slate-400'
-            }`}
-            strokeWidth={activeTab === 'video' ? 2.3 : 1.8}
-          />
-          {activeTab === 'video' && (
-            <div className="absolute -bottom-1 w-5 h-[2.5px] bg-blue-600 rounded-full transition-all" />
-          )}
-        </button>
-
-        {/* Tab 3: Analitika */}
-        <button
-          id="tab-analytics"
-          onClick={() => onChangeTab('analytics')}
-          className="relative flex flex-col items-center justify-center p-2 text-slate-700 hover:text-blue-600 transition-all active:scale-95"
-          title={language === 'ru' ? 'Аналитика' : 'Аналитика'}
-        >
-          <BarChart3
-            className={`w-[22px] h-[22px] transition-colors ${
-              activeTab === 'analytics' ? 'text-blue-600' : 'text-slate-400'
-            }`}
-            strokeWidth={activeTab === 'analytics' ? 2.3 : 1.8}
-          />
-          {activeTab === 'analytics' && (
-            <div className="absolute -bottom-1 w-5 h-[2.5px] bg-blue-600 rounded-full transition-all" />
-          )}
-        </button>
-
-        {/* Tab 4: Profile & 8 Business Tools */}
-        <button
-          id="tab-profile"
-          onClick={() => onChangeTab('profile')}
-          className="relative flex flex-col items-center justify-center p-2 text-slate-700 hover:text-blue-600 transition-all active:scale-95"
-          title={t.navProfile}
-        >
-          <User
-            className={`w-[22px] h-[22px] transition-colors ${
-              activeTab === 'profile' ? 'text-blue-600' : 'text-slate-400'
-            }`}
-            strokeWidth={activeTab === 'profile' ? 2.3 : 1.8}
-          />
-          {activeTab === 'profile' && (
-            <div className="absolute -bottom-1 w-5 h-[2.5px] bg-blue-600 rounded-full transition-all" />
-          )}
-        </button>
+    <div className="w-full bg-white border-t border-slate-100/90 px-2 pt-1.5 pb-[max(0.4rem,env(safe-area-inset-bottom))] select-none shrink-0 z-20">
+      <div className="w-full grid grid-cols-5">
+        {tabs.map(({ id, label, icon: Icon }) => {
+          const on = activeTab === id;
+          return (
+            <button
+              key={id}
+              id={`tab-${id}`}
+              onClick={() => onChangeTab(id)}
+              className="relative flex flex-col items-center justify-center gap-0.5 py-1.5 active:scale-95 transition-all"
+              title={label}
+            >
+              <Icon className={`w-[21px] h-[21px] transition-colors ${on ? 'text-blue-600' : 'text-slate-400'}`} strokeWidth={on ? 2.3 : 1.8} />
+              <span className={`text-[10px] leading-none font-semibold truncate max-w-full ${on ? 'text-blue-600' : 'text-slate-500'}`}>{label}</span>
+            </button>
+          );
+        })}
       </div>
-
     </div>
   );
 };

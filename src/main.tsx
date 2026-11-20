@@ -2,6 +2,9 @@ import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
+import { captureRefFromUrl } from './lib/referral';
+
+captureRefFromUrl();   // ?ref=PROMOKOD havolasi (2026-11-17)
 
 // Yangi versiya chiqqanda ochiq turgan sahifa eski (o'chirilgan) bo'lim faylini so'rasa — bir marta qayta yuklaymiz
 window.addEventListener('vite:preloadError', (e) => {

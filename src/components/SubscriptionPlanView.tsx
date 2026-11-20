@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { ArrowLeft, Check, Crown, Loader2 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { api, PlanUsage } from '../lib/api';
+import { ReferralCard } from './ReferralCard';
 
 // Tarif — REAL (2026-11-08): joriy tarif va shu oydagi foydalanish backend'dan.
 // Avval o'ylab topilgan imkoniyatlar (bank integratsiyasi, VIP menejer, raqobatchi radari...)
@@ -243,6 +244,9 @@ export const SubscriptionPlanView: React.FC<SubscriptionPlanViewProps> = ({ onBa
         ))}
 
         {!isAndroidApp() && <p className="text-center text-[11px] text-slate-500">{L.soon}</p>}
+
+        {/* 2026-11-19: «Пригласить друзей» — tarif bo'limining eng pastida (sayt ham shunday) */}
+        {usage && <ReferralCard lang={lang === 'kk' ? 'kk' : 'ru'} />}
       </div>
     </div>
   );

@@ -5,6 +5,7 @@ import { api, MarketplaceReport, MpOrdersBlock, WbFunnel } from '../lib/api';
 import { formatDay, formatMoney, formatNumber } from '../lib/format';
 import { MarketplaceConnectCard } from './MarketplaceConnectCard';
 import { MpCardsPanel, MpGuidePanel, MpLinksPanel, MpReviewsPanel } from './MarketplaceTools';
+import { MpCalcPanel, MpOrdersPanel } from './MarketplaceEcon';
 
 // Marketplace hisoboti (2026-11-14) — saytdagi "Маркетплейсы" bilan bir manba: GET /marketplaces/{id}/report.
 // Kaspi/WB/Uzum buyurtmalari + WB voronkasi (ko'rish → savat → buyurtma → sotib olish).
@@ -38,7 +39,7 @@ export const MarketplaceReportView: React.FC<{ onBack?: () => void; storeContext
   const businessId = storeContext?.businessId;
   const [days, setDays] = useState(30);
   const [tab, setTab] = useState<'all' | Src>('all');
-  const [section, setSection] = useState<'report' | 'reviews' | 'cards' | 'links' | 'guide'>('report');
+  const [section, setSection] = useState<'report' | 'orders' | 'calc' | 'reviews' | 'cards' | 'links' | 'guide'>('report');
   const [data, setData] = useState<MarketplaceReport | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -171,12 +172,14 @@ export const MarketplaceReportView: React.FC<{ onBack?: () => void; storeContext
         <button onClick={() => load(true)} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100"><RefreshCw className={`w-4 h-4 text-slate-600 ${loading ? 'animate-spin' : ''}`} /></button>
       </div>
       <div className="flex gap-1.5 overflow-x-auto no-scrollbar px-4 pb-2">
-        {([['report', ru ? 'Отчёт' : 'Есеп'], ['reviews', ru ? 'Отзывы' : 'Пікірлер'], ['cards', ru ? 'Карточки' : 'Карточкалар'], ['links', ru ? 'Связки' : 'Байланыстар'], ['guide', ru ? 'Правила' : 'Ережелер']] as const).map(([k, label]) => (
+        {([['report', ru ? 'Отчёт' : 'Есеп'], ['orders', ru ? 'Заказы' : 'Тапсырыстар'], ['calc', ru ? 'Прибыль' : 'Пайда'], ['reviews', ru ? 'Отзывы' : 'Пікірлер'], ['cards', ru ? 'Карточки' : 'Карточкалар'], ['links', ru ? 'Связки' : 'Байланыстар'], ['guide', ru ? 'Правила' : 'Ережелер']] as const).map(([k, label]) => (
           <button key={k} onClick={() => setSection(k)} className={`px-3 py-1.5 rounded-xl text-[12px] font-bold whitespace-nowrap ${section === k ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'}`}>{label}</button>
         ))}
       </div>
       {section !== 'report' && businessId && (
         <div className="flex-1 overflow-y-auto px-4 pb-6 no-scrollbar">
+          {section === 'orders' && <MpOrdersPanel businessId={businessId} l={lang} />}
+          {section === 'calc' && <MpCalcPanel businessId={businessId} l={lang} />}
           {section === 'reviews' && <MpReviewsPanel businessId={businessId} l={lang} />}
           {section === 'cards' && <MpCardsPanel businessId={businessId} l={lang} />}
           {section === 'links' && <MpLinksPanel businessId={businessId} l={lang} />}

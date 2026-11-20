@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertCircle, BookOpen, Check, Copy, Download, ExternalLink, Image as ImageIcon, Link2, MessageSquare, RefreshCw, Send, Sparkles, Star, Wand2 } from 'lucide-react';
+import { AlertCircle, AlertTriangle, BookOpen, Calculator, Check, Clock, Copy, Download, ExternalLink, Image as ImageIcon, Link2, MessageSquare, Package, RefreshCw, Send, Sparkles, Star, TrendingUp, Wand2 } from 'lucide-react';
 import { api, ApiError, MpCard, MpGuide, MpLinks, MpReview, MpReviews, Product } from '../lib/api';
 import { formatDay } from '../lib/format';
 
@@ -390,7 +390,7 @@ export const MpGuidePanel: React.FC<{ businessId: string; l: L }> = ({ businessI
   );
   return (
     <div className="space-y-3">
-      <p className={`text-[11px] ${MUTED} leading-snug px-1`}>{tr(l, 'Эти правила FindLead изучил по урокам продавцов Kaspi, WB и Uzum и официальным гидам площадок — по ним он пишет карточки и ответы на отзывы.', 'Бұл ережелерді FindLead Kaspi, WB және Uzum сатушыларының сабақтары мен ресми гидтерінен үйренді — карточка мен жауаптарды солар бойынша жазады.')}</p>
+      <p className={`text-[11px] ${MUTED} leading-snug px-1`}>{tr(l, 'Эти правила FindLead изучил по урокам продавцов Kaspi, WB и Uzum (34 видео) и официальным гидам: деньги и комиссии, что делать с заказом, как добавить товар, как площадка ранжирует и главные ошибки новичков.', 'Бұл ережелерді FindLead Kaspi, WB және Uzum сатушыларының сабақтарынан (34 бейне) және ресми гидтерден үйренді: ақша мен комиссия, тапсырыспен не істеу, тауар қосу, рейтинг және басты қателер.')}</p>
       <div className="flex gap-1.5">
         {(['kaspi', 'wb', 'uzum'] as const).map((x) => <button key={x} onClick={() => setPlat(x)} className={`flex-1 py-2 rounded-xl text-[12px] font-bold border ${plat === x ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-600 border-slate-200'}`}>{NAME[x]}</button>)}
       </div>
@@ -400,10 +400,24 @@ export const MpGuidePanel: React.FC<{ businessId: string; l: L }> = ({ businessI
         <div><b>{tr(l, 'Видео', 'Бейне')}:</b> {p.video}</div>
         <div><b>{tr(l, 'Модерация', 'Модерация')}:</b> {p.moderation}</div>
       </div>
+      {p.economics && <List title={tr(l, 'Деньги: комиссии, доставка, налоги', 'Ақша: комиссия, жеткізу, салық')} items={p.economics} icon={<Calculator className="w-4 h-4" />} />}
+      {p.orders && <List title={tr(l, 'Пришёл заказ: что делать и сроки', 'Тапсырыс келді: не істеу және мерзім')} items={p.orders} icon={<Clock className="w-4 h-4" />} />}
+      {p.adding && <List title={tr(l, 'Как добавить товар', 'Тауарды қалай қосу')} items={p.adding} icon={<Package className="w-4 h-4" />} />}
+      {p.ranking && <List title={tr(l, 'Как площадка показывает товары', 'Алаң тауарды қалай көрсетеді')} items={p.ranking} icon={<TrendingUp className="w-4 h-4" />} />}
+      {p.mistakes && <List title={tr(l, 'Главные ошибки новичков', 'Жаңадан бастаушылардың басты қателері')} items={p.mistakes} icon={<AlertTriangle className="w-4 h-4" />} />}
       <List title={tr(l, 'Советы для площадки', 'Алаң бойынша кеңестер')} items={p.tips} icon={<BookOpen className="w-4 h-4" />} />
       <List title={tr(l, 'Описание', 'Сипаттама')} items={g.description} icon={<MessageSquare className="w-4 h-4" />} />
       <List title={tr(l, 'Фото и инфографика', 'Фото және инфографика')} items={g.infographic} icon={<ImageIcon className="w-4 h-4" />} />
       <List title={tr(l, 'Ответы на отзывы', 'Пікірлерге жауап')} items={g.reviews} icon={<Star className="w-4 h-4" />} />
+      {p.sources && p.sources.length > 0 && (
+        <div className={`p-3 ${BOX}`}>
+          <div className="text-[13px] font-black flex items-center gap-1.5"><ExternalLink className="w-4 h-4" />{tr(l, 'Источники (уроки продавцов)', 'Дереккөздер (сатушылар сабақтары)')}</div>
+          <div className="mt-1.5 space-y-1">{p.sources.map((s) => (
+            <a key={s.id} href={s.url} target="_blank" rel="noopener noreferrer" className="block text-[12px] leading-snug text-blue-600 underline-offset-2 hover:underline">• {s.title}</a>
+          ))}</div>
+          <p className={`mt-2 text-[10.5px] ${MUTED} leading-snug`}>{tr(l, `Цифры — из уроков 2024–2026 (обновлено ${g.as_of || ''}). Тарифы площадок меняются — сверяйте в своём кабинете.`, `Сандар — 2024–2026 сабақтарынан (${g.as_of || ''}). Алаң тарифтері өзгереді — кабинетіңізде тексеріңіз.`)}</p>
+        </div>
+      )}
     </div>
   );
 };

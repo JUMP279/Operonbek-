@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { DealsView } from './DealsView';
 import {
   ArrowLeft,
+  Handshake,
   BarChart3,
   BellRing,
   Bot,
@@ -97,6 +99,7 @@ export const CustomerResponseView: React.FC<CustomerResponseViewProps> = ({ onBa
   const { language } = useLanguage();
   const lang: 'ru' | 'kk' = language === 'ru' ? 'ru' : 'kk';
   const L = T[lang];
+  const [showDeals, setShowDeals] = useState(false);
   const businessId = storeContext?.businessId;
 
   const [tab, setTab] = useState<Tab>('hot');
@@ -213,6 +216,9 @@ export const CustomerResponseView: React.FC<CustomerResponseViewProps> = ({ onBa
 
   const name = (c: Conversation) => c.customer_name || c.customer_id || L.customer;
 
+  // 2026-11-19: «Сделки» endi «Клиенты» ichida (user so'rovi; sayt ham shunday)
+  if (showDeals) return <DealsView onBack={() => setShowDeals(false)} storeContext={storeContext} />;
+
   return (
     <div className="flex-1 flex flex-col h-full bg-[#FAFBFD] overflow-x-hidden font-sans text-slate-900 w-full max-w-full">
       <div className="bg-white border-b border-slate-200/80 px-3 py-2.5 shrink-0 w-full">
@@ -236,14 +242,20 @@ export const CustomerResponseView: React.FC<CustomerResponseViewProps> = ({ onBa
               { id: 'telegram' as const, label: L.telegram, icon: <Send className="w-3.5 h-3.5" /> },
               { id: 'funnel' as const, label: L.funnel, icon: <BarChart3 className="w-3.5 h-3.5" /> },
               { id: 'tone' as const, label: L.tone, icon: <SlidersHorizontal className="w-3.5 h-3.5" /> },
-            ]).map((t) => (
-              <button key={t.id} onClick={() => setTab(t.id)}
+            ]).map((t, i) => (<React.Fragment key={t.id}>
+              {i === 2 && (
+                <button onClick={() => setShowDeals(true)}
+                  className="px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 active:scale-95 shrink-0 whitespace-nowrap bg-blue-50 text-blue-700 border border-blue-100">
+                  <Handshake className="w-3.5 h-3.5" /><span>{lang === 'ru' ? 'Сделки' : 'Мәмілелер'}</span>
+                </button>
+              )}
+              <button onClick={() => setTab(t.id)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 active:scale-95 shrink-0 whitespace-nowrap ${
                   tab === t.id ? (t.id === 'hot' ? 'bg-orange-500 text-white' : 'bg-purple-600 text-white')
                     : (t.id === 'hot' && hotCount ? 'bg-orange-100 text-orange-700' : t.id === 'attention' && attCount ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600')}`}>
                 {t.icon}<span>{t.label}</span>
               </button>
-            ))}
+            </React.Fragment>))}
           </div>
         )}
         {open && (

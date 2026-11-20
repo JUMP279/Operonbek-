@@ -1,3 +1,4 @@
+import { applyPendingRef } from './lib/referral';
 import React, { lazy, Suspense, useState, useEffect, useRef } from 'react';
 import { Download, Calendar, LayoutGrid } from 'lucide-react';
 import { HeaderNav } from './components/HeaderNav';
@@ -169,6 +170,7 @@ function DashboardApp() {
         } else if (me.business) {
           if (me.business.language) setLanguage(me.business.language);
           setBusinessId(me.business.id);
+          applyPendingRef();   // referal promokodi (2026-11-17)
           setSession('ready');
           setAuthStep(null);
         } else {
@@ -285,6 +287,7 @@ function DashboardApp() {
     if (me.business) {
       if (me.business.language) setLanguage(me.business.language);
       setBusinessId(me.business.id);
+          applyPendingRef();   // referal promokodi (2026-11-17)
     }
     setUserProfile((prev) => {
       const next = profileFromMe(me, prev, profile);
@@ -345,12 +348,12 @@ function DashboardApp() {
             storeContext={storeContext}
           />
         </div>
-      ) : activeTab === 'video' || activeTab === 'analytics' ? (
-        // Pastki menyu: Video yaratish va Analitika (Заказы/Склад o'rniga, 2026-11-13)
+      ) : activeTab === 'video' || activeTab === 'analytics' || activeTab === 'marketplaces' || activeTab === 'products' ? (
+        // Pastki menyu (2026-11-19): Обзор · Аналитика · Маркетплейс · Товары · Профиль (Видео — Профиль ichida)
         <div className="flex-1 overflow-hidden flex flex-col">
           <ToolDetailView
             key={activeTab}
-            toolId={activeTab === 'video' ? 'video-creator' : 'analytics'}
+            toolId={activeTab === 'video' ? 'video-creator' : activeTab === 'products' ? 'products' : activeTab}
             onBack={() => setActiveTab('overview')}
             storeContext={storeContext}
           />
