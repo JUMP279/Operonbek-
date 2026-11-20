@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  AlertCircle, ArrowLeft, CheckCircle2, ChevronDown, ExternalLink, Film, HeartPulse, Instagram, Lightbulb,
-  Loader2, Lock, RefreshCw, Save, Send, ShoppingBag, Sparkles, Star, Swords, TrendingDown, TrendingUp,
+  AlertCircle, ArrowLeft, CheckCircle2, ChevronDown, Circle, ExternalLink, HeartPulse, Instagram, Lightbulb,
+  ListChecks, Loader2, Lock, Megaphone, RefreshCw, Save, Send, ShoppingBag, Sparkles, Star, Swords, TrendingDown,
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { api, MarketProduct, MarketState, MarketWatch, MarketIgAccount } from '../lib/api';
@@ -42,6 +42,15 @@ const T = {
     priceBox: 'Цены на рынке (Kaspi)', median: 'медиана', range: 'диапазон', yourPrice: 'ваша медиана',
     cheaper: 'вы дешевле рынка', pricier: 'вы дороже рынка', same: 'вы в рынке', withDisc: 'со скидкой', withInst: 'в рассрочку',
     marketWeek: 'лидеры за 7 дней: не менее', err: 'охват поста', discLift: 'акции к обычным постам', tgSales: 'Как продают в Telegram', perWeekTg: 'постов/нед',
+    verdictT: 'Где вы сейчас', aiFound: 'Каналы, найденные AI', tasks: 'Задачи на эту неделю', check: 'Как проверить',
+    who: 'Кто ваши конкуренты', gaps: 'Где вы проигрываете', data: 'Подробные данные', adapt: 'Взять себе', adsLink: 'Их реклама сейчас',
+    lvl: { direct: 'прямой', near: 'близкий', leader: 'пример', channel: 'канал' } as Record<string, string>,
+    pos: { leader: 'вы впереди', middle: 'наравне', behind: 'вы отстаёте', unknown: 'мало данных' } as Record<string, string>,
+    sales30: (n: number, capped?: boolean) => `≥${n}${capped ? '+' : ''} продаж/30 дн.`,
+    vsYou: (p: number) => (p === 0 ? 'как у вас' : `${p > 0 ? '+' : ''}${p}% к вашей цене`),
+    inst: 'рассрочка',
+    where: { kaspi: 'Kaspi', wb: 'WB', instagram: 'Instagram', telegram: 'Telegram', card: 'Карточка', price: 'Цена', delivery: 'Доставка', reviews: 'Отзывы' } as Record<string, string>,
+    topic: { price: 'Цена', reviews: 'Отзывы', delivery: 'Доставка', assortment: 'Ассортимент', content: 'Контент', channels: 'Каналы', trust: 'Доверие' } as Record<string, string>,
   },
   kk: {
     title: 'Бизнес талдауы', refresh: 'Қазір жаңарту', running: 'Бәсекелестер талданып жатыр… 1–3 минут',
@@ -76,6 +85,15 @@ const T = {
     priceBox: 'Нарықтағы бағалар (Kaspi)', median: 'медиана', range: 'аралық', yourPrice: 'сіздің медианаңыз',
     cheaper: 'сіз нарықтан арзансыз', pricier: 'сіз нарықтан қымбатсыз', same: 'сіз нарық деңгейіндесіз', withDisc: 'жеңілдікпен', withInst: 'бөліп төлеумен',
     marketWeek: 'көшбасшылар 7 күнде: кемінде', err: 'пост қамтуы', discLift: 'акция / қарапайым пост', tgSales: 'Telegram-да қалай сатады', perWeekTg: 'пост/апта',
+    verdictT: 'Қазір қай жердесіз', aiFound: 'AI өзі тапқан арналар', tasks: 'Осы аптаның тапсырмалары', check: 'Қалай тексеру',
+    who: 'Бәсекелестеріңіз кім', gaps: 'Қай жерде ұтыласыз', data: 'Толық деректер', adapt: 'Өзіңізге алыңыз', adsLink: 'Қазіргі жарнамасы',
+    lvl: { direct: 'тікелей', near: 'жақын', leader: 'үлгі', channel: 'арна' } as Record<string, string>,
+    pos: { leader: 'сіз алдындасыз', middle: 'тең', behind: 'сіз артта қалдыңыз', unknown: 'дерек аз' } as Record<string, string>,
+    sales30: (n: number, capped?: boolean) => `30 күнде ≥${n}${capped ? '+' : ''} сатылым`,
+    vsYou: (p: number) => (p === 0 ? 'сіздікіндей' : `сіздің бағаңызға ${p > 0 ? '+' : ''}${p}%`),
+    inst: 'бөліп төлеу',
+    where: { kaspi: 'Kaspi', wb: 'WB', instagram: 'Instagram', telegram: 'Telegram', card: 'Карточка', price: 'Баға', delivery: 'Жеткізу', reviews: 'Пікірлер' } as Record<string, string>,
+    topic: { price: 'Баға', reviews: 'Пікірлер', delivery: 'Жеткізу', assortment: 'Ассортимент', content: 'Контент', channels: 'Арналар', trust: 'Сенім' } as Record<string, string>,
   },
 };
 
@@ -114,7 +132,7 @@ const Note: React.FC<{ icon?: React.ReactNode; children: React.ReactNode }> = ({
 );
 
 // Havolalar serverdan keladi (scraping/AI manbali) — faqat https va ma'lum saytlar (javascript:/data: XSS'dan himoya)
-const SAFE_HOSTS = ['kaspi.kz', 'wildberries.ru', 'instagram.com', 't.me', 'uzum.uz'];
+const SAFE_HOSTS = ['kaspi.kz', 'wildberries.ru', 'instagram.com', 't.me', 'uzum.uz', 'facebook.com'];
 const safeUrl = (u?: string | null): string | undefined => {
   if (!u) return undefined;
   try {
@@ -139,6 +157,17 @@ export const BusinessAnalyzeView: React.FC<{ onBack: () => void; storeContext?: 
   const [savedMsg, setSavedMsg] = useState(false);
   const [showWatch, setShowWatch] = useState(false);
   const poll = useRef<number | null>(null);
+  // Vazifalar "bajarildi" belgisi — shu hisobot uchun (yangi hisobot kelganda tozalanadi), faqat shu qurilmada
+  const [done, setDone] = useState<Record<number, boolean>>({});
+  const doneKey = `fl-market-done:${businessId || ''}:${state?.intel?.generated_at || ''}`;
+  useEffect(() => {
+    try { setDone(JSON.parse(localStorage.getItem(doneKey) || '{}') || {}); } catch { setDone({}); }
+  }, [doneKey]);
+  const toggleDone = (i: number) => setDone((d) => {
+    const next = { ...d, [i]: !d[i] };
+    try { localStorage.setItem(doneKey, JSON.stringify(next)); } catch { /* private rejim */ }
+    return next;
+  });
   const n = (v: number | null | undefined) => fmt(v, lang);
 
   const fillForm = (w: MarketWatch) =>
@@ -249,30 +278,10 @@ export const BusinessAnalyzeView: React.FC<{ onBack: () => void; storeContext?: 
     </div>
   );
 
-  const MarketBlock: React.FC<{ k: 'kaspi' | 'wb' }> = ({ k }) => {
-    const ai = rep.marketplaces?.[k];
-    return ai ? (
-      <div className="space-y-2">
-        {ai.summary && <p className="text-[12px] text-slate-700 leading-snug">{ai.summary}</p>}
-        {ai.leaders && ai.leaders.length > 0 && (
-          <div className="space-y-1">
-            <p className="text-[11px] font-bold text-slate-500">{L.leaders}</p>
-            {ai.leaders.map((l, i) => (
-              <div key={i} className="text-[12px] bg-purple-50/60 rounded-xl p-2">
-                <p className="font-bold">{l.name}</p>
-                {l.sales_signal && <p className="text-purple-700 font-semibold">{l.sales_signal}</p>}
-                {l.revenue_signal && <p className="text-emerald-700 font-semibold">{l.revenue_signal}</p>}
-                {l.why_sells && <p className="text-slate-600">{l.why_sells}</p>}
-              </div>
-            ))}
-          </div>
-        )}
-        {ai.tactics && ai.tactics.length > 0 && (<><p className="text-[11px] font-bold text-slate-500">{L.tactics}</p><Bullets items={ai.tactics} color="bg-purple-400" /></>)}
-      </div>
-    ) : null;
-  };
-
   const ks = intel?.data?.kaspi_summary;
+  const acts = (rep.actions || []).filter((a) => a.task || a.action).slice(0, 5);
+  const comps = (rep.competitors || []).slice(0, 4);
+  const gaps = (rep.gaps && rep.gaps.length ? rep.gaps : (rep.vs_us || []).map((d) => ({ topic: d.topic, them: d.them, us: d.us }))).slice(0, 3);
   const igAccounts = (src.instagram?.accounts || []).filter((a): a is MarketIgAccount => typeof a === 'object');
 
   if (state?.locked) {
@@ -336,13 +345,12 @@ export const BusinessAnalyzeView: React.FC<{ onBack: () => void; storeContext?: 
                 {health.verdict === 'good' ? L.good : health.verdict === 'bad' ? L.bad : L.ok}{health.score != null ? ` · ${health.score}/100` : ''}
               </span>}</>}>
             {health.headline && <p className="text-[12.5px] font-semibold leading-snug">{health.headline}</p>}
-            {health.changes && health.changes.length > 0 && (<><p className="text-[11px] font-bold text-slate-500">{L.changes}</p><Bullets items={health.changes} /></>)}
-            {health.problems && health.problems.length > 0 && (<><p className="text-[11px] font-bold text-slate-500 flex items-center gap-1"><TrendingDown className="w-3 h-3" />{L.problems}</p><Bullets items={health.problems} color="bg-rose-400" /></>)}
+                        {health.problems && health.problems.length > 0 && (<><p className="text-[11px] font-bold text-slate-500 flex items-center gap-1"><TrendingDown className="w-3 h-3" />{L.problems}</p><Bullets items={health.problems.slice(0, 2)} color="bg-rose-400" /></>)}
             {health.advice && health.advice.length > 0 && (
               <>
                 <p className="text-[11px] font-bold text-slate-500 flex items-center gap-1"><Lightbulb className="w-3 h-3" />{L.advice}</p>
                 <div className="space-y-1.5">
-                  {health.advice.map((a, i) => (
+                  {health.advice.slice(0, 3).map((a, i) => (
                     <div key={i} className="bg-white/80 rounded-xl p-2 text-[12px]">
                       <p className="font-bold flex gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />{a.action}</p>
                       {a.why && <p className="text-slate-500 mt-0.5">{a.why}</p>}
@@ -358,219 +366,122 @@ export const BusinessAnalyzeView: React.FC<{ onBack: () => void; storeContext?: 
 
         {intel && (
           <>
-            {/* Umumiy xulosa va harakatlar */}
-            <Card title={<><Swords className="w-4 h-4 text-purple-600" />{L.summary}</>}>
-              {rep.summary && <p className="text-[12.5px] leading-snug">{rep.summary}</p>}
-              {rep.actions && rep.actions.length > 0 && (
-                <>
-                  <p className="text-[11px] font-bold text-slate-500">{L.actions}</p>
-                  <div className="space-y-1.5">
-                    {rep.actions.map((a, i) => (
-                      <div key={i} className="bg-purple-50/60 rounded-xl p-2.5 text-[12px] space-y-0.5">
-                        <p className="font-bold">{i + 1}. {a.action}</p>
-                        {a.why && <p className="text-slate-600"><b>{L.why}:</b> {a.why}</p>}
-                        {a.expected && <p className="text-emerald-700"><b>{L.expected}:</b> {a.expected}</p>}
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-              {rep.opportunities && rep.opportunities.length > 0 && (<><p className="text-[11px] font-bold text-slate-500 flex items-center gap-1"><TrendingUp className="w-3 h-3" />{L.opps}</p><Bullets items={rep.opportunities} color="bg-emerald-500" /></>)}
-            </Card>
-
-            {rep.vs_us && rep.vs_us.length > 0 && (
-              <Card title={<><Swords className="w-4 h-4 text-emerald-600" />{L.vsUs}</>}>
-                <div className="space-y-2">
-                  {rep.vs_us.map((d, i) => (
-                    <div key={i} className="rounded-xl bg-slate-50 p-2.5 space-y-1 text-[12px]">
-                      {d.topic && <p className="text-[10.5px] font-black uppercase text-slate-400">{d.topic}</p>}
-                      {d.them && <p className="text-slate-700"><b>{L.them}:</b> {d.them}</p>}
-                      {d.us && <p className="text-slate-700"><b>{L.us}:</b> {d.us}</p>}
-                      {d.our_move && <p className="text-emerald-700 font-semibold"><b>{L.ourMove}:</b> {d.our_move}</p>}
-                    </div>
-                  ))}
-                </div>
+            {/* 1. Qayerdamiz — 1-2 gap */}
+            {(rep.verdict || rep.summary) && (
+              <Card title={<><Swords className="w-4 h-4 text-purple-600" />{L.verdictT}
+                {rep.position && L.pos[rep.position] && <span className="ml-auto text-[10.5px] px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 font-black">{L.pos[rep.position]}</span>}</>}>
+                <p className="text-[12.5px] leading-snug">{rep.verdict || rep.summary}</p>
               </Card>
             )}
 
-            {rep.how_they_grow && rep.how_they_grow.length > 0 && (
-              <Card title={<><TrendingUp className="w-4 h-4 text-purple-600" />{L.howGrow}</>}>
+            {/* 2. Shu hafta nima qilish kerak — belgilanadigan ro'yxat */}
+            {acts.length > 0 && (
+              <Card title={<><ListChecks className="w-4 h-4 text-emerald-600" />{L.tasks}
+                <span className="ml-auto text-[10.5px] font-black text-slate-400">{acts.filter((_, i) => done[i]).length}/{acts.length}</span></>}>
                 <div className="space-y-1.5">
-                  {rep.how_they_grow.map((g, i) => (
-                    <div key={i} className="bg-purple-50/60 rounded-xl p-2.5 text-[12px]">
-                      <p className="font-bold">{g.lever}{g.who ? <span className="ml-1.5 text-[10.5px] font-semibold text-slate-500">{g.who}</span> : null}</p>
-                      {g.evidence && <p className="text-slate-600">{g.evidence}</p>}
+                  {acts.map((a, i) => (
+                    <div key={i} className={`rounded-xl p-2.5 text-[12px] space-y-1 ${done[i] ? 'bg-slate-50 opacity-60' : 'bg-emerald-50/60'}`}>
+                      <button onClick={() => toggleDone(i)} className="w-full text-left flex gap-2 items-start">
+                        {done[i] ? <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-px" /> : <Circle className="w-4 h-4 text-slate-300 shrink-0 mt-px" />}
+                        <span className={`flex-1 font-bold leading-snug ${done[i] ? 'line-through' : ''}`}>{a.task || a.action}</span>
+                        {a.where && L.where[a.where] && <span className="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-white text-slate-500">{L.where[a.where]}</span>}
+                      </button>
+                      {!done[i] && a.why && <p className="text-slate-600 pl-6 leading-snug">{a.why}</p>}
+                      {!done[i] && (a.check || a.expected) && <p className="text-emerald-700 pl-6 leading-snug"><b>{L.check}:</b> {a.check || a.expected}</p>}
                     </div>
                   ))}
                 </div>
               </Card>
             )}
 
-            {rep.content_ideas && rep.content_ideas.length > 0 && (
-              <Card title={<><Lightbulb className="w-4 h-4 text-amber-500" />{L.ideas}</>}>
-                <div className="space-y-1.5">
-                  {rep.content_ideas.map((c, i) => (
-                    <div key={i} className="bg-amber-50/70 rounded-xl p-2.5 text-[12px] space-y-0.5">
-                      <p className="font-bold">{c.idea}</p>
-                      {c.format && <p className="text-[10.5px] font-bold uppercase text-amber-700">{c.format}</p>}
-                      {c.based_on && <p className="text-slate-600"><b>{L.basedOn}:</b> {c.based_on}</p>}
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            )}
-
-            {rep.competitors && rep.competitors.length > 0 && (
-              <Card title={<><Swords className="w-4 h-4 text-slate-600" />{L.competitors}</>}>
+            {/* 3. Raqobatchilar — 3-4 ta: raqamlar, nega sotadi, zaif joyi */}
+            {comps.length > 0 && (
+              <Card title={<><Swords className="w-4 h-4 text-slate-600" />{L.who}</>}>
                 <div className="space-y-2">
-                  {rep.competitors.map((c, i) => (
-                    <div key={i} className="rounded-xl bg-slate-50 p-2.5 space-y-1.5">
-                      <p className="text-[12.5px] font-black">{c.name}{c.platform ? <span className="ml-1.5 text-[10px] font-bold text-slate-400 uppercase">{c.platform}</span> : null}</p>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div><p className="text-[10.5px] font-bold text-emerald-700">{L.strengths}</p><Bullets items={c.strengths} color="bg-emerald-500" /></div>
-                        <div><p className="text-[10.5px] font-bold text-rose-600">{L.weaknesses}</p><Bullets items={c.weaknesses} color="bg-rose-400" /></div>
+                  {comps.map((c, i) => (
+                    <div key={i} className="rounded-xl bg-slate-50 p-2.5 space-y-1">
+                      <div className="flex items-start gap-1.5">
+                        {safeUrl(c.link) ? (
+                          <a href={safeUrl(c.link)} target="_blank" rel="noreferrer" className="text-[12.5px] font-black leading-snug flex-1 hover:text-purple-700">{c.name}</a>
+                        ) : <p className="text-[12.5px] font-black leading-snug flex-1">{c.name}</p>}
+                        {c.level && L.lvl[c.level] && <span className="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-white text-slate-500">{L.lvl[c.level]}</span>}
                       </div>
+                      <div className="flex flex-wrap gap-x-2.5 gap-y-0.5 text-[11px] text-slate-600">
+                        {c.platform && <span className="uppercase font-bold text-slate-400">{c.platform}</span>}
+                        {c.shop && <span className="font-semibold text-slate-700">{c.shop}</span>}
+                        {c.price != null && <span><b>{n(c.price)} ₸</b>{c.price_vs_ours_pct != null && <span className={c.price_vs_ours_pct > 0 ? 'text-rose-600' : 'text-emerald-700'}> ({L.vsYou(c.price_vs_ours_pct)})</span>}</span>}
+                        {c.rating != null && <span className="flex items-center gap-0.5"><Star className="w-3 h-3 text-amber-500" />{c.rating}</span>}
+                        {c.reviews_total != null && <span>{L.reviews}: {n(c.reviews_total)}</span>}
+                        {!!c.reviews_30d && <span className="font-bold text-purple-700">{L.sales30(c.reviews_30d, c.reviews_30d_capped)}</span>}
+                        {c.installment && <span>{L.inst}</span>}
+                      </div>
+                      {(c.strong || c.strengths?.[0]) && <p className="text-[12px] text-slate-700 leading-snug"><b className="text-emerald-700">+</b> {c.strong || c.strengths?.[0]}</p>}
+                      {(c.weak || c.weaknesses?.[0]) && <p className="text-[12px] text-slate-700 leading-snug"><b className="text-rose-600">−</b> {c.weak || c.weaknesses?.[0]}</p>}
+                      {c.adapt && <p className="text-[12px] text-purple-700 leading-snug"><b>{L.adapt}:</b> {c.adapt}</p>}
+                      {safeUrl(c.ads_url) && (
+                        <a href={safeUrl(c.ads_url)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[11px] font-bold text-sky-700">
+                          <Megaphone className="w-3 h-3" />{L.adsLink}<ExternalLink className="w-3 h-3" />
+                        </a>
+                      )}
                     </div>
                   ))}
                 </div>
               </Card>
             )}
 
-            {/* Kaspi */}
-            <Card title={<><ShoppingBag className="w-4 h-4 text-rose-600" />{L.kaspi}</>}>
-              <MarketBlock k="kaspi" />
-              {ks?.market_median_price != null && (
-                <div className="rounded-xl bg-rose-50/60 p-2.5 text-[11.5px] text-slate-700 space-y-0.5">
-                  <p className="text-[11px] font-bold text-slate-500">{L.priceBox}</p>
-                  <p>{L.median}: <b>{n(ks.market_median_price)} ₸</b> · {L.range}: {n(ks.market_min_price)}–{n(ks.market_max_price)} ₸</p>
-                  {ks.our_median_price != null && (
-                    <p>{L.yourPrice}: <b>{n(ks.our_median_price)} ₸</b> — <b className={ks.price_position === 'pricier' ? 'text-rose-600' : 'text-emerald-700'}>
-                      {ks.price_position === 'cheaper' ? L.cheaper : ks.price_position === 'pricier' ? L.pricier : L.same}
-                      {ks.our_vs_market_pct != null ? ` (${ks.our_vs_market_pct > 0 ? '+' : ''}${ks.our_vs_market_pct}%)` : ''}</b></p>
-                  )}
-                  <p>{ks.with_discount_pct != null && <>{L.withDisc}: <b>{ks.with_discount_pct}%</b> · </>}{ks.with_installment_pct != null && <>{L.withInst}: <b>{ks.with_installment_pct}%</b></>}</p>
-                  {!!ks.min_week_sales_total && <p>{L.marketWeek} <b>{n(ks.min_week_sales_total)}</b>{ks.min_week_revenue_total ? <> · <b>{n(ks.min_week_revenue_total)} ₸</b></> : null}</p>}
+            {/* 4. Qayerda yutqazyapmiz — max 3 qator */}
+            {gaps.length > 0 && (
+              <Card title={<><TrendingDown className="w-4 h-4 text-rose-500" />{L.gaps}</>}>
+                <div className="space-y-1.5">
+                  {gaps.map((g, i) => (
+                    <div key={i} className="rounded-xl bg-slate-50 p-2.5 text-[12px] space-y-0.5">
+                      {g.topic && <p className="text-[10.5px] font-black uppercase text-slate-400">{L.topic[g.topic] || g.topic}</p>}
+                      {g.them && <p className="text-slate-700"><b>{L.them}:</b> {g.them}</p>}
+                      {g.us && <p className="text-slate-700"><b>{L.us}:</b> {g.us}</p>}
+                    </div>
+                  ))}
                 </div>
-              )}
-              {[...(src.kaspi?.tracked || []), ...(src.kaspi?.market_top || [])].map((p) => <ProductRow key={'k' + p.id} p={p} />)}
-              <Note icon={<AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />}>{L.salesNote}</Note>
-            </Card>
+              </Card>
+            )}
 
-            {/* Wildberries */}
-            <Card title={<><ShoppingBag className="w-4 h-4 text-fuchsia-600" />{L.wb}</>}>
-              <MarketBlock k="wb" />
-              {(src.wb?.tracked || []).length ? (src.wb?.tracked || []).map((p) => <ProductRow key={'w' + p.id} p={p} />) : <Note>{L.noWb}</Note>}
-            </Card>
-
-            {/* Uzum */}
-            <Card title={<><ShoppingBag className="w-4 h-4 text-violet-600" />{L.uzum}</>}>
-              <Note>{L.uzumClosed}</Note>
-            </Card>
-
-            {/* Instagram */}
-            <Card title={<><Instagram className="w-4 h-4 text-pink-600" />{L.ig}</>}>
-              {src.instagram?.status === 'needs_facebook_login' && <Note>{L.igNeeds}</Note>}
-              {src.instagram?.status === 'no_accounts' && <Note icon={<Instagram className="w-3.5 h-3.5 shrink-0 mt-0.5" />}>{L.igNone}</Note>}
-              {rep.instagram?.summary && <p className="text-[12px] text-slate-700 leading-snug">{rep.instagram.summary}</p>}
-              {igAccounts.map((a) => (
-                <div key={a.username} className="rounded-xl bg-slate-50 p-2.5 space-y-1.5">
-                  <a href={`https://instagram.com/${a.username}`} target="_blank" rel="noreferrer" className="text-[12.5px] font-black hover:text-pink-600">@{a.username}</a>
-                  {a.error ? <p className="text-[11px] text-slate-400">{L.notFound}</p> : (
-                    <>
-                      <div className="flex flex-wrap gap-x-3 text-[11px] text-slate-600">
-                        <span>{L.followers}: <b>{n(a.followers)}</b></span>
-                        {a.posts_per_week != null && <span><b>{a.posts_per_week}</b> {L.perWeek}</span>}
-                        {a.reels_share != null && <span>{L.reels}: <b>{a.reels_share}%</b></span>}
-                        {a.avg_er != null && <span>{L.er}: <b>{a.avg_er}%</b></span>}
-                        {a.reels_per_week != null && <span><b>{a.reels_per_week}</b> {L.reelsWeek}</span>}
-                        {a.avg_reel_views != null && <span>{L.avgReel}: <b>{n(a.avg_reel_views)}</b></span>}
-                        {a.views_hidden && <span className="text-slate-400">{L.viewsHidden}</span>}
-                      </div>
-                      {(a.top_videos || []).length > 0 && <p className="text-[10.5px] font-bold text-slate-500">{L.topVideos}</p>}
-                      {(a.top_videos || []).slice(0, 3).map((v, i) => (
-                        <a key={i} href={safeUrl(v.permalink)} target="_blank" rel="noreferrer" className="flex gap-2 items-start text-[11.5px] bg-white rounded-lg p-1.5">
-                          <Film className="w-3.5 h-3.5 text-purple-600 shrink-0 mt-0.5" />
-                          <span className="flex-1 line-clamp-2 text-slate-700">{v.caption || '—'}</span>
-                          <span className="shrink-0 font-bold text-right">{v.views ? <>▶ {n(v.views)}{v.vs_avg && v.vs_avg >= 1.5 ? <span className="text-emerald-600"> ×{v.vs_avg}</span> : null}<br /></> : null}♥ {n(v.likes)}</span>
-                        </a>
-                      ))}
-                    </>
-                  )}
-                </div>
-              ))}
-              {rep.instagram?.genres && rep.instagram.genres.length > 0 && (
-                <>
-                  <p className="text-[11px] font-bold text-slate-500">{L.genres}</p>
-                  <div className="space-y-1.5">
-                    {rep.instagram.genres.map((g, i) => (
-                      <div key={i} className="bg-pink-50/60 rounded-xl p-2.5 text-[12px] space-y-0.5">
-                        <p className="font-bold">{g.genre}{g.count ? ` · ${g.count}` : ''}
-                          {g.goal && <span className="ml-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-white text-pink-700">{g.goal === 'sales' ? L.forSales : g.goal === 'both' ? L.forBoth : L.forViews}</span>}
-                          {safeUrl(g.example_link) && <a href={safeUrl(g.example_link)} target="_blank" rel="noreferrer" className="ml-1.5 inline-flex align-middle text-slate-400"><ExternalLink className="w-3 h-3" /></a>}</p>
-                        {g.views_signal && <p className="text-purple-700 font-semibold">{g.views_signal}</p>}
-                        {g.why_works && <p className="text-slate-600">{g.why_works}</p>}
-                      </div>
-                    ))}
+            {/* 5. Xom ma'lumotlar — yopiq holda */}
+            <details className="bg-white border border-slate-200/90 rounded-2xl group">
+              <summary className="cursor-pointer list-none flex items-center justify-between p-3.5 text-[13px] font-black">
+                <span className="flex items-center gap-1.5"><ShoppingBag className="w-4 h-4 text-slate-500" />{L.data}</span>
+                <ChevronDown className="w-4 h-4 transition-transform group-open:rotate-180" />
+              </summary>
+              <div className="px-3.5 pb-3.5 space-y-2.5">
+                {ks?.market_median_price != null && (
+                  <div className="rounded-xl bg-rose-50/60 p-2.5 text-[11.5px] text-slate-700 space-y-0.5">
+                    <p className="text-[11px] font-bold text-slate-500">{L.priceBox}</p>
+                    <p>{L.median}: <b>{n(ks.market_median_price)} ₸</b> · {L.range}: {n(ks.market_min_price)}–{n(ks.market_max_price)} ₸</p>
+                    {ks.our_median_price != null && (
+                      <p>{L.yourPrice}: <b>{n(ks.our_median_price)} ₸</b> — <b className={ks.price_position === 'pricier' ? 'text-rose-600' : 'text-emerald-700'}>
+                        {ks.price_position === 'cheaper' ? L.cheaper : ks.price_position === 'pricier' ? L.pricier : L.same}
+                        {ks.our_vs_market_pct != null ? ` (${ks.our_vs_market_pct > 0 ? '+' : ''}${ks.our_vs_market_pct}%)` : ''}</b></p>
+                    )}
                   </div>
-                </>
-              )}
-              {rep.instagram?.sales_videos && rep.instagram.sales_videos.length > 0 && (<><p className="text-[11px] font-bold text-slate-500">{L.salesVideos}</p><Bullets items={rep.instagram.sales_videos} color="bg-purple-400" /></>)}
-              {rep.instagram?.not_working && rep.instagram.not_working.length > 0 && (<><p className="text-[11px] font-bold text-slate-500">{L.notWorking}</p><Bullets items={rep.instagram.not_working} color="bg-rose-400" /></>)}
-              {rep.instagram?.video_patterns && rep.instagram.video_patterns.length > 0 && (<><p className="text-[11px] font-bold text-slate-500">{L.patterns}</p><Bullets items={rep.instagram.video_patterns} color="bg-pink-400" /></>)}
-              {rep.instagram?.what_to_try && rep.instagram.what_to_try.length > 0 && (<><p className="text-[11px] font-bold text-slate-500">{L.tryIt}</p><Bullets items={rep.instagram.what_to_try} color="bg-emerald-500" /></>)}
-            </Card>
-
-            {/* Telegram */}
-            <Card title={<><Send className="w-4 h-4 text-sky-600" />{L.tg}</>}>
-              {src.telegram?.status === 'no_channels' && <Note icon={<Send className="w-3.5 h-3.5 shrink-0 mt-0.5" />}>{L.tgNone}</Note>}
-              {rep.telegram?.summary && <p className="text-[12px] text-slate-700 leading-snug">{rep.telegram.summary}</p>}
-              {(src.telegram?.channels || []).map((c) => (
-                <div key={c.channel} className="rounded-xl bg-slate-50 p-2.5 space-y-1.5">
-                  <a href={`https://t.me/${c.channel}`} target="_blank" rel="noreferrer" className="text-[12.5px] font-black hover:text-sky-600">@{c.channel}</a>
-                  {c.error ? <p className="text-[11px] text-slate-400">{L.notFound}</p> : (
-                    <>
-                      <div className="flex flex-wrap gap-x-3 text-[11px] text-slate-600">
-                        <span>{L.subs}: <b>{n(c.subscribers)}</b></span>
-                        <span><b>{c.posts_30d}</b> {L.posts30}</span>
-                        <span>{L.avgViews}: <b>{n(c.avg_views)}</b></span>
-                        {c.discount_avg_views != null && <span>{L.discountViews}: <b>{n(c.discount_avg_views)}</b></span>}
-                        {c.posts_per_week != null && <span><b>{c.posts_per_week}</b> {L.perWeekTg}</span>}
-                        {c.err_pct != null && <span>{L.err}: <b>{c.err_pct}%</b></span>}
-                        {c.discount_lift != null && <span>{L.discLift}: <b>×{c.discount_lift}</b></span>}
-                      </div>
-                      {(c.discount_posts || []).length > 0 && <p className="text-[10.5px] font-bold text-slate-500">{L.discounts}</p>}
-                      {(c.discount_posts || []).slice(0, 3).map((d, i) => (
-                        <a key={i} href={safeUrl(d.link)} target="_blank" rel="noreferrer" className="block text-[11.5px] bg-white rounded-lg p-1.5 text-slate-700">
-                          <span className="line-clamp-2">{d.text}</span>
-                          <span className="text-[10.5px] text-slate-400">{d.date} · {n(d.views)}</span>
-                        </a>
-                      ))}
-                    </>
-                  )}
-                </div>
-              ))}
-              {rep.telegram?.discount_tactics && rep.telegram.discount_tactics.length > 0 && <Bullets items={rep.telegram.discount_tactics} color="bg-sky-400" />}
-              {rep.telegram?.sales_tactics && rep.telegram.sales_tactics.length > 0 && (<><p className="text-[11px] font-bold text-slate-500">{L.tgSales}</p><Bullets items={rep.telegram.sales_tactics} color="bg-emerald-500" /></>)}
-            </Card>
+                )}
+                {[...(src.kaspi?.tracked || []), ...(src.kaspi?.market_top || [])].map((p) => <ProductRow key={'k' + p.id} p={p} />)}
+                {(src.wb?.tracked || []).map((p) => <ProductRow key={'w' + p.id} p={p} />)}
+                {igAccounts.filter((a) => !a.error).map((a) => (
+                  <p key={a.username} className="text-[11.5px] text-slate-600"><Instagram className="inline w-3 h-3 text-pink-600 mr-1" />
+                    <b>@{a.username}</b> · {L.followers}: {n(a.followers)}{a.reels_per_week != null ? ` · ${a.reels_per_week} ${L.reelsWeek}` : ''}{a.avg_reel_views != null ? ` · ${L.avgReel}: ${n(a.avg_reel_views)}` : ''}</p>
+                ))}
+                {(src.telegram?.channels || []).filter((c) => !c.error).map((c) => (
+                  <p key={c.channel} className="text-[11.5px] text-slate-600"><Send className="inline w-3 h-3 text-sky-600 mr-1" />
+                    <b>@{c.channel}</b> · {L.subs}: {n(c.subscribers)}{c.posts_per_week != null ? ` · ${c.posts_per_week} ${L.perWeekTg}` : ''} · {L.avgViews}: {n(c.avg_views)}</p>
+                ))}
+                {src.instagram?.status === 'needs_facebook_login' && <Note>{L.igNeeds}</Note>}
+                <Note icon={<AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />}>{L.salesNote}</Note>
+                {state?.watch?.auto && (state.watch.auto.telegram.length > 0 || state.watch.auto.instagram.length > 0) && (
+                  <p className="text-[11px] text-slate-500 break-words">
+                    <Sparkles className="inline w-3 h-3 text-purple-600 mr-1" />{L.aiFound}: {[...state.watch.auto.telegram, ...state.watch.auto.instagram].map((c) => '@' + c).join(', ')}
+                  </p>
+                )}
+              </div>
+            </details>
           </>
-        )}
-
-        {state?.watch?.auto && (state.watch.auto.telegram.length > 0 || state.watch.auto.instagram.length > 0 || state.watch.auto.keywords.length > 0) && (
-          <Card title={<><Sparkles className="w-4 h-4 text-purple-600" />{lang === 'kk' ? 'AI өзі тапқан бәсекелестер' : 'Конкуренты, которых AI нашёл сам'}</>}>
-            {state.watch.auto.keywords.length > 0 && (
-              <p className="text-[12px] text-slate-700"><b>Kaspi:</b> {state.watch.auto.keywords.join(' · ')}</p>
-            )}
-            {state.watch.auto.telegram.length > 0 && (
-              <p className="text-[12px] text-slate-700 break-words"><b>Telegram:</b> {state.watch.auto.telegram.map((c) => '@' + c).join(', ')}</p>
-            )}
-            {state.watch.auto.instagram.length > 0 && (
-              <p className="text-[12px] text-slate-700 break-words"><b>Instagram:</b> {state.watch.auto.instagram.map((c) => '@' + c).join(', ')}</p>
-            )}
-            <p className="text-[11px] text-slate-400 leading-snug">
-              {lang === 'kk' ? 'Әр арна шынымен бар екені тексерілген. Тізім 14 күн сайын жаңарады; өз бәсекелестеріңізді төменде қосуға болады.'
-                : 'Каждый канал проверен — он существует и активен. Список обновляется раз в 14 дней; своих конкурентов можно добавить ниже.'}
-            </p>
-          </Card>
         )}
 
         {/* Kuzatuv ro'yxati */}
