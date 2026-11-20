@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { api } from '../lib/api';
 import {
   Settings,
   Bot,
@@ -58,6 +59,31 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
   const [copiedId, setCopiedId] = useState(false);
   const [internalActiveTool, setInternalActiveTool] = useState<string | null>(null);
   const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
+  // 2026-11-20 BUG: tarif banneri HAR DOIM "Starter Plan" ko'rsatardi, haqiqiy tarifdan qat'i nazar.
+  // Endi haqiqiy tarifni olamiz (api.planUsage → billing).
+  const [plan, setPlan] = useState<{ plan: string; state?: string; days_left?: number | null; prices?: Record<string, number> } | null>(null);
+  useEffect(() => {
+    const bid = storeContext?.businessId;
+    if (!bid) return;
+    let on = true;
+    api.planUsage(bid).then((u) => { if (on) setPlan(u); }).catch(() => { /* banner sukut holatda qoladi */ });
+    return () => { on = false; };
+  }, [storeContext?.businessId]);
+  const PLAN_LABEL: Record<string, string> = { trial: 'Trial', starter: 'Starter', growth: 'Growth', business: 'Business' };
+  const PLAN_LIMITS: Record<string, string> = {
+    trial: language === 'kk' ? '14 күн тегін • күніне 1 бейне + 1 пост' : '14 дней бесплатно • 1 видео + 1 пост в день',
+    starter: language === 'kk' ? '$20 / ай • 15 бейне + 15 пост' : '$20 / мес • 15 видео + 15 постов',
+    growth: language === 'kk' ? '$49.90 / ай • күніне 1 бейне + 1 пост' : '$49.90 / мес • 1 видео + 1 пост в день',
+    business: language === 'kk' ? '$79.99 / ай • күніне 3 бейне + 3 пост' : '$79.99 / мес • 3 видео + 3 поста в день',
+  };
+  const planKey = plan && PLAN_LABEL[plan.plan] ? plan.plan : 'starter';
+  const planName = PLAN_LABEL[planKey] + ' Plan';
+  const planSubtitle = PLAN_LIMITS[planKey] || t.starterPlanSubtitle;
+  const planBadge = plan?.state === 'expired'
+    ? (language === 'kk' ? 'Аяқталды' : 'Истёк')
+    : plan?.state === 'trial' && plan.days_left != null
+      ? (language === 'kk' ? `${plan.days_left} күн қалды` : `Осталось ${plan.days_left} дн.`)
+      : t.activePlan;
 
   const uniqueId = userProfile?.uniqueCode || userProfile?.id || '';
 
@@ -369,13 +395,13 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="text-xs font-black tracking-tight">Starter Plan</span>
-                <span className="text-[9px] bg-white/25 text-white font-bold px-1.5 py-0.5 rounded-full border border-white/20">
-                  {t.activePlan}
+                <span className="text-xs font-black tracking-tight">{planName}</span>
+                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${plan?.state === 'expired' ? 'bg-rose-500/40 border-rose-200/40' : 'bg-white/25 border-white/20'} text-white`}>
+                  {planBadge}
                 </span>
               </div>
               <p className="text-[10.5px] text-purple-100 font-medium leading-tight mt-0.5">
-                {t.starterPlanSubtitle}
+                {planSubtitle}
               </p>
             </div>
           </div>
