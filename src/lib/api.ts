@@ -904,7 +904,8 @@ export const api = {
     request<{ ok: boolean; post_id: string; scheduled_at: string; ideas: OwnerIdea[] }>(
       `/ideas/${encodeURIComponent(businessId)}/${encodeURIComponent(id)}/apply`, { method: 'POST' }),
 
-  growth: (businessId: string, lang: 'kk' | 'ru') => request<GrowthChecklist>(`/growth/${encodeURIComponent(businessId)}?lang=${lang}`),
+  growth: (businessId: string, lang: 'kk' | 'ru', refresh = false) =>
+    request<GrowthChecklist>(`/growth/${encodeURIComponent(businessId)}?lang=${lang}${refresh ? '&refresh=1' : ''}`),
   setGrowthDone: (businessId: string, item: string, done: boolean) =>
     request<{ ok: boolean }>(`/growth/${encodeURIComponent(businessId)}/done`, { method: 'POST', body: JSON.stringify({ item, done }) }),
 
@@ -995,10 +996,26 @@ export interface GrowthChecklist {
   items: { id: string; group: 'base' | 'instagram' | 'telegram' | 'growth'; kind: 'auto' | 'manual'; title: string; how: string; done: boolean }[];
   done: number;
   total: number;
-  ai_actions: { active: boolean; title: string; detail: string; stat: string | null }[];
+  /** reason — nega ishlamayapti / cheklangan (masalan Instagram bloklangan) */
+  ai_actions: { active: boolean; title: string; detail: string; stat: string | null; reason?: string | null }[];
   warnings: string[];
   sources: string[];
   channel_url: string | null;
+  /** Jonli holat (2026-11-21): obunachilar, 7/30 kunlik o'zgarish, Instagram ulanishi (services/growth_status.py) */
+  status?: GrowthStatus | null;
+}
+
+export interface GrowthStatus {
+  instagram: {
+    connected: boolean; ok?: boolean; problem?: 'checkpoint' | 'token' | 'network' | 'other' | null; error?: string;
+    username?: string | null; name?: string | null; biography?: string | null; website?: string | null;
+    followers_count?: number | null; follows_count?: number | null; media_count?: number | null;
+    delta_7?: number | null; delta_30?: number | null; has_tg_link?: boolean;
+  };
+  telegram: { connected: boolean; channel?: string; url?: string | null; subscribers?: number | null; delta_7?: number | null; delta_30?: number | null };
+  history: { date: string; ig?: number; tg?: number }[];
+  history_days: number;
+  checked_at: string;
 }
 
 export interface Product {
@@ -1237,6 +1254,10 @@ export interface ProfileTips {
   username?: string | null;
   username_ideas?: string[];
   username_issue?: 'uz_domain' | null;
+  /** Hozir Instagram profilida turgan matn (jonli o'qilsa) */
+  current_bio?: string | null;
+  current_name?: string | null;
+  current_link?: string | null;
   missing?: ('city' | 'delivery' | 'payment' | 'returns')[];
   generated_at: string;
 }

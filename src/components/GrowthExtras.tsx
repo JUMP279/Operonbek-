@@ -66,6 +66,14 @@ export const ProfileTipsCard: React.FC<{ businessId: string; lang: Lang }> = ({ 
               ? `Direct-ке «${tips.dm_keyword}» деп жазған адамға AI-сатушы бірден каталог пен бағаны жібереді.`
               : `Кто напишет «${tips.dm_keyword}» в Direct — AI-продавец сразу пришлёт каталог и цены.`}</p>
           )}
+          {tips.current_bio != null && (
+            <div className="rounded-xl border border-slate-200 p-2.5 space-y-1">
+              <span className="text-[10.5px] font-bold text-slate-500">{k ? 'Қазір профильде' : 'Сейчас в профиле'}{tips.username ? ` @${tips.username}` : ''}</span>
+              {tips.current_name && <p className="text-[12px] font-semibold">{tips.current_name}</p>}
+              <p className="text-[12px] whitespace-pre-line leading-snug text-slate-600">{tips.current_bio || (k ? '(bio бос)' : '(bio пустое)')}</p>
+              {tips.current_link && <p className="text-[11px] text-slate-500">{k ? 'Сілтеме' : 'Ссылка'}: {tips.current_link}</p>}
+            </div>
+          )}
           <div className="rounded-xl bg-slate-50 p-2.5 space-y-1">
             <div className="flex items-center justify-between"><span className="text-[10.5px] font-bold text-slate-500">{k ? 'Аты (іздеуде табылу үшін)' : 'Имя (чтобы находили в поиске)'}</span><CopyBtn text={tips.name} lang={lang} /></div>
             <p className="text-[12.5px] font-semibold">{tips.name}</p>

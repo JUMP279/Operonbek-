@@ -4,6 +4,7 @@ import QRCode from 'qrcode';
 import { useLanguage } from '../context/LanguageContext';
 import { api, GrowthChecklist } from '../lib/api';
 import { ExperimentsCard, ProfileTipsCard } from './GrowthExtras';
+import { GrowthStatusCard } from './GrowthStatusCard';
 
 // "Рост подписчиков" (2026-11-14) — saytdagi bilan bir manba: GET /growth/{id} (services/growth_playbook.py).
 export const GrowthView: React.FC<{ onBack?: () => void; storeContext?: { businessId?: string } }> = ({ onBack, storeContext }) => {
@@ -14,11 +15,16 @@ export const GrowthView: React.FC<{ onBack?: () => void; storeContext?: { busine
   const [error, setError] = useState('');
   const [open, setOpen] = useState<string | null>(null);
   const [qr, setQr] = useState<string | null>(null);
+  const [checking, setChecking] = useState(false);
 
-  useEffect(() => {
+  const load = (refresh = false) => {
     if (!businessId) return;
-    api.growth(businessId, ru ? 'ru' : 'kk').then(setData).catch(() => setError(ru ? 'Не удалось загрузить.' : 'Жүктелмеді.'));
-  }, [businessId, ru]);
+    if (refresh) setChecking(true);
+    api.growth(businessId, ru ? 'ru' : 'kk', refresh).then((d) => { setData(d); setError(''); })
+      .catch(() => setError(ru ? 'Не удалось загрузить.' : 'Жүктелмеді.'))
+      .finally(() => setChecking(false));
+  };
+  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [businessId, ru]);
 
   useEffect(() => {
     if (data?.channel_url) QRCode.toDataURL(data.channel_url, { width: 640, margin: 2 }).then(setQr).catch(() => setQr(null));
@@ -54,12 +60,11 @@ export const GrowthView: React.FC<{ onBack?: () => void; storeContext?: { busine
             <div className="p-3.5 rounded-2xl bg-slate-900 text-white">
               <div className="flex items-center justify-between text-[12px] text-white/60"><span>{ru ? 'Выполнено' : 'Орындалды'}</span><b className="text-white text-[15px]">{data.done}/{data.total}</b></div>
               <div className="mt-2 h-2 rounded-full bg-white/10 overflow-hidden"><div className="h-full rounded-full bg-emerald-400" style={{ width: `${(data.done / Math.max(1, data.total)) * 100}%` }} /></div>
-              <p className="mt-2 text-[11px] text-white/60 leading-snug">{ru ? 'План на основе 27 видео и интервью (блогеры СНГ, глава Instagram, MrBeast, Hormozi, GaryVee и др.). FindLead уже пишет контент по этим правилам.' : '27 видео мен сұхбат негізіндегі жоспар (ТМД блогерлері, Instagram басшысы, MrBeast, Hormozi, GaryVee т.б.). FindLead контентті осы ережелермен жазады.'}</p>
             </div>
+            {data.status && <GrowthStatusCard status={data.status} lang={ru ? 'ru' : 'kk'} busy={checking} onRefresh={() => load(true)} />}
             {data.ai_actions && data.ai_actions.length > 0 && (
               <div className="p-3.5 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white space-y-2.5">
-                <div className="flex items-center gap-1.5 text-[12.5px] font-black"><Sparkles className="w-4 h-4" />{ru ? 'FindLead делает это за вас' : 'FindLead мұны сіз үшін жасайды'}</div>
-                <div className="text-[11px] text-white/70 -mt-1">{ru ? 'Пока вы заняты бизнесом — FindLead растит подписчиков автоматически.' : 'Сіз бизнеспен айналысқанда — FindLead жазылушыны автоматты өсіреді.'}</div>
+                <div className="flex items-center gap-1.5 text-[12.5px] font-black"><Sparkles className="w-4 h-4" />{ru ? 'Что FindLead делает сам' : 'FindLead өзі не істейді'}</div>
                 {data.ai_actions.map((a, i) => (
                   <div key={i} className="flex items-start gap-2.5 rounded-xl bg-white/10 p-2.5">
                     <div className={`mt-0.5 w-5 h-5 rounded-md flex items-center justify-center shrink-0 ${a.active ? 'bg-emerald-400 text-emerald-950' : 'bg-white/20 text-white/60'}`}>
@@ -71,14 +76,14 @@ export const GrowthView: React.FC<{ onBack?: () => void; storeContext?: { busine
                         {a.stat && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-white/15 text-white/90 shrink-0">{a.stat}</span>}
                       </div>
                       <p className="text-[11px] text-white/70 leading-snug mt-0.5">{a.detail}</p>
-                      {!a.active && <p className="text-[10.5px] text-amber-200 mt-1">{ru ? 'Подключите, чтобы включить' : 'Қосу үшін жалғаңыз'}</p>}
+                      {a.reason && <p className="text-[10.5px] text-amber-200 mt-1">{a.reason}</p>}
                     </div>
                   </div>
                 ))}
               </div>
             )}
 
-                        {businessId && <ProfileTipsCard businessId={businessId} lang={ru ? 'ru' : 'kk'} />}
+            {businessId && <ProfileTipsCard businessId={businessId} lang={ru ? 'ru' : 'kk'} />}
             {businessId && <ExperimentsCard businessId={businessId} lang={ru ? 'ru' : 'kk'} />}
             {groups.map((g) => {
               const items = data.items.filter((i) => i.group === g.id);
