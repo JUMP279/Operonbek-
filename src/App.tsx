@@ -133,8 +133,11 @@ function DashboardApp() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   // Kirish / Ro'yxatdan o'tish / Onboarding oqimi.
-  // session: 'checking' (token tekshirilmoqda) | 'anon' | 'ready'.
-  const [session, setSession] = useState<'checking' | 'anon' | 'ready'>(tokens.access ? 'checking' : 'anon');
+  // session: 'checking' (token tekshirilmoqda) | 'reconnect' (vaqtinchalik uzilish — token saqlanadi) | 'anon' | 'ready'.
+  const [session, setSession] = useState<'checking' | 'reconnect' | 'anon' | 'ready'>(tokens.access ? 'checking' : 'anon');
+  // 2026-11-21: vaqtinchalik tarmoq/server uzilishi foydalanuvchini tizimdan CHIQARMASIN (MVP). Qayta urinishni
+  // shu hisoblagich qayta ishga tushiradi (avto + qo'lda «Повторить»).
+  const [bootAttempt, setBootAttempt] = useState(0);
   const [authStep, setAuthStep] = useState<AuthStep | null>(tokens.access ? null : 'welcome');
   const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
   // Yuridik rozilik: joriy versiyaga rozilik bo'lmasa majburiy oyna (backend /auth/me -> consent_required)
@@ -146,6 +149,7 @@ function DashboardApp() {
   useEffect(() => {
     if (!tokens.access) return;
     let cancelled = false;
+    if (bootAttempt > 0) setSession('checking');
     // Vaqtinchalik server/tarmoq xatosida (5xx, 0) qayta urinamiz — tokenni o'chirmaymiz.
     const meWithRetry = async () => {
       for (let i = 0; ; i++) {
@@ -153,7 +157,7 @@ function DashboardApp() {
           return await api.me();
         } catch (e) {
           const s = e instanceof ApiError ? e.status : 0;
-          if (s === 401 || s === 403 || i >= 3) throw e;
+          if (s === 401 || s === 403 || i >= 4) throw e;
           await new Promise((r) => setTimeout(r, 1200 * (i + 1)));
         }
       }
@@ -179,16 +183,31 @@ function DashboardApp() {
           setAuthStep('name');
         }
       })
-      .catch(() => {
+      .catch((e) => {
         if (cancelled) return;
-        tokens.clear();
-        setSession('anon');
-        setAuthStep('login');
+        const s = e instanceof ApiError ? e.status : 0;
+        if (s === 401 || s === 403) {
+          // Haqiqiy avtorizatsiya xatosi — qayta kirish kerak.
+          tokens.clear();
+          setSession('anon');
+          setAuthStep('login');
+        } else {
+          // Tarmoq/server vaqtinchalik uzildi — TOKENNI SAQLAYMIZ, foydalanuvchini chiqarmaymiz.
+          // «Qayta ulanyapti» ekrani ko'rsatiladi va 5 soniyada o'zi qayta urinadi.
+          setSession('reconnect');
+        }
       });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [bootAttempt]);
+
+  // Qayta ulanish holatida — 5 soniyada o'zi qayta urinadi (foydalanuvchi hech narsa qilmasa ham).
+  useEffect(() => {
+    if (session !== 'reconnect') return;
+    const id = window.setTimeout(() => setBootAttempt((n) => n + 1), 5000);
+    return () => window.clearTimeout(id);
+  }, [session]);
 
   // Dashboard ma'lumotini yuklash (biznes, davr yoki qayta yuklash o'zgarganda)
   useEffect(() => {
@@ -196,8 +215,19 @@ function DashboardApp() {
     let cancelled = false;
     setDashLoading(true);
     setDashError('');
-    api
-      .dashboard(businessId, days)
+    // Vaqtinchalik tarmoq/server xatosida (0, 5xx) bir necha marta qayta urinamiz — darrov xato ko'rsatmaymiz.
+    const dashWithRetry = async () => {
+      for (let i = 0; ; i++) {
+        try { return await api.dashboard(businessId, days); }
+        catch (e) {
+          const s = e instanceof ApiError ? e.status : 0;
+          if ((s !== 0 && s < 500) || i >= 3) throw e;
+          if (cancelled) throw e;
+          await new Promise((r) => setTimeout(r, 1000 * (i + 1)));
+        }
+      }
+    };
+    dashWithRetry()
       .then((d) => {
         if (!cancelled) setDash(d);
       })
@@ -568,6 +598,29 @@ function DashboardApp() {
             onClose={session === 'ready' ? () => setAuthStep(null) : undefined}
           />
         </Suspense>
+      )}
+
+      {/* Vaqtinchalik uzilish (2026-11-21): foydalanuvchini chiqarmaymiz — qayta ulanamiz. */}
+      {session === 'reconnect' && (
+        <div className="absolute inset-0 z-[60] flex flex-col items-center justify-center gap-5 bg-[#FAFAFC]/95 backdrop-blur-sm px-8 text-center">
+          <div className="w-9 h-9 rounded-full border-[3px] border-slate-200 border-t-slate-500 animate-spin" />
+          <div>
+            <p className="text-[15px] font-semibold text-slate-800">
+              {language === 'kk' ? 'Қайта қосылу…' : 'Переподключаемся…'}
+            </p>
+            <p className="mt-1 text-[13px] text-slate-500 leading-snug">
+              {language === 'kk'
+                ? 'Байланыс қалпына келтірілуде. Сіз жүйеден шыққан жоқсыз.'
+                : 'Восстанавливаем связь. Вы не вышли из системы.'}
+            </p>
+          </div>
+          <button
+            onClick={() => setBootAttempt((n) => n + 1)}
+            className="rounded-full bg-slate-900 text-white px-6 py-2.5 text-[14px] font-semibold"
+          >
+            {language === 'kk' ? 'Қайталау' : 'Повторить'}
+          </button>
+        </div>
       )}
 
       {session === 'ready' && !authStep && consentVersion && (
