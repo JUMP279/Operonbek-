@@ -31,7 +31,9 @@ export const ApprovalSwitch: React.FC<{ value: ApprovalMode; kind: 'video' | 'po
 export const ReviewActions: React.FC<{
   lang: 'kk' | 'ru'; past?: boolean; busy?: boolean; redoLabel: string; redoGo: string;
   onApprove: () => void; onRedo: (wish: string) => void; onSkip: () => void;
-}> = ({ lang, past, busy, redoLabel, redoGo, onApprove, onRedo, onSkip }) => {
+  /** Bepul tarif: istak so'ralmaydi — bosilganda darhol 14 ta ichidan boshqa video */
+  quickRedo?: boolean; redoDisabled?: boolean; redoNote?: string;
+}> = ({ lang, past, busy, redoLabel, redoGo, onApprove, onRedo, onSkip, quickRedo, redoDisabled, redoNote }) => {
   const ru = lang !== 'kk';
   const [open, setOpen] = useState(false);
   const [wish, setWish] = useState('');
@@ -41,10 +43,11 @@ export const ReviewActions: React.FC<{
       <p className="text-[10.5px] font-semibold text-amber-700">{ru ? 'Без вашего «Опубликовать» не выйдет' : 'Сіз «Жариялау» баспасаңыз шықпайды'}</p>
       <div className="grid grid-cols-3 gap-1.5">
         <button disabled={busy} onClick={onApprove} className={`${b} bg-slate-900 text-white`}><Send className="w-3.5 h-3.5" />{past ? (ru ? 'Сейчас' : 'Қазір') : (ru ? 'Опубликовать' : 'Жариялау')}</button>
-        <button disabled={busy} onClick={() => setOpen(!open)} className={`${b} bg-purple-50 text-purple-700 border border-purple-200`}><RotateCcw className="w-3.5 h-3.5" />{redoLabel}</button>
+        <button disabled={busy || redoDisabled} onClick={() => (quickRedo ? onRedo('') : setOpen(!open))} className={`${b} bg-purple-50 text-purple-700 border border-purple-200`}><RotateCcw className="w-3.5 h-3.5" />{redoLabel}</button>
         <button disabled={busy} onClick={onSkip} className={`${b} bg-slate-100 text-slate-600`}><Ban className="w-3.5 h-3.5" />{ru ? 'Не надо' : 'Керек емес'}</button>
       </div>
-      {open && (
+      {redoNote && <p className="text-[10.5px] font-semibold text-slate-500">{redoNote}</p>}
+      {open && !quickRedo && (
         <div className="space-y-1.5">
           <textarea value={wish} onChange={(e) => setWish(e.target.value)} rows={2} maxLength={1000}
             placeholder={ru ? 'Что изменить? (необязательно)' : 'Не өзгерту керек? (міндетті емес)'}

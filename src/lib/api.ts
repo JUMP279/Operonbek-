@@ -1156,6 +1156,8 @@ export interface VideoPlan {
   items: VideoPlanItem[];
   /** 2026-11-19: kelgusi kunlarga tayyorlangan, hali ko'rsatilmaydigan videolar soni */
   upcoming_hidden?: number;
+  /** Bepul tarif: yana necha marta «almashtirish» mumkin (2 ta video qolganda 0) */
+  swaps_left?: number | null;
 }
 
 /** Bepul sinov: 14 video paketini boshlash shartlari (services/video_plan.onboarding_status) */

@@ -83,7 +83,9 @@ const T = {
     askPh: 'Напишите своё пожелание… (можно оставить пустым)',
     byWish: 'Сделать по-моему', byAi: 'Придумай сам', cancel: 'Отмена', writing: 'Пишем новый сценарий…',
     empty: 'Пока нет видео.',
-    errors: { network: 'Нет связи с сервером.', generic: 'Ошибка — попробуйте ещё раз.', busy: 'Это видео уже готовится — изменить нельзя.' },
+    errors: { network: 'Нет связи с сервером.', generic: 'Ошибка — попробуйте ещё раз.', busy: 'Это видео уже готовится — изменить нельзя.', swapLimit: 'Лимит замен исчерпан: осталось 2 видео пробного периода.' },
+    swapsLeft: (n: number) => n > 0 ? `Можно заменить ещё ${n} раз (из 14 готовых видео)` : 'Лимит замен исчерпан — осталось 2 видео',
+    otherVideo: 'Другое видео',
   },
   kk: {
     title: 'AI бейне', back: 'Артқа', plan: 'Жоспар', library: 'Бейнелерім',
@@ -126,7 +128,9 @@ const T = {
     askPh: 'Тілегіңізді жазыңыз… (бос қалдыруға болады)',
     byWish: 'Менің айтқанымдай', byAi: 'Өзің ойлап тап', cancel: 'Бас тарту', writing: 'Жаңа сценарий жазылуда…',
     empty: 'Әзірге бейне жоқ.',
-    errors: { network: 'Серверге қосылу жоқ.', generic: 'Қате — қайталап көріңіз.', busy: 'Бұл бейне дайындалуда — өзгерту мүмкін емес.' },
+    errors: { network: 'Серверге қосылу жоқ.', generic: 'Қате — қайталап көріңіз.', busy: 'Бұл бейне дайындалуда — өзгерту мүмкін емес.', swapLimit: 'Ауыстыру лимиті таусылды: сынақ кезеңінің 2 бейнесі қалды.' },
+    swapsLeft: (n: number) => n > 0 ? `Тағы ${n} рет ауыстыруға болады (14 дайын бейненің ішінен)` : 'Ауыстыру лимиті таусылды — 2 бейне қалды',
+    otherVideo: 'Басқа бейне',
   },
 };
 
@@ -199,6 +203,7 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
   const errText = (e: unknown) => {
     if (e instanceof ApiError) {
       if (e.status === 0) return L.errors.network;
+      if (e.status === 409 && e.message === 'swap_limit') return L.errors.swapLimit;
       if (e.status === 409) return L.errors.busy;
     }
     return L.errors.generic;
@@ -501,6 +506,11 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
     setError('');
     try { await f(); setPlan(await api.videoPlan(businessId)); } catch (e) { setError(errText(e)); } finally { setItemBusy(null); }
   };
+  // Bepul tarif (2026-11-21): «almashtirish» AI'da yangi ssenariy yozmaydi — 14 tayyor video ichidan boshqasini qo'yadi
+  const trial = plan?.plan === 'trial';
+  const swapsLeft = typeof plan?.swaps_left === 'number' ? plan.swaps_left : null;
+  const swapOff = trial && swapsLeft === 0;
+  const trialSwap = (id: string) => itemAct(id, () => api.regenerateVideoItem(id));
   const upcoming = (plan?.items || []).filter((i) => !i.past || i.status === 'draft' || i.status === 'scheduled' || i.status === 'review');
   // Ekranda faqat bugungi va kelgusi rejalar; eski kunlar ko'rinmaydi, eng yaqini doim tepada (2026-11-13)
   const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
@@ -886,7 +896,9 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
 
                   {it.status === 'review' && (
                     <ReviewActions lang={lang} past={it.past} busy={itemBusy === it.id}
-                      redoLabel={lang === 'ru' ? 'Переделать' : 'Қайта жасау'} redoGo={lang === 'ru' ? 'Переснять видео' : 'Бейнені қайта түсіру'}
+                      redoLabel={trial ? L.otherVideo : (lang === 'ru' ? 'Переделать' : 'Қайта жасау')} redoGo={lang === 'ru' ? 'Переснять видео' : 'Бейнені қайта түсіру'}
+                      quickRedo={trial} redoDisabled={swapOff}
+                      redoNote={trial && swapsLeft !== null ? L.swapsLeft(swapsLeft) : undefined}
                       onApprove={() => itemAct(it.id, () => api.approveVideoItem(it.id), 'scheduled')}
                       onRedo={(w) => itemAct(it.id, () => api.redoVideoItem(it.id, w))}
                       onSkip={() => itemAct(it.id, () => api.skipVideoItem(it.id), 'skipped')} />
@@ -919,10 +931,14 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
                   )}
 
                   {it.status === 'draft' && it.scenario && (
-                    <button onClick={() => { setAskFor(it); setWish(''); }}
-                      className="w-full py-2 rounded-xl text-[11.5px] font-bold bg-purple-50 text-purple-700 border border-purple-200 flex items-center justify-center gap-1.5">
-                      <RefreshCw className="w-3.5 h-3.5" />{L.other}
+                    <button disabled={itemBusy === it.id || swapOff}
+                      onClick={() => (trial ? trialSwap(it.id) : (setAskFor(it), setWish('')))}
+                      className="w-full py-2 rounded-xl text-[11.5px] font-bold bg-purple-50 text-purple-700 border border-purple-200 flex items-center justify-center gap-1.5 disabled:opacity-50">
+                      {itemBusy === it.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}{L.other}
                     </button>
+                  )}
+                  {it.status === 'draft' && it.scenario && trial && swapsLeft !== null && (
+                    <p className="text-[10.5px] font-semibold text-slate-500 text-center">{L.swapsLeft(swapsLeft)}</p>
                   )}
                 </div>
               );
