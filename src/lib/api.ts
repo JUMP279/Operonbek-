@@ -397,10 +397,22 @@ export const api = {
 
   // ── 2026-11-08: biznes nomi + parol / Google ──
   async loginBusiness(login: string, password: string) {
-    const data = await request<{ access_token: string; refresh_token: string }>('/auth/login-business', {
+    // 2026-11-21: login POST tarmoq uzilsa (status 0) BIR marta qayta uriniladi — qisqa uzilishda
+    // (Cloudflare tunnel / server bandligi) "Не удалось подключиться" xato bo'lib ko'rinmasin.
+    // Login idempotent (faqat token beradi, hech narsa yaratmaydi) — qayta urinish xavfsiz.
+    const call = () => request<{ access_token: string; refresh_token: string }>('/auth/login-business', {
       method: 'POST',
       body: JSON.stringify({ login, password }),
     });
+    let data;
+    try {
+      data = await call();
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 0) {
+        await new Promise((r) => setTimeout(r, 900));
+        data = await call();
+      } else throw e;
+    }
     tokens.set(data.access_token, data.refresh_token);
   },
 
