@@ -41,7 +41,7 @@ export const ConsentChecks: React.FC<{ lang: 'uz' | 'kk' | 'ru'; onValid: (ok: b
   return (
     <div className="space-y-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
       <Box checked={a} onChange={setA}>
-        {(isUz() ? <>Men 18 yoshdaman, roziman <A to="/terms">Foydalanuvchi shartnomasini (oferta)</A>, <A to="/aup">Foydalanish qoidalari</A>va <A to="/privacy">Maxfiylik siyosatini</A>.</> : ru ? <>Мне есть 18 лет, я принимаю <A to="/terms">Пользовательское соглашение (оферту)</A>, <A to="/aup">Правила использования</A> и <A to="/privacy">Политику конфиденциальности</A>.</>
+        {(isUz() ? <>Men 18 yoshdaman, qabul qilaman <A to="/terms">Foydalanuvchi shartnomasini (oferta)</A>, <A to="/aup">Foydalanish qoidalarini</A> va <A to="/privacy">Maxfiylik siyosatini</A>.</> : ru ? <>Мне есть 18 лет, я принимаю <A to="/terms">Пользовательское соглашение (оферту)</A>, <A to="/aup">Правила использования</A> и <A to="/privacy">Политику конфиденциальности</A>.</>
           : <>18 жасқа толдым, <A to="/terms">Пайдаланушы келісімін (офертаны)</A>, <A to="/aup">Пайдалану ережелерін</A> және <A to="/privacy">Құпиялылық саясатын</A> қабылдаймын.</>)}
       </Box>
       <Box checked={b} onChange={setB}>

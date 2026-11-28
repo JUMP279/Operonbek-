@@ -670,6 +670,7 @@ export const AuthFlow: React.FC<AuthFlowProps> = ({ initialStep = 'login', onRea
       <button
         type="button"
         onClick={() => setShowPassword(!showPassword)}
+        aria-label={showPassword ? (isUz() ? "Parolni yashirish" : language === 'kk' ? 'Құпиясөзді жасыру' : 'Скрыть пароль') : (isUz() ? "Parolni ko'rsatish" : language === 'kk' ? 'Құпиясөзді көрсету' : 'Показать пароль')}
         className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-700"
       >
         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}

@@ -177,7 +177,7 @@ export const InstagramConnectCard: React.FC<{ businessId?: string | null }> = ({
       )}
       {!connected && status !== null && (
         <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100 p-2.5 text-[11px] leading-snug text-slate-600 space-y-1">
-          <p>{(isUz() ? <>Akkauntga kiring <b>do'konning</b>(Biznes yoki Muallif) va «Ruxsat berish» tugmasini bosing.</> : ru ? <>Войдите в аккаунт <b>магазина</b> (Бизнес или Автор) и нажмите «Разрешить».</>
+          <p>{(isUz() ? <><b>Do'koningiz</b> akkauntiga (Biznes yoki Muallif) kiring va «Ruxsat berish» tugmasini bosing.</> : ru ? <>Войдите в аккаунт <b>магазина</b> (Бизнес или Автор) и нажмите «Разрешить».</>
             : <><b>Дүкен</b> аккаунтына (Бизнес не Автор) кіріп, «Рұқсат беру» басыңыз.</>)}</p>
         </div>
       )}

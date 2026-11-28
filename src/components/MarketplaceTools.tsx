@@ -1,4 +1,4 @@
-import { isUz } from '../context/LanguageContext';
+import { isUz, useLanguage } from '../context/LanguageContext';
 import React, { useEffect, useMemo, useState } from 'react';
 import { AlertCircle, AlertTriangle, BookOpen, Calculator, Check, Clock, Copy, Download, ExternalLink, Image as ImageIcon, Link2, MessageSquare, Package, RefreshCw, Send, Sparkles, Star, TrendingUp, Wand2 } from 'lucide-react';
 import { api, ApiError, MpCard, MpGuide, MpLinks, MpReview, MpReviews, Product } from '../lib/api';
@@ -380,7 +380,8 @@ export const MpLinksPanel: React.FC<{ businessId: string; l: L }> = ({ businessI
 export const MpGuidePanel: React.FC<{ businessId: string; l: L }> = ({ businessId, l }) => {
   const [g, setG] = useState<MpGuide | null>(null);
   const [plat, setPlat] = useState<Plat>('kaspi');
-  useEffect(() => { api.mpGuide(businessId).then(setG).catch(() => undefined); }, [businessId]);
+  const { language: gLang } = useLanguage();
+  useEffect(() => { api.mpGuide(businessId, gLang).then(setG).catch(() => undefined); }, [businessId, gLang]);
   if (!g) return <div className="py-10 flex justify-center"><div className="w-7 h-7 border-[3px] border-blue-600 border-t-transparent rounded-full animate-spin" /></div>;
   const p = g.platforms[plat];
   const List: React.FC<{ title: string; items: string[]; icon: React.ReactNode }> = ({ title, items, icon }) => (

@@ -30,7 +30,7 @@ export function PlanCountdown({ usage, lang, onOpen }: { usage: PlanUsage; lang:
   const left = t.days >= 1
     ? ((isUz() ? `${t.days} kun ${t.hours} soat` : ru ? `${t.days} дн. ${t.hours} ч` : `${t.days} күн ${t.hours} сағ`))
     : ((isUz() ? `${t.hours} soat ${t.minutes} daqiqa` : ru ? `${t.hours} ч ${t.minutes} мин` : `${t.hours} сағ ${t.minutes} мин`));
-  const end = new Date(usage.trial_end as string).toLocaleDateString(ru ? 'ru-RU' : 'kk-KZ', { day: 'numeric', month: 'long' });
+  const end = new Date(usage.trial_end as string).toLocaleDateString(isUz() ? 'uz-UZ' : ru ? 'ru-RU' : 'kk-KZ', { day: 'numeric', month: 'long' });
   const title = trial
     ? ((isUz() ? "Bepul davr" : ru ? 'Бесплатный период' : 'Тегін кезең'))
     : ((isUz() ? `Tarif ${usage.plan.charAt(0).toUpperCase()}${usage.plan.slice(1)}` : ru ? `Тариф ${usage.plan.charAt(0).toUpperCase()}${usage.plan.slice(1)}` : `${usage.plan.charAt(0).toUpperCase()}${usage.plan.slice(1)} тарифі`));

@@ -19,7 +19,7 @@ export function ExpiredScreen({ usage, lang, onChoosePlan, onSupport, onLogout }
   const left = usage.grace_days_left ?? null;
   const purge = usage.purge_at ? new Date(usage.purge_at) : null;
   const purgeStr = purge
-    ? purge.toLocaleDateString(ru ? 'ru-RU' : 'kk-KZ', { day: 'numeric', month: 'long' })
+    ? purge.toLocaleDateString(isUz() ? 'uz-UZ' : ru ? 'ru-RU' : 'kk-KZ', { day: 'numeric', month: 'long' })
     : null;
   const wasTrial = usage.plan === 'trial';
 

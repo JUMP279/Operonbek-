@@ -873,7 +873,7 @@ export const api = {
     request<{ ok: boolean }>(`/marketplaces/${encodeURIComponent(businessId)}/reviews/answer`, {
       method: 'POST', body: JSON.stringify({ id, text }),
     }),
-  mpGuide: (businessId: string) => request<MpGuide>(`/marketplaces/${encodeURIComponent(businessId)}/guide`),
+  mpGuide: (businessId: string, lang = 'ru') => request<MpGuide>(`/marketplaces/${encodeURIComponent(businessId)}/guide?lang=${lang}`),
   mpCalcPresets: (businessId: string) =>
     request<{ presets: Record<MpPlat, MpCalcPreset>; uzum_logistics: Record<'s' | 'm' | 'l', number>; target_margin: number }>(
       `/marketplaces/${encodeURIComponent(businessId)}/calc`),

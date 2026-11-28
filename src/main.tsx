@@ -4,6 +4,9 @@ import App from './App.tsx';
 import './index.css';
 import { captureRefFromUrl } from './lib/referral';
 import { initPwa } from './lib/pwa';
+import { installUzDates } from './lib/uzDate';
+
+installUzDates();     // o'zbekcha oy nomlari (Chrome/WebView'da uz-UZ yo'q — «M12» chiqardi), 2026-11-28
 
 captureRefFromUrl();   // ?ref=PROMOKOD havolasi (2026-11-17)
 initPwa();             // telefon ekraniga o'rnatish + service worker (2026-11-22)

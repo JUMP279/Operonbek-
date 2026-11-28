@@ -135,13 +135,13 @@ export const TelegramConnectCard: React.FC<{ businessId?: string | null }> = ({ 
       {!connected && info !== null && (
         <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100 p-2.5 text-[11px] leading-snug space-y-1.5">
           <Step done={!!info.bot_linked} n={1}>
-            {(isUz() ? <>«Ulash» → ichida {bot}bosing <b>Start</b>.</> : ru ? <>«Подключить» → в {bot} нажмите <b>Start</b>.</> : <>«Қосу» → {bot} ішінде <b>Start</b> басыңыз.</>)}
+            {(isUz() ? <>«Bog'lash» → {bot} ichida <b>Start</b> tugmasini bosing.</> : ru ? <>«Подключить» → в {bot} нажмите <b>Start</b>.</> : <>«Қосу» → {bot} ішінде <b>Start</b> басыңыз.</>)}
             {info.bot_linked && (
               <button onClick={openBot} className="ml-1 text-sky-700 font-bold">{(isUz() ? "Qayta ochish" : ru ? 'Открыть снова' : 'Қайта ашу')}</button>
             )}
           </Step>
           <Step done={false} n={2}>
-            {(isUz() ? <>Kanal → <b>Administratorlar</b>→ qo'shing {bot}.</> : ru ? <>Канал → <b>Администраторы</b> → добавьте {bot}.</> : <>Арна → <b>Әкімшілер</b> → {bot} қосыңыз.</>)}
+            {(isUz() ? <>Kanal → <b>Administratorlar</b> → {bot} ni qo'shing.</> : ru ? <>Канал → <b>Администраторы</b> → добавьте {bot}.</> : <>Арна → <b>Әкімшілер</b> → {bot} қосыңыз.</>)}
           </Step>
           {waiting && (
             <p className="text-sky-700 font-semibold flex items-center gap-1.5">
@@ -178,7 +178,7 @@ export const TelegramConnectCard: React.FC<{ businessId?: string | null }> = ({ 
               </p>
               {!info.comments_group && (
                 <p className="text-slate-600">
-                  {(isUz() ? <>Kanal → <b>Muhokama</b>→ guruh → qo'shing {bot}admin sifatida.</> : ru ? <>Канал → <b>Обсуждение</b> → группа → добавьте {bot} админом.</>
+                  {(isUz() ? <>Kanal → <b>Muhokama</b> → guruh → {bot} ni admin sifatida qo'shing.</> : ru ? <>Канал → <b>Обсуждение</b> → группа → добавьте {bot} админом.</>
                     : <>Арна → <b>Талқылау</b> → топ → {bot} әкімші етіп қосыңыз.</>)}
                 </p>
               )}
