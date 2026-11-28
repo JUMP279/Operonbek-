@@ -45,7 +45,7 @@ export const ConsentChecks: React.FC<{ lang: 'uz' | 'kk' | 'ru'; onValid: (ok: b
           : <>18 жасқа толдым, <A to="/terms">Пайдаланушы келісімін (офертаны)</A>, <A to="/aup">Пайдалану ережелерін</A> және <A to="/privacy">Құпиялылық саясатын</A> қабылдаймын.</>)}
       </Box>
       <Box checked={b} onChange={setB}>
-        {(isUz() ? <>Roziman <A to="/consent">shaxsiy ma'lumotlarni qayta ishlashga</A>, shu jumladan ularni xorijiy xizmatlarga (AI, hosting) uzatishga.</> : ru ? <>Даю <A to="/consent">согласие на обработку персональных данных</A>, в том числе на их передачу зарубежным сервисам (ИИ, хостинг).</>
+        {(isUz() ? <>Roziman <A to="/consent">shaxsga doir ma'lumotlarni qayta ishlashga</A>, shu jumladan ularni xorijiy xizmatlarga (AI, hosting) uzatishga.</> : ru ? <>Даю <A to="/consent">согласие на обработку персональных данных</A>, в том числе на их передачу зарубежным сервисам (ИИ, хостинг).</>
           : <>Дербес деректерімді, оның ішінде шетелдік сервистерге беруге (ЖИ, хостинг) <A to="/consent">өңдеуге келісім</A> беремін.</>)}
       </Box>
     </div>
@@ -78,8 +78,8 @@ export const ConsentGate: React.FC<{ lang: 'uz' | 'kk' | 'ru'; version: string; 
         <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center"><ShieldCheck className="w-5 h-5" /></div>
         <h2 className="text-lg font-extrabold text-slate-900">{(isUz() ? "Foydalanish shartlari" : ru ? 'Условия использования' : 'Пайдалану шарттары')}</h2>
         <p className="text-xs text-slate-500 leading-relaxed">
-          {(isUz() ? "Biz hujjatlarni Qozog'istonning shaxsiy ma'lumotlar va sun'iy intellekt to'g'risidagi qonunchiligiga muvofiq yangiladik. Davom etish uchun rozilikni tasdiqlang." : ru ? 'Мы обновили документы в соответствии с законодательством Казахстана о персональных данных и об искусственном интеллекте. Чтобы продолжить, подтвердите согласие.'
-            : 'Біз құжаттарды Қазақстанның дербес деректер және жасанды интеллект туралы заңнамасына сәйкес жаңарттық. Жалғастыру үшін келісіміңізді растаңыз.')}
+          {(isUz() ? "Biz hujjatlarni yangiladik: endi ular O'zbekiston qonunchiligiga asoslanadi, Qozog'iston va Rossiya foydalanuvchilarining huquqlari ham hisobga olingan. Davom etish uchun rozilikni tasdiqlang." : ru ? 'Мы обновили документы: теперь они основаны на законодательстве Узбекистана и учитывают права пользователей из Казахстана и России. Чтобы продолжить, подтвердите согласие.'
+            : 'Біз құжаттарды жаңарттық: енді олар Өзбекстан заңнамасына негізделген және Қазақстан мен Ресей пайдаланушыларының құқықтарын ескереді. Жалғастыру үшін келісіміңізді растаңыз.')}
         </p>
         <ConsentChecks lang={lang} onValid={setOk} />
         {err && <p className="text-xs text-rose-600">{err}</p>}
