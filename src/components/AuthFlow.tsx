@@ -1,9 +1,11 @@
+import { isUz } from '../context/LanguageContext';
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, ArrowRight, Eye, EyeOff, Gift, KeyRound, Lock, Rocket, Store } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Eye, EyeOff, Gift, KeyRound, Lock, Phone, Rocket, Store, User } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useLanguage } from '../context/LanguageContext';
 import { api, ApiError, MeResponse, OnboardingMode, pendingConsent } from '../lib/api';
 import { ConsentChecks, legalVersion } from './LegalConsent';
+import { isValidPhone, nextPhone, PhoneFlag, phonePlaceholder } from '../lib/phone';
 import { applyPendingRef, normalizeRef, pendingRef, refFromLink, setPendingRef } from '../lib/referral';
 import { OperonMark } from './HeaderNav';
 import seoTopics from '../data/seo-topics.json';
@@ -44,9 +46,9 @@ const RefBanner = ({ kk }: { kk: boolean }) => {
     <div className="flex items-start gap-2.5 p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800">
       <Gift className="w-4 h-4 mt-0.5 shrink-0" />
       <p className="text-[12.5px] leading-snug">
-        {kk ? 'Сізді досыңыз шақырды. Промокод ' : 'Вас пригласил друг. Промокод '}
+        {(isUz() ? "Sizni do'stingiz taklif qildi. Promokod " : kk ? 'Сізді досыңыз шақырды. Промокод ' : 'Вас пригласил друг. Промокод ')}
         <b className="tracking-wide">{code}</b>
-        {kk ? ' сақталды — тіркелгенде автоматты түрде қосылады.' : ' сохранён — применится автоматически при регистрации.'}
+        {(isUz() ? " saqlandi — ro'yxatdan o'tishda avtomatik qo'llaniladi." : kk ? ' сақталды — тіркелгенде автоматты түрде қосылады.' : ' сохранён — применится автоматически при регистрации.')}
       </p>
     </div>
   );
@@ -75,14 +77,14 @@ const PromoAsk = ({ kk, onBad }: { kk: boolean; onBad: (bad: boolean) => void })
     return (
       <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 space-y-1.5">
         <div className="flex items-center gap-2 text-[13px] font-bold">
-          <Gift className="w-4 h-4" /> {tx('Вас пригласил друг', 'Сізді досыңыз шақырды')}
+          <Gift className="w-4 h-4" /> {(isUz() ? "Sizni do'st taklif qildi" : tx('Вас пригласил друг', 'Сізді досыңыз шақырды'))}
         </div>
         <p className="text-[12.5px] leading-snug">
-          {tx('Промокод ', 'Промокод ')}<b className="tracking-wide">{v}</b>
-          {st === 'checking' ? tx(' — проверяем…', ' — тексерілуде…') : tx(' применён автоматически ✓', ' автоматты түрде қосылды ✓')}
+          {(isUz() ? "Promokod " : tx('Промокод ', 'Промокод '))}<b className="tracking-wide">{v}</b>
+          {st === 'checking' ? (isUz() ? " — tekshiramiz…" : tx(' — проверяем…', ' — тексерілуде…')) : (isUz() ? " avtomatik qo'llandi ✓" : tx(' применён автоматически ✓', ' автоматты түрде қосылды ✓'))}
         </p>
         <button type="button" onClick={() => setEdit(true)} className="text-[12px] font-semibold text-emerald-700 underline underline-offset-4">
-          {tx('Изменить', 'Өзгерту')}
+          {(isUz() ? "O'zgartirish" : tx('Изменить', 'Өзгерту'))}
         </button>
       </div>
     );
@@ -95,11 +97,11 @@ const PromoAsk = ({ kk, onBad }: { kk: boolean; onBad: (bad: boolean) => void })
   return (
     <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
       <div className="flex items-center gap-2 text-[13.5px] font-bold text-slate-900">
-        <Gift className="w-4 h-4 text-blue-600" /> {tx('Есть промокод?', 'Промокод бар ма?')}
+        <Gift className="w-4 h-4 text-blue-600" /> {(isUz() ? "Promokodingiz bormi?" : tx('Есть промокод?', 'Промокод бар ма?'))}
       </div>
       <div className="flex gap-2">
-        <button type="button" className={chip(has === true)} onClick={() => choose(true)}>{tx('Да', 'Иә')}</button>
-        <button type="button" className={chip(has === false)} onClick={() => choose(false)}>{tx('Нет', 'Жоқ')}</button>
+        <button type="button" className={chip(has === true)} onClick={() => choose(true)}>{(isUz() ? "Ha" : tx('Да', 'Иә'))}</button>
+        <button type="button" className={chip(has === false)} onClick={() => choose(false)}>{(isUz() ? "Yo'q" : tx('Нет', 'Жоқ'))}</button>
       </div>
       {has && (
         <div className="space-y-1.5">
@@ -107,12 +109,12 @@ const PromoAsk = ({ kk, onBad }: { kk: boolean; onBad: (bad: boolean) => void })
             value={v}
             autoFocus={!v}
             onChange={(e) => setCode(e.target.value)}
-            placeholder={tx('Введите промокод', 'Промокодты енгізіңіз')}
+            placeholder={(isUz() ? "Promokodni kiriting" : tx('Введите промокод', 'Промокодты енгізіңіз'))}
             className="w-full h-11 rounded-xl border border-slate-200 bg-white px-3.5 text-[14px] font-semibold tracking-wide uppercase"
           />
-          {st === 'checking' && <p className="text-[11.5px] text-slate-500">{tx('Проверяем…', 'Тексерілуде…')}</p>}
-          {st === 'ok' && <p className="text-[11.5px] font-semibold text-emerald-700">✓ {tx('Промокод найден', 'Промокод табылды')}</p>}
-          {st === 'bad' && <p className="text-[11.5px] font-semibold text-rose-600">{tx('Такого промокода нет — проверьте или выберите «Нет»', 'Мұндай промокод жоқ — тексеріңіз немесе «Жоқ» таңдаңыз')}</p>}
+          {st === 'checking' && <p className="text-[11.5px] text-slate-500">{(isUz() ? "Tekshiramiz…" : tx('Проверяем…', 'Тексерілуде…'))}</p>}
+          {st === 'ok' && <p className="text-[11.5px] font-semibold text-emerald-700">✓ {(isUz() ? "Promokod topildi" : tx('Промокод найден', 'Промокод табылды'))}</p>}
+          {st === 'bad' && <p className="text-[11.5px] font-semibold text-rose-600">{(isUz() ? "Bunday promokod yo'q — tekshiring yoki «Yo'q»ni tanlang" : tx('Такого промокода нет — проверьте или выберите «Нет»', 'Мұндай промокод жоқ — тексеріңіз немесе «Жоқ» таңдаңыз'))}</p>}
         </div>
       )}
     </div>
@@ -149,7 +151,7 @@ const AutomationTopics = ({ kk }: { kk: boolean }) => {
         aria-expanded={open}
         className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-white/70 border border-slate-200 text-[13.5px] font-bold text-slate-800"
       >
-        {kk ? 'FindLead не істей алады?' : 'Что умеет FindLead?'}
+        {(isUz() ? "FindLead nima qila oladi?" : kk ? 'FindLead не істей алады?' : 'Что умеет FindLead?')}
         <span className={`text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`}>▾</span>
       </button>
       {open && (
@@ -186,6 +188,12 @@ const TEXT = {
     tagline: 'Бизнесіңізді басқаратын AI-оператор',
     bizName: 'Бизнес атауы',
     bizNamePh: 'Мысалы: Aru Coffee',
+    ownerName: 'Сіздің атыңыз',
+    ownerNamePh: 'Мысалы: Айгерим',
+    phone: 'Телефон нөмірі',
+    phonePh: '+7 701 123 45 67',
+    errOwnerName: 'Атыңызды жазыңыз (кемінде 2 таңба).',
+    errPhone: 'Телефон нөмірін толық жазыңыз, мысалы +7 701 123 45 67 немесе +998 90 123 45 67.',
     password: 'Құпиясөз',
     login: 'Кіру',
     forgot: 'Құпиясөзді ұмыттыңыз ба?',
@@ -194,8 +202,8 @@ const TEXT = {
     firstTime: 'Алғаш рет пе? Google арқылы кіріңіз — содан кейін бизнес атауы мен құпиясөз ойлап табасыз.',
     back: 'Артқа',
     next: 'Әрі қарай',
-    nameTitle: 'Бизнесіңіздің атауын енгізіңіз',
-    nameSub: 'Келесі жолы осы атау мен құпиясөз арқылы кіресіз.',
+    nameTitle: 'Бизнесіңіз және өзіңіз туралы',
+    nameSub: 'Келесі жолы бизнес атауы мен құпиясөз арқылы кіресіз. Телефон — сізбен байланысу үшін.',
     pwTitle: 'Құпиясөз ойлап табыңыз',
     pwSub: 'Кемінде 8 таңба. Оны ешкімге айтпаңыз.',
     pwNew: 'Жаңа құпиясөз',
@@ -224,10 +232,63 @@ const TEXT = {
     errGoogle: 'Google арқылы кіру сәтсіз аяқталды. Қайталап көріңіз.',
     errGeneric: 'Қате орын алды. Қайталап көріңіз.',
   },
-  ru: {
+  uz: {
+    tagline: "Biznesingizni yuritadigan AI-operator",
+    bizName: "Biznes nomi",
+    bizNamePh: "Masalan: Aru Coffee",
+    ownerName: "Ismingiz",
+    ownerNamePh: "Masalan: Aygerim",
+    phone: "Telefon raqami",
+    phonePh: '+7 701 123 45 67',
+    errOwnerName: "Ismingizni kiriting (kamida 2 belgi).",
+    errPhone: "Telefon raqamini to'liq kiriting, masalan +998 90 123 45 67 yoki +7 701 123 45 67.",
+    password: "Parol",
+    login: "Kirish",
+    forgot: "Parolni unutdingizmi?",
+    or: "yoki",
+    google: "Google orqali kirish",
+    firstTime: "Birinchi marta kirdingizmi? Google orqali kiring — keyin biznes nomi va parol o'ylab topasiz.",
+    back: "Orqaga",
+    next: "Davom etish",
+    nameTitle: "Biznesingiz va siz haqingizda",
+    nameSub: "Keyingi safar biznes nomi va parol bilan kirasiz. Telefon — siz bilan bog'lanishimiz uchun.",
+    pwTitle: "Parol o'ylab toping",
+    pwSub: "Kamida 8 ta belgi. Uni hech kimga aytmang.",
+    pwNew: "Yangi parol",
+    pwRepeat: "Parolni takrorlang",
+    chooseTitle: "Nimadan boshlaymiz?",
+    chooseSub: "Variantni tanlang — biznesingiz darhol ochiladi.",
+    addTitle: "Biznes qo'shish",
+    addDesc: "Menda allaqachon biznes bor — Kaspi, WB, Uzum yoki Instagramda sotaman.",
+    createTitle: "Biznes yaratish",
+    createDesc: "Menda g'oya bor, biznesni noldan boshlamoqchiman.",
+    finishing: "FindLead biznesingizni ochmoqda...",
+    resetTitle: "Parolni tiklash",
+    resetSub: "Ro'yxatdan o'tgan Google akkauntingiz orqali kirishni tasdiqlang — keyin yangi parol o'rnating.",
+    resetBtn: "Google orqali tasdiqlash",
+    newpassTitle: "Yangi parol",
+    save: "Saqlash",
+    errNetwork: "Serverga ulanib bo'lmadi. Internetni tekshirib, qaytadan urining.",
+    errLogin: "Biznes nomi yoki parol noto'g'ri.",
+    errFill: "Biznes nomi va parolni kiriting.",
+    errNameShort: "Nom 2 ta belgidan kam bo'lmasligi kerak.",
+    errNameTaken: "Bu nom allaqachon band. Boshqasini kiriting (masalan, shahar qo'shing).",
+    errPwShort: "Parol 8 ta belgidan kam bo'lmasligi kerak.",
+    errPwWeak: "Parol juda oddiy. Harf va raqamlarni aralashtiring.",
+    errPwMatch: "Parollar mos kelmadi.",
+    errReauth: "Xavfsizlik uchun Google orqali kirishni yana bir bor tasdiqlang.",
+    errGoogle: "Google orqali kirib bo'lmadi. Qaytadan urinib ko'ring.",
+    errGeneric: "Xatolik yuz berdi. Qaytadan urinib ko'ring.",
+  }, ru: {
     tagline: 'AI-оператор, который ведёт ваш бизнес',
     bizName: 'Название бизнеса',
     bizNamePh: 'Например: Aru Coffee',
+    ownerName: 'Ваше имя',
+    ownerNamePh: 'Например: Айгерим',
+    phone: 'Номер телефона',
+    phonePh: '+7 701 123 45 67',
+    errOwnerName: 'Укажите ваше имя (не короче 2 символов).',
+    errPhone: 'Укажите номер телефона полностью, например +998 90 123 45 67 или +7 701 123 45 67.',
     password: 'Пароль',
     login: 'Войти',
     forgot: 'Забыли пароль?',
@@ -236,8 +297,8 @@ const TEXT = {
     firstTime: 'Впервые здесь? Войдите через Google — затем придумаете название бизнеса и пароль.',
     back: 'Назад',
     next: 'Далее',
-    nameTitle: 'Введите название вашего бизнеса',
-    nameSub: 'В следующий раз вы войдёте по этому названию и паролю.',
+    nameTitle: 'О вашем бизнесе и о вас',
+    nameSub: 'В следующий раз вы войдёте по названию бизнеса и паролю. Телефон — чтобы мы могли с вами связаться.',
     pwTitle: 'Придумайте пароль',
     pwSub: 'Минимум 8 символов. Никому его не сообщайте.',
     pwNew: 'Новый пароль',
@@ -293,6 +354,9 @@ export const AuthFlow: React.FC<AuthFlowProps> = ({ initialStep = 'login', onRea
   const norm = (s: AuthStep): AuthStep => (s === 'welcome' || s === 'register' ? 'login' : s);
   const [step, setStep] = useState<AuthStep>(norm(initialStep));
   const [bizName, setBizName] = useState('');
+  // Ro'yxatdan o'tishda ega ismi va telefoni (2026-11-22)
+  const [ownerName, setOwnerName] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [password2, setPassword2] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -330,6 +394,8 @@ export const AuthFlow: React.FC<AuthFlowProps> = ({ initialStep = 'login', onRea
         password_short: T.errPwShort,
         password_weak: T.errPwWeak,
         reauth_required: T.errReauth,
+        owner_name_short: T.errOwnerName,
+        phone_invalid: T.errPhone,
       };
       if (map[e.message]) return map[e.message];
     }
@@ -361,9 +427,9 @@ export const AuthFlow: React.FC<AuthFlowProps> = ({ initialStep = 'login', onRea
   // «Зарегистрироваться»: rozilik belgilanmagan bo'lsa — belgilashni so'raymiz, keyin Google
   const register = () => {
     if (!consentOk) {
-      setError(language === 'kk'
+      setError((language === 'uz' ? "Ro'yxatdan o'tish uchun yuqoridagi rozilik belgilarini belgilang." : language === 'kk'
         ? 'Тіркелу үшін жоғарыдағы келісімдерді белгілеңіз.'
-        : 'Чтобы зарегистрироваться, отметьте согласия выше.');
+        : 'Чтобы зарегистрироваться, отметьте согласия выше.'));
       document.getElementById('auth-consent')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
@@ -373,12 +439,12 @@ export const AuthFlow: React.FC<AuthFlowProps> = ({ initialStep = 'login', onRea
   const BrowserNote = browserOpened ? (
     <div className="p-3 rounded-2xl bg-blue-50 border border-blue-200 text-[12.5px] text-blue-900 leading-snug space-y-2">
       <p>
-        {language === 'kk'
+        {(language === 'uz' ? "Google orqali kirish telefon brauzerida ochildi. Akkauntni tanlang — kirgach, ilovaga avtomatik qaytasiz." : language === 'kk'
           ? 'Google арқылы кіру телефон браузерінде ашылды. Аккаунтты таңдаңыз — кейін қосымшаға өзі ораласыз.'
-          : 'Вход через Google открыт в браузере телефона. Выберите аккаунт — после входа вы вернётесь в приложение автоматически.'}
+          : 'Вход через Google открыт в браузере телефона. Выберите аккаунт — после входа вы вернётесь в приложение автоматически.')}
       </p>
       <button type="button" onClick={() => google('login')} className="font-bold text-blue-700 underline underline-offset-4">
-        {language === 'kk' ? 'Браузер ашылмады ма? Қайта ашу' : 'Браузер не открылся? Открыть ещё раз'}
+        {(language === 'uz' ? "Brauzer ochilmadimi? Yana ochish" : language === 'kk' ? 'Браузер ашылмады ма? Қайта ашу' : 'Браузер не открылся? Открыть ещё раз')}
       </button>
     </div>
   ) : null;
@@ -417,6 +483,16 @@ export const AuthFlow: React.FC<AuthFlowProps> = ({ initialStep = 'login', onRea
       setError(T.errNameShort);
       return;
     }
+    if (setupMode) {
+      if (ownerName.trim().replace(/\s+/g, ' ').length < 2) {
+        setError(T.errOwnerName);
+        return;
+      }
+      if (!isValidPhone(phone)) {
+        setError(T.errPhone);
+        return;
+      }
+    }
     setBusy(true);
     try {
       const r = await api.nameAvailable(n);
@@ -451,7 +527,7 @@ export const AuthFlow: React.FC<AuthFlowProps> = ({ initialStep = 'login', onRea
       return;
     }
     if (promoBad) {
-      setError(language === 'kk' ? 'Промокод табылмады — түзетіңіз немесе «Жоқ» таңдаңыз.' : 'Промокод не найден — исправьте или выберите «Нет».');
+      setError((language === 'uz' ? "Promokod topilmadi — to'g'rilang yoki «Yo'q»ni tanlang." : language === 'kk' ? 'Промокод табылмады — түзетіңіз немесе «Жоқ» таңдаңыз.' : 'Промокод не найден — исправьте или выберите «Нет».'));
       return;
     }
     setSetupMode(true);
@@ -463,7 +539,7 @@ export const AuthFlow: React.FC<AuthFlowProps> = ({ initialStep = 'login', onRea
     setStep('finishing');
     setError('');
     try {
-      if (setupMode) await api.setupAccount(bizName, password, m, language, pendingConsent.get());
+      if (setupMode) await api.setupAccount(bizName, password, m, language, pendingConsent.get(), ownerName.trim(), phone.trim());
       else await api.onboardingQuick(m, language);
       pendingConsent.set(null);
       await applyPendingRef();   // promokod — akkaunt yaratilishi bilan darhol bog'lanadi
@@ -476,7 +552,7 @@ export const AuthFlow: React.FC<AuthFlowProps> = ({ initialStep = 'login', onRea
       const msg = errorText(err, T.errGeneric);
       setError(msg);
       // Nom band bo'lib qolgan bo'lsa — nom bosqichiga qaytaramiz
-      if (err instanceof ApiError && err.message === 'name_taken') setStep('name');
+      if (err instanceof ApiError && ['name_taken', 'owner_name_short', 'phone_invalid'].includes(err.message)) setStep('name');
       else if (err instanceof ApiError && err.message.startsWith('password_')) setStep('password');
       else setStep('choose');
     }
@@ -512,7 +588,7 @@ export const AuthFlow: React.FC<AuthFlowProps> = ({ initialStep = 'login', onRea
   // ── UI ──────────────────────────────────────────────────────────────────
   const LangToggle = (
     <div className="flex items-center bg-white/80 rounded-xl p-0.5 border border-slate-200 shadow-2xs">
-      {(['kk', 'ru'] as const).map((l) => (
+      {(['uz', 'ru', 'kk'] as const).map((l) => (
         <button
           key={l}
           type="button"
@@ -521,7 +597,7 @@ export const AuthFlow: React.FC<AuthFlowProps> = ({ initialStep = 'login', onRea
             language === l ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-slate-900'
           }`}
         >
-          {l === 'kk' ? 'ҚАЗ' : 'РУС'}
+          {l === 'uz' ? "O'ZB" : l === 'kk' ? 'ҚАЗ' : 'РУС'}
         </button>
       ))}
     </div>
@@ -649,13 +725,13 @@ export const AuthFlow: React.FC<AuthFlowProps> = ({ initialStep = 'login', onRea
           <span className="text-[11px] font-semibold text-slate-400 uppercase">{T.or}</span>
           <div className="h-px flex-1 bg-slate-200" />
         </div>
-        <div id="auth-consent"><ConsentChecks lang={language === 'kk' ? 'kk' : 'ru'} onValid={setConsentOk} /></div>
+        <div id="auth-consent"><ConsentChecks lang={language} onValid={setConsentOk} /></div>
         <GoogleBtn purpose="login" label={T.google} locked={!consentOk} />
         {BrowserNote}
         {/* Ro'yxatdan o'tish (2026-11-18, user talabi): pastda aniq tugma. Yangi akkaunt = Google → nom → parol. */}
         <div className="pt-3 mt-1 border-t border-slate-100 space-y-2">
           <p className="text-center text-[12.5px] font-semibold text-slate-700">
-            {language === 'kk' ? 'Аккаунтыңыз жоқ па?' : 'Нет аккаунта?'}
+            {(language === 'uz' ? "Akkauntingiz yo'qmi?" : language === 'kk' ? 'Аккаунтыңыз жоқ па?' : 'Нет аккаунта?')}
           </p>
           <button
             type="button"
@@ -663,7 +739,7 @@ export const AuthFlow: React.FC<AuthFlowProps> = ({ initialStep = 'login', onRea
             onClick={register}
             className="w-full py-3 rounded-2xl border-2 border-blue-600 text-blue-700 font-bold text-sm hover:bg-blue-50 active:scale-[0.98] transition-all disabled:opacity-60"
           >
-            {language === 'kk' ? 'Тіркелу' : 'Зарегистрироваться'}
+            {(language === 'uz' ? "Ro'yxatdan o'tish" : language === 'kk' ? 'Тіркелу' : 'Зарегистрироваться')}
           </button>
           <p className="text-center text-[11px] text-slate-500 leading-relaxed px-2">{T.firstTime}</p>
         </div>
@@ -680,7 +756,32 @@ export const AuthFlow: React.FC<AuthFlowProps> = ({ initialStep = 'login', onRea
           </div>
         </div>
         {ErrorBox}
-        {NameInput}
+        <label className="block space-y-1.5">
+          <span className="text-xs font-semibold text-slate-700">{T.bizName}</span>
+          {NameInput}
+        </label>
+        {setupMode && (
+          <>
+            <label className="block space-y-1.5">
+              <span className="text-xs font-semibold text-slate-700">{T.ownerName}</span>
+              <div className="relative">
+                <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input type="text" autoComplete="name" value={ownerName} maxLength={60}
+                  onChange={(e) => setOwnerName(e.target.value)} placeholder={T.ownerNamePh} className={inputCls} />
+              </div>
+            </label>
+            <label className="block space-y-1.5">
+              <span className="text-xs font-semibold text-slate-700">{T.phone}</span>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center"><PhoneFlag value={phone} fallback={<Phone className="w-4 h-4 text-slate-400" />} /></span>
+                <input type="tel" inputMode="tel" autoComplete="tel" value={phone} maxLength={20}
+                  onChange={(e) => setPhone(nextPhone(phone, e.target.value))}
+                  onFocus={() => { if (!phone) setPhone('+'); }}
+                  placeholder={phonePlaceholder(language)} className={inputCls} />
+              </div>
+            </label>
+          </>
+        )}
         <PrimaryBtn label={T.next} />
       </form>
     );

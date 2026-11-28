@@ -1,3 +1,4 @@
+import { isUz } from '../context/LanguageContext';
 import React from 'react';
 import {
   X,
@@ -71,7 +72,7 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
               <h3 className="text-base font-extrabold text-slate-900">{t.addWidgets}</h3>
               <p className="text-xs text-slate-400">
                 {availableWidgets.length}{' '}
-                {language === 'ru' ? 'основных бизнес-виджетов' : 'негізгі бизнес виджеттері'}
+                {(language === 'uz' ? "asosiy biznes-vidjetlar" : language === 'ru' ? 'основных бизнес-виджетов' : 'негізгі бизнес виджеттері')}
               </p>
             </div>
           </div>
@@ -87,7 +88,7 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
         <div className="my-3 space-y-2 max-h-[400px] overflow-y-auto pr-1 no-scrollbar flex-1">
           {availableWidgets.map((w) => {
             const isAdded = activeWidgetIds.includes(w.id);
-            const displayName = language === 'ru' ? w.nameRu : w.nameKk;
+            const displayName = (isUz() ? (w.nameUz ?? w.nameRu) : language === 'ru' ? w.nameRu : w.nameKk);
 
             return (
               <div
@@ -137,7 +138,7 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
             className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-98 text-white rounded-xl font-bold text-xs transition-all shadow-xs"
           >
             {t.done} ({activeWidgetIds.length} / {availableWidgets.length}{' '}
-            {language === 'ru' ? 'активно' : 'белсенді'})
+            {(language === 'uz' ? "faol" : language === 'ru' ? 'активно' : 'белсенді')})
           </button>
         </div>
       </div>

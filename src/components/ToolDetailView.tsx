@@ -54,8 +54,22 @@ const ViewLoading = () => (
     <div className="w-8 h-8 rounded-full border-2 border-[#2f55f4]/20 border-t-[#2f55f4] animate-spin" />
   </div>
 );
+// Qayta-build'dan keyin eski chunk o'chsa (404) ekran qotmasin — bir marta sahifani yangilaymiz (2026-11-22).
+function retryChunk<T>(f: () => Promise<T>): Promise<T> {
+  return f().catch((err) => {
+    try {
+      const key = 'fl_chunk_reload_at';
+      if (Date.now() - Number(sessionStorage.getItem(key) || 0) > 10000) {
+        sessionStorage.setItem(key, String(Date.now()));
+        window.location.reload();
+        return new Promise<T>(() => {});
+      }
+    } catch { /* noop */ }
+    throw err;
+  });
+}
 function lazyView<K extends string>(load: () => Promise<Record<K, React.ComponentType<any>>>, k: K) {
-  const C = lazy(() => load().then((m) => ({ default: m[k] })));
+  const C = lazy(() => retryChunk(() => load().then((m) => ({ default: m[k] }))));
   return (props: any) => <Suspense fallback={<ViewLoading />}><C {...props} /></Suspense>;
 }
 const SubscriptionPlanView = lazyView(() => import('./SubscriptionPlanView'), 'SubscriptionPlanView');
@@ -94,39 +108,39 @@ export const ToolDetailView: React.FC<ToolDetailViewProps> = ({
   const getToolTitle = () => {
     switch (toolId) {
       case 'ai-management':
-        return language === 'ru' ? 'AI Бизнес-Ассистент' : 'AI Бизнес-Ассистент';
+        return (language === 'uz' ? "AI Biznes-Assistent" : language === 'ru' ? 'AI Бизнес-Ассистент' : 'AI Бизнес-Ассистент');
       case 'post-creator':
-        return language === 'ru' ? 'Создание постов (Вирусный SMM)' : 'Пост жасау (Вирустық SMM)';
+        return (language === 'uz' ? "Postlar yaratish (Virusli SMM)" : language === 'ru' ? 'Создание постов (Вирусный SMM)' : 'Пост жасау (Вирустық SMM)');
       case 'video-creator':
-        return language === 'ru' ? 'Создание видео (Reels и TikTok)' : 'Видео жасау (Reels & TikTok)';
+        return (language === 'uz' ? "Video yaratish (Reels va TikTok)" : language === 'ru' ? 'Создание видео (Reels и TikTok)' : 'Видео жасау (Reels & TikTok)');
       case 'add-product':
-        return language === 'ru' ? 'Добавить товар и склад' : 'Тауар қосу & Қойма';
+        return (language === 'uz' ? "Tovar va omborni qo'shish" : language === 'ru' ? 'Добавить товар и склад' : 'Тауар қосу & Қойма');
       case 'analytics':
-        return language === 'ru' ? 'Аналитика и чистая прибыль' : 'Аналитика & Таза пайда';
+        return (language === 'uz' ? "Analitika va sof foyda" : language === 'ru' ? 'Аналитика и чистая прибыль' : 'Аналитика & Таза пайда');
       case 'business-analyze':
-        return language === 'ru' ? 'Бизнес-анализ (AI)' : 'Бизнес талдауы (AI)';
+        return (language === 'uz' ? "Biznes-tahlil (AI)" : language === 'ru' ? 'Бизнес-анализ (AI)' : 'Бизнес талдауы (AI)');
       case 'growth':
-        return language === 'ru' ? 'Рост подписчиков' : 'Жазылушы өсуі';
+        return (language === 'uz' ? "Obunachilar o'sishi" : language === 'ru' ? 'Рост подписчиков' : 'Жазылушы өсуі');
       case 'support':
-        return language === 'ru' ? 'Поддержка' : 'Қолдау';
+        return (language === 'uz' ? "Yordam" : language === 'ru' ? 'Поддержка' : 'Қолдау');
       case 'marketplaces':
-        return language === 'ru' ? 'Маркетплейсы' : 'Маркетплейстер';
+        return (language === 'uz' ? "Marketpleyslar" : language === 'ru' ? 'Маркетплейсы' : 'Маркетплейстер');
       case 'orders-manager':
-        return language === 'ru' ? 'Управление заказами' : 'Тапсырыстарды басқару';
+        return (language === 'uz' ? "Buyurtmalarni boshqarish" : language === 'ru' ? 'Управление заказами' : 'Тапсырыстарды басқару');
       case 'phone-operator':
-        return language === 'ru' ? 'AI Телефонный оператор' : 'AI Телефон операторы';
+        return (language === 'uz' ? "AI Telefon operatori" : language === 'ru' ? 'AI Телефонный оператор' : 'AI Телефон операторы');
       case 'customer-response':
       case 'client-response':
       case 'customer_reply':
-        return language === 'ru' ? 'Ответ клиентам (Direct и Комментарии)' : 'Клиенттерге жауап (Direct & Пікірлер)';
+        return (language === 'uz' ? "Mijozlarga javob (Direct va izohlar)" : language === 'ru' ? 'Ответ клиентам (Direct и Комментарии)' : 'Клиенттерге жауап (Direct & Пікірлер)');
       case 'subscription':
-        return language === 'ru' ? 'Тарифные планы и подписка' : 'Тарифтер мен жазылым';
+        return (language === 'uz' ? "Tarif rejalari va obuna" : language === 'ru' ? 'Тарифные планы и подписка' : 'Тарифтер мен жазылым');
       case 'business-memory':
       case 'business_memory':
       case 'memory':
-        return language === 'ru' ? 'Память бизнеса (База знаний AI)' : 'Бизнес жады (AI білім базасы)';
+        return (language === 'uz' ? "Biznes xotirasi (AI bilimlar bazasi)" : language === 'ru' ? 'Память бизнеса (База знаний AI)' : 'Бизнес жады (AI білім базасы)');
       default:
-        return language === 'ru' ? 'Бизнес-инструмент' : 'Бизнес құралы';
+        return (language === 'uz' ? "Biznes-vosita" : language === 'ru' ? 'Бизнес-инструмент' : 'Бизнес құралы');
     }
   };
 
@@ -197,7 +211,7 @@ export const ToolDetailView: React.FC<ToolDetailViewProps> = ({
           className="flex items-center gap-1.5 px-2 py-1 rounded-xl text-slate-700 hover:text-blue-600 hover:bg-slate-100 transition-colors font-bold text-xs active:scale-95"
         >
           <ArrowLeft className="w-4 h-4 text-blue-600" />
-          <span>{language === 'ru' ? 'Назад' : 'Артқа'}</span>
+          <span>{(language === 'uz' ? "Orqaga" : language === 'ru' ? 'Назад' : 'Артқа')}</span>
         </button>
 
         <div className="text-center truncate px-2">
@@ -228,8 +242,8 @@ export const ToolDetailView: React.FC<ToolDetailViewProps> = ({
         {toolId === 'business-analyze' && (
           <div className="bg-white rounded-2xl p-4 border border-slate-200/90 text-center space-y-1">
             <Sparkles className="w-5 h-5 text-purple-600 mx-auto" />
-            <p className="text-sm font-bold">{language === 'ru' ? 'Анализ бизнеса скоро появится' : 'Бизнес талдауы жақында қосылады'}</p>
-            <p className="text-[11px] text-slate-500">{language === 'ru' ? 'Он будет строиться на реальных данных вашего магазина.' : 'Ол дүкеніңіздің нақты деректеріне негізделеді.'}</p>
+            <p className="text-sm font-bold">{(language === 'uz' ? "Biznes tahlili tez orada paydo bo'ladi" : language === 'ru' ? 'Анализ бизнеса скоро появится' : 'Бизнес талдауы жақында қосылады')}</p>
+            <p className="text-[11px] text-slate-500">{(language === 'uz' ? "U sizning do'koningizning real ma'lumotlariga asoslanadi." : language === 'ru' ? 'Он будет строиться на реальных данных вашего магазина.' : 'Ол дүкеніңіздің нақты деректеріне негізделеді.')}</p>
           </div>
         )}
 

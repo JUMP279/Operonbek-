@@ -1,3 +1,4 @@
+import { isUz } from '../context/LanguageContext';
 import React, { useMemo, useState } from 'react';
 import { ChevronRight, Handshake } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
@@ -77,10 +78,10 @@ export const RevenueCard: React.FC<{ dash: DashboardData; currency: string; onOp
   return (
     <div id="card-total-profit" className="bg-white rounded-2xl p-4 border border-slate-100/90 shadow-xs">
       <div className="flex items-center justify-between mb-1">
-        <span className="text-[13px] font-medium text-slate-500">{ru ? 'Выручка' : 'Түсім'}</span>
+        <span className="text-[13px] font-medium text-slate-500">{(isUz() ? "Daromad" : ru ? 'Выручка' : 'Түсім')}</span>
         <div className="flex items-center gap-2 text-[9.5px] text-slate-400">
-          <span className="inline-flex items-center gap-1"><span className="w-3 border-t-2 border-blue-600" />{bars.length > 0 && dash.series.length > 45 ? (ru ? 'недели' : 'апталар') : (ru ? 'дни' : 'күндер')}</span>
-          {hasPrev && <span className="inline-flex items-center gap-1"><span className="w-3 border-t-2 border-dashed border-orange-400" />{ru ? 'раньше' : 'бұрын'}</span>}
+          <span className="inline-flex items-center gap-1"><span className="w-3 border-t-2 border-blue-600" />{bars.length > 0 && dash.series.length > 45 ? ((isUz() ? "haftalar" : ru ? 'недели' : 'апталар')) : ((isUz() ? "kunlar" : ru ? 'дни' : 'күндер'))}</span>
+          {hasPrev && <span className="inline-flex items-center gap-1"><span className="w-3 border-t-2 border-dashed border-orange-400" />{(isUz() ? "avval" : ru ? 'раньше' : 'бұрын')}</span>}
         </div>
       </div>
       <div className="flex items-baseline gap-2 flex-wrap">
@@ -90,13 +91,13 @@ export const RevenueCard: React.FC<{ dash: DashboardData; currency: string; onOp
         )}
       </div>
       <div className="mt-1 h-4 text-[11px] text-slate-500 truncate">
-        {hv ? `${label(hv)} · ${hv.orders} ${ru ? 'продаж' : 'сатылым'}${hasPrev ? ` · ${ru ? 'раньше' : 'бұрын'} ${formatMoney(hv.prev, currency, language)}` : ''}`
-          : st ? `${ru ? 'Прошлый период' : 'Өткен кезең'}: ${formatMoney(st.prev_revenue, currency, language)}` : ''}
+        {hv ? `${label(hv)} · ${hv.orders} ${(isUz() ? "sotuvlar" : ru ? 'продаж' : 'сатылым')}${hasPrev ? ` · ${(isUz() ? "avval" : ru ? 'раньше' : 'бұрын')} ${formatMoney(hv.prev, currency, language)}` : ''}`
+          : st ? `${(isUz() ? "O'tgan davr" : ru ? 'Прошлый период' : 'Өткен кезең')}: ${formatMoney(st.prev_revenue, currency, language)}` : ''}
       </div>
 
       {empty ? (
         <div className="mt-3 rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-6 text-center text-[11.5px] text-slate-500">
-          {ru ? 'Продаж за период пока нет. Отмечайте «Продано» в «Сделках» — выручка появится здесь.' : 'Кезеңде сатылым әлі жоқ. «Мәмілелерде» «Сатылды» белгілеңіз — түсім осында көрінеді.'}
+          {(isUz() ? "Davr davomida savdolar hali yo'q. «Bitimlar»da «Sotildi» deb belgilang — daromad shu yerda paydo bo'ladi." : ru ? 'Продаж за период пока нет. Отмечайте «Продано» в «Сделках» — выручка появится здесь.' : 'Кезеңде сатылым әлі жоқ. «Мәмілелерде» «Сатылды» белгілеңіз — түсім осында көрінеді.')}
         </div>
       ) : (
         <svg viewBox={`0 0 ${W} ${H}`} className="mt-2 w-full h-auto select-none" onMouseLeave={() => setHover(null)}>
@@ -134,18 +135,18 @@ export const RevenueCard: React.FC<{ dash: DashboardData; currency: string; onOp
       )}
 
       <div className="mt-3 grid grid-cols-2 gap-2">
-        {stat(ru ? 'Средний чек' : 'Орташа чек', formatMoney(st?.avg_check || 0, currency, language),
-          st && st.prev_avg_check ? `${ru ? 'было' : 'болды'} ${formatMoney(st.prev_avg_check, currency, language)}` : undefined)}
-        {stat(ru ? 'Продаж' : 'Сатылым', formatNumber(dash.metrics.orders, language),
-          st ? `${st.sale_days} ${ru ? 'дн. с продажами' : 'күн сатылыммен'}` : undefined)}
-        {stat(ru ? 'Лучший день' : 'Үздік күн', st?.best_day ? formatMoney(st.best_day.revenue, currency, language) : '—',
+        {stat((isUz() ? "O'rtacha chek" : ru ? 'Средний чек' : 'Орташа чек'), formatMoney(st?.avg_check || 0, currency, language),
+          st && st.prev_avg_check ? `${(isUz() ? "bo'lgan" : ru ? 'было' : 'болды')} ${formatMoney(st.prev_avg_check, currency, language)}` : undefined)}
+        {stat((isUz() ? "Sotuvlar" : ru ? 'Продаж' : 'Сатылым'), formatNumber(dash.metrics.orders, language),
+          st ? `${st.sale_days} ${(isUz() ? "sotuvli kunlar" : ru ? 'дн. с продажами' : 'күн сатылыммен')}` : undefined)}
+        {stat((isUz() ? "Eng yaxshi kun" : ru ? 'Лучший день' : 'Үздік күн'), st?.best_day ? formatMoney(st.best_day.revenue, currency, language) : '—',
           st?.best_day ? formatDay(st.best_day.date, language) : undefined)}
-        {stat(ru ? 'Ждут оплаты' : 'Төлемді күтеді', formatMoney(dash.metrics.potential_revenue || 0, currency, language),
-          `${formatNumber(dash.metrics.inquiries, language)} ${ru ? 'заявок' : 'өтінім'}`)}
+        {stat((isUz() ? "To'lov kutilmoqda" : ru ? 'Ждут оплаты' : 'Төлемді күтеді'), formatMoney(dash.metrics.potential_revenue || 0, currency, language),
+          `${formatNumber(dash.metrics.inquiries, language)} ${(isUz() ? "so'rovlar" : ru ? 'заявок' : 'өтінім')}`)}
       </div>
       {onOpenDeals && (
         <button onClick={onOpenDeals} className="mt-3 w-full flex items-center justify-between rounded-xl bg-blue-50 border border-blue-100 px-3 py-2.5 text-[12px] font-bold text-blue-700 active:scale-[0.99]">
-          <span className="inline-flex items-center gap-1.5"><Handshake className="w-4 h-4" />{ru ? 'Сделки: кто купил, кто нет' : 'Мәмілелер: кім алды, кім алмады'}</span>
+          <span className="inline-flex items-center gap-1.5"><Handshake className="w-4 h-4" />{(isUz() ? "Bitimlar: kim sotib oldi, kim olmadi" : ru ? 'Сделки: кто купил, кто нет' : 'Мәмілелер: кім алды, кім алмады')}</span>
           <ChevronRight className="w-4 h-4" />
         </button>
       )}

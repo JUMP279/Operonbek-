@@ -1,3 +1,4 @@
+import { isUz } from '../context/LanguageContext';
 // Backend /dashboard javobini mavjud UI komponentlari kutgan shaklga aylantiradi.
 // Bu yerda HECH QANDAY soxta qiymat yo'q — hamma narsa DashboardData'dan.
 
@@ -8,7 +9,7 @@ import { formatChange, formatDay, formatMoney, formatNumber, timeAgo } from './f
 export function buildMetrics(d: DashboardData, lang: string): MetricItem[] {
   const ru = lang !== 'kk';
   const m = d.metrics;
-  const vs = ru ? 'к прошлому периоду' : 'өткен кезеңмен';
+  const vs = (isUz() ? "o'tgan davrga nisbatan" : ru ? 'к прошлому периоду' : 'өткен кезеңмен');
   const card = (
     id: string,
     label: string,
@@ -26,25 +27,25 @@ export function buildMetrics(d: DashboardData, lang: string): MetricItem[] {
       numericValue: numeric,
       change: ch ? ch.text : '',
       isPositive: ch ? ch.positive : true,
-      comparisonText: note || (ch ? vs : ru ? 'нет данных за прошлый период' : 'өткен кезең деректері жоқ'),
+      comparisonText: note || (ch ? vs : (isUz() ? "o'tgan davr uchun ma'lumot yo'q" : ru ? 'нет данных за прошлый период' : 'өткен кезең деректері жоқ')),
       iconName: icon,
     };
   };
   return [
-    card('revenue', ru ? 'Выручка' : 'Түсім', formatMoney(m.revenue, d.currency, lang), m.revenue, m.revenue_change, 'dollar-sign'),
-    card('orders', ru ? 'Продажи' : 'Сатылымдар', formatNumber(m.orders, lang), m.orders, m.orders_change, 'shopping-cart'),
+    card('revenue', (isUz() ? "Daromad" : ru ? 'Выручка' : 'Түсім'), formatMoney(m.revenue, d.currency, lang), m.revenue, m.revenue_change, 'dollar-sign'),
+    card('orders', (isUz() ? "Sotuvlar" : ru ? 'Продажи' : 'Сатылымдар'), formatNumber(m.orders, lang), m.orders, m.orders_change, 'shopping-cart'),
     card(
       'inquiries',
-      ru ? 'Запросы' : 'Сұраулар',
+      (isUz() ? "So'rovlar" : ru ? 'Запросы' : 'Сұраулар'),
       formatNumber(m.inquiries, lang),
       m.inquiries,
       m.inquiries_change,
       'mouse-pointer',
       m.potential_revenue
-        ? `${ru ? 'потенциал' : 'әлеует'} ${formatMoney(m.potential_revenue, d.currency, lang)}`
+        ? `${(isUz() ? "potensial" : ru ? 'потенциал' : 'әлеует')} ${formatMoney(m.potential_revenue, d.currency, lang)}`
         : undefined,
     ),
-    card('customers', ru ? 'Клиенты' : 'Клиенттер', formatNumber(m.customers, lang), m.customers, m.customers_change, 'users'),
+    card('customers', (isUz() ? "Mijozlar" : ru ? 'Клиенты' : 'Клиенттер'), formatNumber(m.customers, lang), m.customers, m.customers_change, 'users'),
   ];
 }
 
@@ -76,7 +77,7 @@ export function buildSegments(d: DashboardData, lang: string): CustomerSegment[]
   return [
     {
       id: 'returning',
-      name: ru ? 'Постоянные покупатели' : 'Тұрақты сатып алушылар',
+      name: (isUz() ? "Doimiy xaridorlar" : ru ? 'Постоянные покупатели' : 'Тұрақты сатып алушылар'),
       count: formatNumber(returning, lang),
       numericCount: returning,
       color: '#2563eb',
@@ -86,7 +87,7 @@ export function buildSegments(d: DashboardData, lang: string): CustomerSegment[]
     },
     {
       id: 'new',
-      name: ru ? 'Новые покупатели' : 'Жаңа сатып алушылар',
+      name: (isUz() ? "Yangi xaridorlar" : ru ? 'Новые покупатели' : 'Жаңа сатып алушылар'),
       count: formatNumber(fresh, lang),
       numericCount: fresh,
       color: '#10b981',
@@ -96,7 +97,7 @@ export function buildSegments(d: DashboardData, lang: string): CustomerSegment[]
     },
     {
       id: 'inquiry_only',
-      name: ru ? 'Только интересовались' : 'Тек қызыққандар',
+      name: (isUz() ? "Faqat qiziqish bildirganlar" : ru ? 'Только интересовались' : 'Тек қызыққандар'),
       count: formatNumber(inquiry_only, lang),
       numericCount: inquiry_only,
       color: '#f97316',

@@ -1,3 +1,4 @@
+import { isUz } from '../context/LanguageContext';
 import React, { useState } from 'react';
 import { Maximize2, Minimize2, X } from 'lucide-react';
 import { ToolDetailView } from './ToolDetailView';
@@ -53,7 +54,7 @@ export const ToolDemoModal: React.FC<ToolDemoModalProps> = ({
             <button
               onClick={() => setIsFullscreen(!isFullscreen)}
               className="p-1 hover:bg-slate-800 rounded-md text-slate-300 hover:text-white transition-colors"
-              title={isFullscreen ? 'Свернуть' : 'Развернуть'}
+              title={isUz() ? (isFullscreen ? "Yig'ish" : 'Kengaytirish') : isFullscreen ? 'Свернуть' : 'Развернуть'}
             >
               {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
             </button>

@@ -9,7 +9,15 @@ import { nearFirst } from '../lib/format';
 // Kunlik post rejasi: har kuni 1 post, tanlangan vaqtda. Matn+rasm faqat eng yaqin post uchun
 // oldindan tayyorlanadi; ҚАЗ/РУС bilan til almashtiriladi.
 const T = {
-  ru: {
+  uz: {
+    intro: "Postlar Instagram va Telegramda tarifingiz bo'yicha. AI matn va rasmni oldindan tayyorlaydi — siz ularni nashr qilishdan oldin ko'rasiz.",
+    cadence: (c?: { every_days: number; per_day: number }) => !c ? '' : c.every_days === 2 ? "Kunora (video bo'lmagan kunlarda)" : c.per_day > 1 ? `${c.per_day} post kuniga` : "Har kuni",
+    time: "Nashr vaqti", start: "Planni ishga tushirish", starting: "Plan yaratilmoqda…",
+    daily: (t: string) => `Boshlanishi ${t}da`, stop: "Planni to'xtatish", stopConfirm: "Haqiqatan ham to'xtatilsinmi? Kelgusi postlar o'chiriladi.",
+    preparing: "AI post tayyorlayapti…", pending: "Post avvalgisi chiqqandan keyin paydo bo'ladi",
+    ready: "Tayyor — jadval bo'yicha chiqadi", published: "Nashr etilgan", failed: "Bo'lmadi", draft: "Qoralama",
+    other: "Boshqa variant", errors: { network: "Server bilan aloqa yo'q", generic: "Nimadir noto'g'ri ketdi. Qayta urinib ko'ring.", busy: "Post allaqachon nashr etilmoqda — o'zgartirib bo'lmaydi" },
+  }, ru: {
     intro: 'Посты в Instagram и Telegram по вашему тарифу. AI заранее готовит текст и картинку — вы видите их до публикации.',
     cadence: (c?: { every_days: number; per_day: number }) => !c ? '' : c.every_days === 2 ? 'Через день (в дни без видео)' : c.per_day > 1 ? `${c.per_day} поста в день` : 'Каждый день',
     time: 'Время публикации', start: 'Запустить план', starting: 'Создаём план…',
@@ -31,7 +39,7 @@ const T = {
 
 function when(iso: string, lang: string): string {
   try {
-    return new Date(iso).toLocaleString(lang === 'kk' ? 'kk-KZ' : 'ru-RU', {
+    return new Date(iso).toLocaleString((lang === 'uz' ? 'uz-UZ' : lang === 'kk' ? 'kk-KZ' : 'ru-RU'), {
       weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
     });
   } catch {
@@ -39,7 +47,7 @@ function when(iso: string, lang: string): string {
   }
 }
 
-export const PostPlanPanel: React.FC<{ businessId: string; lang: 'ru' | 'kk' }> = ({ businessId, lang }) => {
+export const PostPlanPanel: React.FC<{ businessId: string; lang: 'uz' | 'ru' | 'kk' }> = ({ businessId, lang }) => {
   const L = T[lang];
   const [plan, setPlan] = useState<PostPlan | null>(null);
   const [time, setTime] = useState('19:00');
@@ -157,8 +165,8 @@ export const PostPlanPanel: React.FC<{ businessId: string; lang: 'ru' | 'kk' }> 
 
   const badge = (s: PostPlanItem['status'], hasText: boolean, review?: boolean) => {
     const [label, cls] =
-      review ? [lang === 'ru' ? 'Ждёт вашего ОК' : 'Келісіміңізді күтеді', 'bg-amber-50 text-amber-700']
-      : s === 'skipped' ? [lang === 'ru' ? 'Не выйдет' : 'Шықпайды', 'bg-slate-100 text-slate-500']
+      review ? [(lang === 'uz' ? "Tasdiqlashingizni kutmoqda" : lang === 'ru' ? 'Ждёт вашего ОК' : 'Келісіміңізді күтеді'), 'bg-amber-50 text-amber-700']
+      : s === 'skipped' ? [(lang === 'uz' ? "Chiqmaydi" : lang === 'ru' ? 'Не выйдет' : 'Шықпайды'), 'bg-slate-100 text-slate-500']
       : s === 'published' ? [L.published, 'bg-emerald-50 text-emerald-700']
       : s === 'scheduled' ? [L.ready, 'bg-sky-50 text-sky-700']
       : s === 'failed' ? [L.failed, 'bg-rose-50 text-rose-700']
@@ -236,11 +244,11 @@ export const PostPlanPanel: React.FC<{ businessId: string; lang: 'ru' | 'kk' }> 
               {it.hashtags.length > 0 && <p className="text-[11.5px] text-purple-700">{it.hashtags.join(' ')}</p>}
               {it.status === 'draft' && (
                 <div className="flex items-center gap-1.5">
-                  {(['kk', 'ru'] as const).map((l) => (
+                  {(['uz', 'ru', 'kk'] as const).map((l) => (
                     <button key={l} onClick={() => switchLang(it, l)} disabled={busy === it.id}
                       className={`px-3 py-1 rounded-lg text-[11px] font-black border active:scale-95 ${
                         (it.lang || 'kk') === l ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-slate-600 border-slate-200'}`}>
-                      {l === 'kk' ? 'ҚАЗ' : 'РУС'}
+                      {l === 'uz' ? "O'ZB" : l === 'kk' ? 'ҚАЗ' : 'РУС'}
                     </button>
                   ))}
                   {busy === it.id && <Loader2 className="w-3.5 h-3.5 text-purple-600 animate-spin" />}
@@ -252,7 +260,7 @@ export const PostPlanPanel: React.FC<{ businessId: string; lang: 'ru' | 'kk' }> 
               )}
               {it.needs_approval && (
                 <ReviewActions lang={lang} past={it.past} busy={busy === it.id}
-                  redoLabel={lang === 'ru' ? 'Переписать' : 'Қайта жазу'} redoGo={lang === 'ru' ? 'Переписать пост' : 'Постты қайта жазу'}
+                  redoLabel={(lang === 'uz' ? "Qayta yozish" : lang === 'ru' ? 'Переписать' : 'Қайта жазу')} redoGo={(lang === 'uz' ? "Postni qayta yozish" : lang === 'ru' ? 'Переписать пост' : 'Постты қайта жазу')}
                   onApprove={() => act(it.id, () => api.approvePostItem(it.id), 'scheduled')}
                   onRedo={(w) => act(it.id, () => api.regeneratePostItem(it.id, w))}
                   onSkip={() => act(it.id, () => api.skipPostItem(it.id), 'skipped')} />
@@ -260,13 +268,13 @@ export const PostPlanPanel: React.FC<{ businessId: string; lang: 'ru' | 'kk' }> 
               {it.status === 'skipped' && (
                 <button onClick={() => act(it.id, () => api.approvePostItem(it.id), 'scheduled')} disabled={busy === it.id}
                   className="w-full py-2 rounded-xl text-[11.5px] font-bold bg-slate-100 text-slate-700 flex items-center justify-center gap-1.5 disabled:opacity-50">
-                  <RefreshCw className="w-3.5 h-3.5" />{lang === 'ru' ? 'Вернуть и опубликовать' : 'Қайтарып жариялау'}
+                  <RefreshCw className="w-3.5 h-3.5" />{(lang === 'uz' ? "Qaytarish va nashr etish" : lang === 'ru' ? 'Вернуть и опубликовать' : 'Қайтарып жариялау')}
                 </button>
               )}
               {approval === 'semi' && it.status === 'scheduled' && (
                 <button onClick={() => act(it.id, () => api.skipPostItem(it.id), 'skipped')} disabled={busy === it.id}
                   className="w-full py-2 rounded-xl text-[11.5px] font-bold bg-slate-100 text-slate-600 disabled:opacity-50">
-                  {lang === 'ru' ? 'Отменить выход' : 'Шығуды болдырмау'}
+                  {(lang === 'uz' ? "Chiqishni bekor qilish" : lang === 'ru' ? 'Отменить выход' : 'Шығуды болдырмау')}
                 </button>
               )}
             </>

@@ -1,8 +1,10 @@
+import { isUz } from '../context/LanguageContext';
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Brain, Check, Loader2, PenLine, X } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { api, BusinessUnderstanding } from '../lib/api';
 import { timeAgo } from '../lib/format';
+import { MemoryInterviewCard } from './MemoryInterviewCard';
 
 interface BusinessMemoryViewProps {
   onBack?: () => void;
@@ -31,7 +33,7 @@ export const BusinessMemoryView: React.FC<BusinessMemoryViewProps> = ({ onBack, 
       setData(await api.understanding(businessId));
       setError('');
     } catch {
-      if (!quiet) setError(ru ? 'Не удалось загрузить память.' : 'Жадты жүктеу мүмкін болмады.');
+      if (!quiet) setError((isUz() ? "Xotirani yuklab bo'lmadi." : ru ? 'Не удалось загрузить память.' : 'Жадты жүктеу мүмкін болмады.'));
     }
   };
 
@@ -63,7 +65,7 @@ export const BusinessMemoryView: React.FC<BusinessMemoryViewProps> = ({ onBack, 
       setText('');
       setSent(true);
     } catch {
-      setError(ru ? 'Не удалось отправить. Попробуйте ещё раз.' : 'Жіберілмеді. Қайталап көріңіз.');
+      setError((isUz() ? "Yuborib bo'lmadi. Qaytadan urinib ko'ring." : ru ? 'Не удалось отправить. Попробуйте ещё раз.' : 'Жіберілмеді. Қайталап көріңіз.'));
     } finally {
       setSending(false);
     }
@@ -88,16 +90,16 @@ export const BusinessMemoryView: React.FC<BusinessMemoryViewProps> = ({ onBack, 
         </button>
         <div className="flex items-center gap-1.5">
           <Brain className="w-4 h-4 text-blue-600" />
-          <h2 className="text-[16px] font-bold text-slate-900">{ru ? 'Память бизнеса' : 'Бизнес жады'}</h2>
+          <h2 className="text-[16px] font-bold text-slate-900">{(isUz() ? "Biznes xotirasi" : ru ? 'Память бизнеса' : 'Бизнес жады')}</h2>
         </div>
         <span className="w-8" />
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 pb-6 space-y-3 no-scrollbar">
         <p className="text-[11.5px] text-slate-500 leading-relaxed">
-          {ru
+          {(isUz() ? "Shunday qilib FindLead biznesingizni tushunadi. Videolar, postlar va mijozlarga javoblar bunga asoslanadi." : ru
             ? 'Так FindLead понимает ваш бизнес. На это опираются видео, посты и ответы клиентам.'
-            : 'FindLead бизнесіңізді осылай түсінеді. Видео, пост және клиентке жауап осыған сүйенеді.'}
+            : 'FindLead бизнесіңізді осылай түсінеді. Видео, пост және клиентке жауап осыған сүйенеді.')}
         </p>
 
         {error && <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs">{error}</div>}
@@ -113,11 +115,11 @@ export const BusinessMemoryView: React.FC<BusinessMemoryViewProps> = ({ onBack, 
             <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-100">
               <div className="flex items-center justify-between gap-2 mb-2">
                 <span className="text-[10.5px] font-bold uppercase tracking-wide text-blue-600">
-                  {ru ? 'FindLead понимает так' : 'FindLead былай түсінеді'}
+                  {(isUz() ? "FindLead shunday tushunadi" : ru ? 'FindLead понимает так' : 'FindLead былай түсінеді')}
                 </span>
                 {updating ? (
                   <span className="inline-flex items-center gap-1 text-[10.5px] font-semibold text-blue-600">
-                    <Loader2 className="w-3 h-3 animate-spin" /> {ru ? 'Обновляется' : 'Жаңартылуда'}
+                    <Loader2 className="w-3 h-3 animate-spin" /> {(isUz() ? "Yangilanmoqda" : ru ? 'Обновляется' : 'Жаңартылуда')}
                   </span>
                 ) : data.updated_at ? (
                   <span className="text-[10.5px] text-slate-400">{timeAgo(data.updated_at, language)}</span>
@@ -127,7 +129,7 @@ export const BusinessMemoryView: React.FC<BusinessMemoryViewProps> = ({ onBack, 
                 <p className={`text-[14px] text-slate-800 leading-relaxed ${updating ? 'opacity-60' : ''}`}>{data.summary}</p>
               ) : (
                 <p className="text-xs text-slate-500 leading-relaxed">
-                  {ru ? 'FindLead изучает ваш бизнес — это займёт до 3 минут.' : 'FindLead бизнесіңізді зерттеп жатыр — 3 минутқа дейін.'}
+                  {(isUz() ? "FindLead biznesingizni o'rganmoqda — bu 3 daqiqagacha vaqt oladi." : ru ? 'FindLead изучает ваш бизнес — это займёт до 3 минут.' : 'FindLead бизнесіңізді зерттеп жатыр — 3 минутқа дейін.')}
                 </p>
               )}
               {data.facts.length > 0 && (
@@ -141,21 +143,24 @@ export const BusinessMemoryView: React.FC<BusinessMemoryViewProps> = ({ onBack, 
               )}
             </div>
 
+            {/* Gramir uslubidagi savol-javob — biznes haqida yangilik/ma'lumot kiritish (2026-11-21) */}
+            <MemoryInterviewCard businessId={businessId} lang={ru ? 'ru' : 'kk'} onSaved={() => load(true)} />
+
             <div className="p-3.5 bg-white rounded-2xl border border-slate-200 space-y-2.5">
               <div className="flex items-center gap-1.5 text-[13px] font-bold text-slate-900">
-                <PenLine className="w-3.5 h-3.5 text-blue-600" /> {ru ? 'Что-то не так?' : 'Бірдеңе дұрыс емес пе?'}
+                <PenLine className="w-3.5 h-3.5 text-blue-600" /> {(isUz() ? "Yoki o'z so'zlaringiz bilan" : ru ? 'Или своими словами' : 'Немесе өз сөзіңізбен')}
               </div>
               <p className="text-[11.5px] text-slate-500 leading-snug">
-                {ru
+                {(isUz() ? "Aslida qanday bo'lsa, shunday yozing. Masalan: «Biz faqat qo'lda to'qilgan sviterlar sotamiz»." : ru
                   ? 'Напишите, как на самом деле. Например: «Мы продаём только вязаные свитера ручной работы».'
-                  : 'Шын мәнінде қалай екенін жазыңыз. Мысалы: «Біз тек қолдан тоқылған свитер сатамыз».'}
+                  : 'Шын мәнінде қалай екенін жазыңыз. Мысалы: «Біз тек қолдан тоқылған свитер сатамыз».')}
               </p>
               <textarea
                 value={text}
                 onChange={(e) => { setText(e.target.value); setSent(false); }}
                 maxLength={600}
                 rows={3}
-                placeholder={ru ? 'Здесь не так, а вот так…' : 'Бұл жерде олай емес, былай…'}
+                placeholder={(isUz() ? "Bu yerda bunday emas, balki shunday…" : ru ? 'Здесь не так, а вот так…' : 'Бұл жерде олай емес, былай…')}
                 className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-[13px] outline-none focus:border-blue-500 focus:bg-white resize-none"
               />
               <button
@@ -163,24 +168,24 @@ export const BusinessMemoryView: React.FC<BusinessMemoryViewProps> = ({ onBack, 
                 disabled={sending || text.trim().length < 2}
                 className="w-full py-2.5 rounded-xl bg-blue-600 text-white text-[13px] font-bold disabled:opacity-40 active:scale-[0.98] transition"
               >
-                {sending ? '…' : ru ? 'Сохранить' : 'Сақтау'}
+                {sending ? '…' : (isUz() ? "Saqlash" : ru ? 'Сохранить' : 'Сақтау')}
               </button>
               {sent && (
                 <p className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[12px] leading-snug">
-                  {ru
+                  {(isUz() ? "Qabul qilindi. Agar biror narsa yozgan bo'lsangiz — ma'lumot 3 daqiqa ichida yangilanadi." : ru
                     ? 'Принято. Если вы что-то написали — информация обновится в течение 3 минут.'
-                    : 'Қабылданды. Егер бірдеңе жазсаңыз — ақпарат 3 минут ішінде жаңарады.'}
+                    : 'Қабылданды. Егер бірдеңе жазсаңыз — ақпарат 3 минут ішінде жаңарады.')}
                 </p>
               )}
               <p className="text-[10.5px] text-slate-400">
-                {ru ? 'Это не чат: FindLead не отвечает здесь, а меняет своё понимание бизнеса.' : 'Бұл чат емес: FindLead мұнда жауап бермейді, бизнес туралы түсінігін өзгертеді.'}
+                {(isUz() ? "Bu chat emas: FindLead bu yerda javob bermaydi, balki biznes haqidagi tushunchasini o'zgartiradi." : ru ? 'Это не чат: FindLead не отвечает здесь, а меняет своё понимание бизнеса.' : 'Бұл чат емес: FindLead мұнда жауап бермейді, бизнес туралы түсінігін өзгертеді.')}
               </p>
             </div>
 
             {data.corrections.length > 0 && (
               <div className="space-y-1.5">
                 <div className="text-[10.5px] font-bold uppercase tracking-wide text-slate-400 px-1">
-                  {ru ? 'Ваши уточнения' : 'Сіздің нақтылауларыңыз'}
+                  {(isUz() ? "Sizning izohlaringiz" : ru ? 'Ваши уточнения' : 'Сіздің нақтылауларыңыз')}
                 </div>
                 {data.corrections.map((c, i) => ({ c, i })).reverse().map(({ c, i }) => (
                   <div key={i} className="p-3 bg-white rounded-2xl border border-slate-100 flex items-start gap-2">

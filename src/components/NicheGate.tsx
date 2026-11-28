@@ -4,12 +4,16 @@ import { api, BrandStatus } from '../lib/api';
 
 // Mahsulot qo'shilmagan va yo'nalish hali aytilmagan bo'lsa — post/video'dan oldin bir marta so'raladi.
 const NICHES = {
-  ru: ['Одежда', 'Обувь', 'Мебель', 'Косметика', 'Продукты питания', 'Электроника', 'Детские товары', 'Цветы', 'Аксессуары', 'Услуги'],
+  uz: ["Kiyim", "Poyabzal", "Mebel", "Kosmetika", "Oziq-ovqat", "Elektronika", "Bolalar tovarlari", "Gullar", "Aksessuarlar", "Xizmatlar"], ru: ['Одежда', 'Обувь', 'Мебель', 'Косметика', 'Продукты питания', 'Электроника', 'Детские товары', 'Цветы', 'Аксессуары', 'Услуги'],
   kk: ['Киім', 'Аяқ киім', 'Жиһаз', 'Косметика', 'Азық-түлік', 'Электроника', 'Балалар тауарлары', 'Гүлдер', 'Аксессуарлар', 'Қызметтер'],
 };
 
 const T = {
-  ru: {
+  uz: {
+    title: "Kontentni qaysi yo'nalishda tayyorlash kerak?",
+    hint: "Tovarlar hali qo'shilmagan — AI shu yo'nalishda do'koningiz nomini targ'ib qiladi. Postlar, video va rasmlar shu mavzuda bo'ladi.",
+    other: "Boshqa yo'nalish", save: "Davom etish", error: "Saqlab bo'lmadi. Yana urinib ko'ring.",
+  }, ru: {
     title: 'В каком направлении готовить контент?',
     hint: 'Товары ещё не добавлены — AI будет продвигать название вашего магазина в этом направлении. Посты, видео и картинки будут по этой теме.',
     other: 'Другое направление', save: 'Продолжить', error: 'Не удалось сохранить. Попробуйте ещё раз.',
@@ -21,7 +25,7 @@ const T = {
   },
 };
 
-export const NicheGate: React.FC<{ businessId: string; lang: 'ru' | 'kk'; onDone: (s: BrandStatus) => void }> = ({
+export const NicheGate: React.FC<{ businessId: string; lang: 'uz' | 'ru' | 'kk'; onDone: (s: BrandStatus) => void }> = ({
   businessId, lang, onDone,
 }) => {
   const L = T[lang];

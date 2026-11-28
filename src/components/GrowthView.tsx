@@ -1,3 +1,4 @@
+import { isUz } from '../context/LanguageContext';
 import React, { useEffect, useState } from 'react';
 import { AlertTriangle, ArrowLeft, Check, ChevronDown, Download, Loader2, Sparkles, Zap } from 'lucide-react';
 import QRCode from 'qrcode';
@@ -21,7 +22,7 @@ export const GrowthView: React.FC<{ onBack?: () => void; storeContext?: { busine
     if (!businessId) return;
     if (refresh) setChecking(true);
     api.growth(businessId, ru ? 'ru' : 'kk', refresh).then((d) => { setData(d); setError(''); })
-      .catch(() => setError(ru ? 'Не удалось загрузить.' : 'Жүктелмеді.'))
+      .catch(() => setError((isUz() ? "Yuklab bo'lmadi." : ru ? 'Не удалось загрузить.' : 'Жүктелмеді.')))
       .finally(() => setChecking(false));
   };
   useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [businessId, ru]);
@@ -41,15 +42,15 @@ export const GrowthView: React.FC<{ onBack?: () => void; storeContext?: { busine
   };
 
   const groups: { id: string; t: string }[] = [
-    { id: 'base', t: ru ? 'Основа' : 'Негіз' }, { id: 'instagram', t: 'Instagram' },
-    { id: 'telegram', t: 'Telegram' }, { id: 'growth', t: ru ? 'Ускорение' : 'Жеделдету' },
+    { id: 'base', t: (isUz() ? "Asos" : ru ? 'Основа' : 'Негіз') }, { id: 'instagram', t: 'Instagram' },
+    { id: 'telegram', t: 'Telegram' }, { id: 'growth', t: (isUz() ? "Tezlashtirish" : ru ? 'Ускорение' : 'Жеделдету') },
   ];
 
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between px-4 py-2">
         <button onClick={onBack} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100"><ArrowLeft className="w-5 h-5 text-slate-800" /></button>
-        <h2 className="text-[16px] font-bold text-slate-900">{ru ? 'Рост подписчиков' : 'Жазылушы өсуі'}</h2>
+        <h2 className="text-[16px] font-bold text-slate-900">{(isUz() ? "Obunachilar o'sishi" : ru ? 'Рост подписчиков' : 'Жазылушы өсуі')}</h2>
         <span className="w-8" />
       </div>
       <div className="flex-1 overflow-y-auto px-4 pb-6 space-y-3 no-scrollbar">
@@ -58,13 +59,13 @@ export const GrowthView: React.FC<{ onBack?: () => void; storeContext?: { busine
         {data && (
           <>
             <div className="p-3.5 rounded-2xl bg-slate-900 text-white">
-              <div className="flex items-center justify-between text-[12px] text-white/60"><span>{ru ? 'Выполнено' : 'Орындалды'}</span><b className="text-white text-[15px]">{data.done}/{data.total}</b></div>
+              <div className="flex items-center justify-between text-[12px] text-white/60"><span>{(isUz() ? "Bajarildi" : ru ? 'Выполнено' : 'Орындалды')}</span><b className="text-white text-[15px]">{data.done}/{data.total}</b></div>
               <div className="mt-2 h-2 rounded-full bg-white/10 overflow-hidden"><div className="h-full rounded-full bg-emerald-400" style={{ width: `${(data.done / Math.max(1, data.total)) * 100}%` }} /></div>
             </div>
             {data.status && <GrowthStatusCard status={data.status} lang={ru ? 'ru' : 'kk'} busy={checking} onRefresh={() => load(true)} />}
             {data.ai_actions && data.ai_actions.length > 0 && (
               <div className="p-3.5 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white space-y-2.5">
-                <div className="flex items-center gap-1.5 text-[12.5px] font-black"><Sparkles className="w-4 h-4" />{ru ? 'Что FindLead делает сам' : 'FindLead өзі не істейді'}</div>
+                <div className="flex items-center gap-1.5 text-[12.5px] font-black"><Sparkles className="w-4 h-4" />{(isUz() ? "FindLead o'zi nimalarni qiladi" : ru ? 'Что FindLead делает сам' : 'FindLead өзі не істейді')}</div>
                 {data.ai_actions.map((a, i) => (
                   <div key={i} className="flex items-start gap-2.5 rounded-xl bg-white/10 p-2.5">
                     <div className={`mt-0.5 w-5 h-5 rounded-md flex items-center justify-center shrink-0 ${a.active ? 'bg-emerald-400 text-emerald-950' : 'bg-white/20 text-white/60'}`}>
@@ -110,7 +111,7 @@ export const GrowthView: React.FC<{ onBack?: () => void; storeContext?: { busine
                       {open === i.id && i.id === 'offline_qr' && data.channel_url && qr && (
                         <div className="mt-2 ml-7 flex items-center gap-3">
                           <img src={qr} alt="QR" className="w-24 h-24 rounded-lg border border-slate-200" />
-                          <a href={qr} download="telegram-qr.png" className="text-[11.5px] font-bold text-blue-600 flex items-center gap-1"><Download className="w-3.5 h-3.5" />{ru ? 'Скачать QR' : 'QR жүктеу'}</a>
+                          <a href={qr} download="telegram-qr.png" className="text-[11.5px] font-bold text-blue-600 flex items-center gap-1"><Download className="w-3.5 h-3.5" />{(isUz() ? "QR yuklab olish" : ru ? 'Скачать QR' : 'QR жүктеу')}</a>
                         </div>
                       )}
                     </div>
@@ -119,7 +120,7 @@ export const GrowthView: React.FC<{ onBack?: () => void; storeContext?: { busine
               );
             })}
             <div className="p-3 rounded-2xl bg-rose-50 border border-rose-100 space-y-1.5">
-              <div className="text-[12px] font-black text-rose-700 flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5" />{ru ? 'Чего не делать' : 'Не істемеу керек'}</div>
+              <div className="text-[12px] font-black text-rose-700 flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5" />{(isUz() ? "Nima qilmaslik kerak" : ru ? 'Чего не делать' : 'Не істемеу керек')}</div>
               {data.warnings.map((w, i) => <p key={i} className="text-[11px] text-slate-700 leading-snug">✕ {w}</p>)}
             </div>
           </>

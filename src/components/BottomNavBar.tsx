@@ -1,3 +1,4 @@
+import { isUz } from '../context/LanguageContext';
 import React from 'react';
 import { BarChart3, Compass, Package, Store, User } from 'lucide-react';
 import { ActiveTab } from '../types';
@@ -14,11 +15,11 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ activeTab, onChangeT
   const { t, language } = useLanguage();
   const ru = language === 'ru';
   const tabs: { id: ActiveTab; label: string; icon: React.ElementType }[] = [
-    { id: 'overview', label: t.navOverview || (ru ? 'Обзор' : 'Шолу'), icon: Compass },
-    { id: 'analytics', label: ru ? 'Аналитика' : 'Аналитика', icon: BarChart3 },
-    { id: 'marketplaces', label: ru ? 'Маркетплейс' : 'Маркетплейс', icon: Store },
-    { id: 'products', label: ru ? 'Товары' : 'Тауарлар', icon: Package },
-    { id: 'profile', label: t.navProfile || (ru ? 'Профиль' : 'Профиль'), icon: User },
+    { id: 'overview', label: t.navOverview || ((isUz() ? "Ko'rib chiqish" : ru ? 'Обзор' : 'Шолу')), icon: Compass },
+    { id: 'analytics', label: (isUz() ? "Analitika" : ru ? 'Аналитика' : 'Аналитика'), icon: BarChart3 },
+    { id: 'marketplaces', label: (isUz() ? "Marketpleys" : ru ? 'Маркетплейс' : 'Маркетплейс'), icon: Store },
+    { id: 'products', label: (isUz() ? "Mahsulotlar" : ru ? 'Товары' : 'Тауарлар'), icon: Package },
+    { id: 'profile', label: t.navProfile || ((isUz() ? "Profil" : ru ? 'Профиль' : 'Профиль')), icon: User },
   ];
 
   return (

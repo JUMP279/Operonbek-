@@ -5,7 +5,10 @@ import { api } from '../lib/api';
 
 // Profil: biznes logotipi. Yuklangan logotip har post rasmining burchagida chiqadi.
 const T = {
-  ru: {
+  uz: {
+    title: "Logotip", hint: "Logotip postlaringiz rasmlarida paydo bo'ladi.", add: "Logotip yuklash",
+    change: "Almashtirish", remove: "O'chirish", error: "Yuklab bo'lmadi (PNG, JPG yoki WEBP, 5 MB gacha)",
+  }, ru: {
     title: 'Логотип', hint: 'Логотип появится на картинках ваших постов.', add: 'Загрузить логотип',
     change: 'Заменить', remove: 'Удалить', error: 'Не удалось загрузить (PNG, JPG или WEBP, до 5 МБ)',
   },
@@ -17,7 +20,7 @@ const T = {
 
 export const LogoCard: React.FC<{ businessId?: string }> = ({ businessId }) => {
   const { language } = useLanguage();
-  const L = T[language === 'ru' ? 'ru' : 'kk'];
+  const L = T[language];
   const [logo, setLogo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');

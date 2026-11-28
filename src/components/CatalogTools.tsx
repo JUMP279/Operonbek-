@@ -4,10 +4,30 @@ import { api, ApiError, ImportPreview, ImportRow, PriceRules } from '../lib/api'
 import { formatMoney } from '../lib/format';
 
 // Saytdagi cabinet/CatalogTools.tsx bilan bir xil: /products/import/* va /products/{id}/price-rules.
-type Lang = 'ru' | 'kk';
+type Lang = 'uz' | 'ru' | 'kk';
 
 const T = {
-  ru: {
+  uz: {
+    bargain: "Mijoz bilan savdolashish",
+    bargainOn: (p: number) => `AI ${p}% gacha (yoki mahsulotning minimal narxigacha) narxni tushirishi mumkin. Undan pastga tizim o'tkazmaydi.`,
+    bargainOff: "Narxlar qat'iy: AI narxni pasaytirmaydi, tizim har bir javobni tekshiradi.",
+    max: "maks.",
+    importTitle: "Katalogni yuklash", importBtn: "Fayl bilan yuklash",
+    importHint: "Excel, CSV, matnli prays yoki prays fotosurati. AI nomlar, narxlar va qoldiqlarni o'zi topadi — saqlashdan oldin tekshirasiz.",
+    pick: "Fayl tanlash", reading: "AI faylni o'qiyapti…", upTo: "8 MB gacha",
+    found: (n: number) => `Topildi: ${n}`, existing: (n: number) => `Allaqachon mavjud: ${n}`, noPrice: (n: number) => `Narxsiz: ${n}`,
+    markup: "Ustama, % (agar faylda tannarx bo'lsa)", upd: "Mavjudlarda narxlar va qoldiqlarni yangilash", noUpd: "Mavjudlarga tegmaslik",
+    willUpd: "yangilanadi", pcs: "dona", other: "Boshqa fayl", save: (n: number) => `Saqlash ${n}`,
+    done: (a: number, u: number, s: number) => `Qo'shildi: ${a}, yangilandi: ${u}${s ? `, o'tkazib yuborildi: ${s}` : ''}`,
+    saveErr: "Saqlab bo'lmadi. Yana urinib ko'ring.",
+    errs: {
+      too_big: "Fayl 8 MB dan katta.", empty: "Fayl bo'sh.", xls_old: "Eski .xls formati — faylni Excelda .xlsx sifatida saqlang.",
+      bad_excel: "Excel faylni ochib bo'lmadi.", bad_text: "Fayl matnini o'qib bo'lmadi.",
+      no_name_column: "Tovar nomlari ustunini topa olmadik.", no_products: "Faylda tovarlar topilmadi.",
+      image_unreadable: "Suratdan matnni o'qib bo'lmadi — aniqroq yoki fayl ko'rinishida yuklang.",
+      network: "Server bilan aloqa yo'q.", generic: "Faylni o'qib bo'lmadi. Yana urinib ko'ring.",
+    } as Record<string, string>,
+  }, ru: {
     bargain: 'Торг с клиентом',
     bargainOn: (p: number) => `AI может уступить до ${p}% (или до минимальной цены товара). Ниже система не пропустит.`,
     bargainOff: 'Цены фиксированные: AI не снижает цену, система проверяет каждый ответ.',

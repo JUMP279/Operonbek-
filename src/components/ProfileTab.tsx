@@ -1,3 +1,4 @@
+import { isUz } from '../context/LanguageContext';
 import React, { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import {
@@ -71,18 +72,18 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
   }, [storeContext?.businessId]);
   const PLAN_LABEL: Record<string, string> = { trial: 'Trial', starter: 'Starter', growth: 'Growth', business: 'Business' };
   const PLAN_LIMITS: Record<string, string> = {
-    trial: language === 'kk' ? '14 күн тегін • күніне 1 бейне + 1 пост' : '14 дней бесплатно • 1 видео + 1 пост в день',
-    starter: language === 'kk' ? '$20 / ай • 15 бейне + 15 пост' : '$20 / мес • 15 видео + 15 постов',
-    growth: language === 'kk' ? '$49.90 / ай • күніне 1 бейне + 1 пост' : '$49.90 / мес • 1 видео + 1 пост в день',
-    business: language === 'kk' ? '$79.99 / ай • күніне 3 бейне + 3 пост' : '$79.99 / мес • 3 видео + 3 поста в день',
+    trial: (language === 'uz' ? "14 kun bepul • kuniga 1 video + 1 post" : language === 'kk' ? '14 күн тегін • күніне 1 бейне + 1 пост' : '14 дней бесплатно • 1 видео + 1 пост в день'),
+    starter: (language === 'uz' ? "$20 / oy • 15 video + 15 post" : language === 'kk' ? '$20 / ай • 15 бейне + 15 пост' : '$20 / мес • 15 видео + 15 постов'),
+    growth: (language === 'uz' ? "$49.90 / oy • kuniga 1 video + 1 post" : language === 'kk' ? '$49.90 / ай • күніне 1 бейне + 1 пост' : '$49.90 / мес • 1 видео + 1 пост в день'),
+    business: (language === 'uz' ? "$79.99 / oy • kuniga 3 video + 3 post" : language === 'kk' ? '$79.99 / ай • күніне 3 бейне + 3 пост' : '$79.99 / мес • 3 видео + 3 поста в день'),
   };
   const planKey = plan && PLAN_LABEL[plan.plan] ? plan.plan : 'starter';
   const planName = PLAN_LABEL[planKey] + ' Plan';
   const planSubtitle = PLAN_LIMITS[planKey] || t.starterPlanSubtitle;
   const planBadge = plan?.state === 'expired'
-    ? (language === 'kk' ? 'Аяқталды' : 'Истёк')
+    ? ((language === 'uz' ? "Tugagan" : language === 'kk' ? 'Аяқталды' : 'Истёк'))
     : plan?.state === 'trial' && plan.days_left != null
-      ? (language === 'kk' ? `${plan.days_left} күн қалды` : `Осталось ${plan.days_left} дн.`)
+      ? ((language === 'uz' ? `Qoldi ${plan.days_left} kun` : language === 'kk' ? `${plan.days_left} күн қалды` : `Осталось ${plan.days_left} дн.`))
       : t.activePlan;
 
   const uniqueId = userProfile?.uniqueCode || userProfile?.id || '';
@@ -117,6 +118,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
   }
 
   const languageOptions: { code: Language; title: string; native: string; flag: string }[] = [
+    { code: 'uz', title: "O'zbekcha", native: "O'zbekcha", flag: '🇺🇿' },
     { code: 'kk', title: 'Қазақша', native: 'Қазақша', flag: '🇰🇿' },
     { code: 'ru', title: 'Русский', native: 'Русский', flag: '🇷🇺' }
   ];
@@ -125,157 +127,157 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
     {
       id: 'customer-response',
       titleKk: 'Клиенттерге жауап',
-      titleRu: 'Ответ клиентам',
+      titleUz: "Mijozlarga javob", titleRu: 'Ответ клиентам',
       subtitleKk: 'Direct, пікірлер және мәмілелер',
-      subtitleRu: 'Direct, комментарии и сделки',
+      subtitleUz: "Direct, izohlar va bitimlar", subtitleRu: 'Direct, комментарии и сделки',
       icon: <MessageSquareText className="w-4 h-4 text-indigo-600" />,
       bg: 'bg-indigo-50/80',
       border: 'border-indigo-100',
       badgeKk: 'Direct & Пікір',
-      badgeRu: 'Direct и Комментарии',
+      badgeUz: "Direct va izohlar", badgeRu: 'Direct и Комментарии',
       badgeColor: 'bg-indigo-100 text-indigo-700'
     },
     {
       id: 'post-creator',
       titleKk: 'Пост жасау',
-      titleRu: 'Создание постов',
+      titleUz: "Post yaratish", titleRu: 'Создание постов',
       subtitleKk: 'Instagram және Telegram посттары',
-      subtitleRu: 'Посты для Instagram и Telegram',
+      subtitleUz: "Instagram va Telegram uchun postlar", subtitleRu: 'Посты для Instagram и Telegram',
       icon: <Edit3 className="w-4 h-4 text-purple-600" />,
       bg: 'bg-purple-50/80',
       border: 'border-purple-100',
       badgeKk: 'Вирустық SMM',
-      badgeRu: 'Вирусный SMM',
+      badgeUz: "Virusli SMM", badgeRu: 'Вирусный SMM',
       badgeColor: 'bg-purple-100 text-purple-700'
     },
     {
       id: 'video-creator',
       titleKk: 'Видео жасау (AI)',
-      titleRu: 'Создание видео (AI)',
+      titleUz: "Video yaratish (AI)", titleRu: 'Создание видео (AI)',
       subtitleKk: 'Reels, TikTok және жариялау',
-      subtitleRu: 'Reels, TikTok и публикатор',
+      subtitleUz: "Reels, TikTok va publikator", subtitleRu: 'Reels, TikTok и публикатор',
       icon: <Video className="w-4 h-4 text-purple-600" />,
       bg: 'bg-purple-50/80',
       border: 'border-purple-100',
       badgeKk: '3 AI Агент',
-      badgeRu: '3 AI Агента',
+      badgeUz: "3 AI agent", badgeRu: '3 AI Агента',
       badgeColor: 'bg-purple-100 text-purple-700'
     },
     {
       id: 'add-product',
       titleKk: 'Тауар қосу',
-      titleRu: 'Добавить товар',
+      titleUz: "Mahsulot qo'shish", titleRu: 'Добавить товар',
       subtitleKk: 'Штрих-код және жаңа қойма',
-      subtitleRu: 'Штрих-код и новый товар',
+      subtitleUz: "Shtrix-kod va yangi mahsulot", subtitleRu: 'Штрих-код и новый товар',
       icon: <PlusCircle className="w-4 h-4 text-emerald-600" />,
       bg: 'bg-emerald-50/80',
       border: 'border-emerald-100',
       badgeKk: 'Жылдам қойма',
-      badgeRu: 'Быстрый склад',
+      badgeUz: "Tez ombor", badgeRu: 'Быстрый склад',
       badgeColor: 'bg-emerald-100 text-emerald-700'
     },
     {
       id: 'analytics',
       titleKk: 'Аналитика',
-      titleRu: 'Аналитика',
+      titleUz: "Analitika", titleRu: 'Аналитика',
       subtitleKk: 'Тікелей трафик және конверсия',
-      subtitleRu: 'Живой трафик и конверсия',
+      subtitleUz: "Jonli trafik va konversiya", subtitleRu: 'Живой трафик и конверсия',
       icon: <BarChart3 className="w-4 h-4 text-cyan-600" />,
       bg: 'bg-cyan-50/80',
       border: 'border-cyan-100',
       badgeKk: 'Нақты',
-      badgeRu: 'Реальные',
+      badgeUz: "Haqiqiy", badgeRu: 'Реальные',
       badgeColor: 'bg-cyan-100 text-cyan-700'
     },
     {
       id: 'business-analyze',
       titleKk: 'Бизнес талдауы',
-      titleRu: 'Анализ бизнеса (ИИ)',
+      titleUz: "Biznes tahlili (AI)", titleRu: 'Анализ бизнеса (ИИ)',
       subtitleKk: 'Kaspi, WB, Instagram, Telegram бәсекелестері',
-      subtitleRu: 'Конкуренты: Kaspi, WB, Instagram, Telegram',
+      subtitleUz: "Raqobatchilar: Kaspi, WB, Instagram, Telegram", subtitleRu: 'Конкуренты: Kaspi, WB, Instagram, Telegram',
       icon: <Sparkles className="w-4 h-4 text-purple-600" />,
       bg: 'bg-purple-50/80',
       border: 'border-purple-100',
       badgeKk: 'AI Аудит',
-      badgeRu: 'AI Аудит',
+      badgeUz: "AI audit", badgeRu: 'AI Аудит',
       badgeColor: 'bg-purple-100 text-purple-700'
     },
     {
       id: 'orders-manager',
       titleKk: 'Тапсырыстар',
-      titleRu: 'Заказы',
+      titleUz: "Buyurtmalar", titleRu: 'Заказы',
       subtitleKk: 'Сұраулар мен сатылымдар',
-      subtitleRu: 'Запросы и продажи',
+      subtitleUz: "So'rovlar va savdolar", subtitleRu: 'Запросы и продажи',
       icon: <ShoppingBag className="w-4 h-4 text-violet-600" />,
       bg: 'bg-violet-50/80',
       border: 'border-violet-100',
       badgeKk: 'Тікелей ағын',
-      badgeRu: 'Живой поток',
+      badgeUz: "Jonli oqim", badgeRu: 'Живой поток',
       badgeColor: 'bg-violet-100 text-violet-700'
     },
     {
       id: 'support',
       titleKk: 'Қолдау',
-      titleRu: 'Поддержка',
+      titleUz: "Yordam", titleRu: 'Поддержка',
       subtitleKk: 'FindLead командасына жазу',
-      subtitleRu: 'Написать команде FindLead',
+      subtitleUz: "FindLead jamoasiga yozish", subtitleRu: 'Написать команде FindLead',
       icon: <LifeBuoy className="w-4 h-4 text-purple-600" />,
       bg: 'bg-purple-50/80',
       border: 'border-purple-100',
       badgeKk: 'Чат',
-      badgeRu: 'Чат',
+      badgeUz: "Chat", badgeRu: 'Чат',
       badgeColor: 'bg-purple-100 text-purple-700'
     },
     {
       id: 'growth',
       titleKk: 'Жазылушы өсуі',
-      titleRu: 'Рост подписчиков',
+      titleUz: "Obunachilar o'sishi", titleRu: 'Рост подписчиков',
       subtitleKk: 'Instagram және Telegram: қадамдық жоспар',
-      subtitleRu: 'Instagram и Telegram: план по шагам',
+      subtitleUz: "Instagram va Telegram: bosqichma-bosqich reja", subtitleRu: 'Instagram и Telegram: план по шагам',
       icon: <Rocket className="w-4 h-4 text-emerald-600" />,
       bg: 'bg-emerald-50/80',
       border: 'border-emerald-100',
       badgeKk: 'Жоспар',
-      badgeRu: 'План',
+      badgeUz: "Reja", badgeRu: 'План',
       badgeColor: 'bg-emerald-100 text-emerald-700'
     },
     {
       id: 'marketplaces',
       titleKk: 'Маркетплейстер',
-      titleRu: 'Маркетплейсы',
+      titleUz: "Marketpleyslar", titleRu: 'Маркетплейсы',
       subtitleKk: 'Kaspi, WB, Uzum: тапсырыс, қаралым, сатылым',
-      subtitleRu: 'Kaspi, WB, Uzum: заказы, просмотры, продажи',
+      subtitleUz: "Kaspi, WB, Uzum: buyurtmalar, ko'rishlar, savdolar", subtitleRu: 'Kaspi, WB, Uzum: заказы, просмотры, продажи',
       icon: <Store className="w-4 h-4 text-rose-600" />,
       bg: 'bg-rose-50/80',
       border: 'border-rose-100',
       badgeKk: 'Есеп',
-      badgeRu: 'Отчёт',
+      badgeUz: "Hisobot", badgeRu: 'Отчёт',
       badgeColor: 'bg-rose-100 text-rose-700'
     },
     {
       id: 'subscription',
       titleKk: 'Тарифтер мен жазылым',
-      titleRu: 'Тарифы и подписка',
+      titleUz: "Tariflar va obuna", titleRu: 'Тарифы и подписка',
       subtitleKk: 'Starter, Growth, Enterprise',
       subtitleRu: 'Starter, Growth, Enterprise',
       icon: <Crown className="w-4 h-4 text-amber-600" />,
       bg: 'bg-gradient-to-br from-purple-50/90 to-indigo-50/90',
       border: 'border-purple-200/80',
       badgeKk: 'PRO Тариф',
-      badgeRu: 'PRO Тариф',
+      badgeUz: "PRO tarif", badgeRu: 'PRO Тариф',
       badgeColor: 'bg-purple-100 text-purple-700'
     },
     {
       id: 'business-memory',
       titleKk: 'Бизнес жады (AI)',
-      titleRu: 'Память бизнеса (AI)',
+      titleUz: "Biznes xotirasi (AI)", titleRu: 'Память бизнеса (AI)',
       subtitleKk: 'AI жады және білім базасы',
-      subtitleRu: 'Память AI и база знаний',
+      subtitleUz: "AI xotirasi va bilimlar bazasi", subtitleRu: 'Память AI и база знаний',
       icon: <Brain className="w-4 h-4 text-purple-600" />,
       bg: 'bg-purple-50/80',
       border: 'border-purple-100',
       badgeKk: 'AI Жады',
-      badgeRu: 'AI Память',
+      badgeUz: "AI xotira", badgeRu: 'AI Память',
       badgeColor: 'bg-purple-100 text-purple-700'
     }
   ];
@@ -317,7 +319,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                 setIsAvatarMenuOpen(true);
               }}
               className="relative cursor-pointer group/av shrink-0 active:scale-95 transition-transform"
-              title={language === 'ru' ? 'Язык и настройки входа (Нажмите)' : 'Тіл және кіру баптаулары (Басыңыз)'}
+              title={(language === 'uz' ? "Til va kirish sozlamalari (Bosing)" : language === 'ru' ? 'Язык и настройки входа (Нажмите)' : 'Тіл және кіру баптаулары (Басыңыз)')}
             >
               <UserAvatarIcon avatarId={userProfile?.avatarId || 1} size={46} showBadge />
               <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-blue-600 text-white rounded-full flex items-center justify-center ring-2 ring-white shadow-2xs group-hover/av:bg-blue-700">
@@ -437,15 +439,15 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                     {tool.icon}
                   </div>
                   <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md ${tool.badgeColor}`}>
-                    {language === 'ru' ? tool.badgeRu : tool.badgeKk}
+                    {(isUz() ? (tool.badgeUz ?? tool.badgeRu) : language === 'ru' ? tool.badgeRu : tool.badgeKk)}
                   </span>
                 </div>
 
                 <div className="text-[11.5px] font-bold text-slate-900 group-hover:text-blue-600 transition-colors leading-tight">
-                  {language === 'ru' ? tool.titleRu : tool.titleKk}
+                  {(isUz() ? (tool.titleUz ?? tool.titleRu) : language === 'ru' ? tool.titleRu : tool.titleKk)}
                 </div>
                 <div className="text-[10px] text-slate-500 line-clamp-1 mt-0.5">
-                  {language === 'ru' ? tool.subtitleRu : tool.subtitleKk}
+                  {(isUz() ? (tool.subtitleUz ?? tool.subtitleRu) : language === 'ru' ? tool.subtitleRu : tool.subtitleKk)}
                 </div>
               </div>
 

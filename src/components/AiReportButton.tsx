@@ -7,7 +7,8 @@ import { api } from '../lib/api';
 type Kind = 'post' | 'video' | 'reply' | 'script' | 'image';
 
 const T = {
-  ru: { btn: 'Пожаловаться', title: 'Жалоба на ИИ-контент', hint: 'Что не так? (оскорбительно, неправда, опасно…)',
+  uz: { btn: "Shikoyat qilish", title: "AI-kontentga shikoyat", hint: "Nima noto'g'ri? (haqoratli, yolg'on, xavfli…)",
+        send: "Yuborish", cancel: "Bekor qilish", done: "Shikoyat yuborildi", err: "Yuborib bo'lmadi" }, ru: { btn: 'Пожаловаться', title: 'Жалоба на ИИ-контент', hint: 'Что не так? (оскорбительно, неправда, опасно…)',
         send: 'Отправить', cancel: 'Отмена', done: 'Жалоба отправлена', err: 'Не удалось отправить' },
   kk: { btn: 'Шағымдану', title: 'ЖИ-контентке шағым', hint: 'Не дұрыс емес? (балағат, жалған, қауіпті…)',
         send: 'Жіберу', cancel: 'Болдырмау', done: 'Шағым жіберілді', err: 'Жіберу мүмкін болмады' },
@@ -18,7 +19,7 @@ export const AiReportButton: React.FC<{
   kind: Kind;
   refId?: string;
   excerpt?: string;
-  lang: 'ru' | 'kk';
+  lang: 'uz' | 'ru' | 'kk';
   className?: string;
 }> = ({ businessId, kind, refId, excerpt, lang, className = '' }) => {
   const L = T[lang];

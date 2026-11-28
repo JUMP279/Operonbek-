@@ -1,3 +1,4 @@
+import { isUz } from '../context/LanguageContext';
 import React, { useEffect, useRef, useState } from 'react';
 import { Instagram, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
@@ -62,7 +63,7 @@ export const InstagramConnectCard: React.FC<{ businessId?: string | null }> = ({
       else window.location.href = login_url;
     } catch {
       win?.close();
-      setError(ru ? 'Не удалось получить ссылку. Попробуйте ещё раз.' : 'Сілтеме алынбады. Қайталап көріңіз.');
+      setError((isUz() ? "Havolani olishning iloji bo'lmadi. Qaytadan urinib ko'ring." : ru ? 'Не удалось получить ссылку. Попробуйте ещё раз.' : 'Сілтеме алынбады. Қайталап көріңіз.'));
       return;
     }
     setWaiting(true);
@@ -83,7 +84,7 @@ export const InstagramConnectCard: React.FC<{ businessId?: string | null }> = ({
       setConfirmOff(false);
       await load();
     } catch {
-      setError(ru ? 'Не удалось отключить. Попробуйте ещё раз.' : 'Ажырату мүмкін болмады. Қайталап көріңіз.');
+      setError((isUz() ? "O'chirishning iloji bo'lmadi. Qaytadan urinib ko'ring." : ru ? 'Не удалось отключить. Попробуйте ещё раз.' : 'Ажырату мүмкін болмады. Қайталап көріңіз.'));
     } finally {
       setBusyOff(false);
     }
@@ -109,23 +110,25 @@ export const InstagramConnectCard: React.FC<{ businessId?: string | null }> = ({
               <>
                 <AlertCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
                 <span className="text-rose-700 font-semibold whitespace-normal">
-                  {ru ? 'Техническая ошибка — переподключите Instagram' : 'Техникалық ақау — Instagram-ды қайта қосыңыз'}
+                  {(isUz() ? "Texnik xatolik — Instagram'ni qayta ulang" : ru ? 'Техническая ошибка — переподключите Instagram' : 'Техникалық ақау — Instagram-ды қайта қосыңыз')}
                 </span>
               </>
             ) : connected ? (
               <>
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                 <span className="text-emerald-700 font-semibold">
-                  {status.username ? `@${status.username}` : ru ? 'Подключён' : 'Қосылған'}
+                  {status.username ? `@${status.username}` : (isUz() ? "Ulangan" : ru ? 'Подключён' : 'Қосылған')}
                 </span>
               </>
             ) : waiting ? (
-              ru ? 'Завершите вход в открывшемся окне…' : 'Ашылған терезеде кіруді аяқтаңыз…'
+              (isUz() ? "Ochilgan oynada kirishni yakunlang…" : ru ? 'Завершите вход в открывшемся окне…' : 'Ашылған терезеде кіруді аяқтаңыз…')
+            ) : (isUz() ? (
+              "Ulanmagan"
             ) : ru ? (
               'Не подключён'
             ) : (
               'Қосылмаған'
-            )}
+            ))}
           </div>
         </div>
         {!connected && status !== null && (
@@ -135,7 +138,7 @@ export const InstagramConnectCard: React.FC<{ businessId?: string | null }> = ({
             className="px-3 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1 shrink-0 active:scale-95 disabled:opacity-60 bg-pink-600 text-white"
           >
             {waiting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-            {ru ? 'Подключить' : 'Қосу'}
+            {(isUz() ? "Bog'lash" : ru ? 'Подключить' : 'Қосу')}
           </button>
         )}
       </div>
@@ -146,27 +149,27 @@ export const InstagramConnectCard: React.FC<{ businessId?: string | null }> = ({
               {connected && (
                 <button onClick={connect}
                   className="px-3 py-1.5 rounded-xl text-[11px] font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 active:scale-95">
-                  {ru ? 'Сменить аккаунт' : 'Аккаунтты ауыстыру'}
+                  {(isUz() ? "Akkauntni almashtirish" : ru ? 'Сменить аккаунт' : 'Аккаунтты ауыстыру')}
                 </button>
               )}
               <button onClick={() => setConfirmOff(true)}
                 className="px-3 py-1.5 rounded-xl text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-100 hover:bg-rose-100 active:scale-95">
-                {ru ? 'Отключить' : 'Ажырату'}
+                {(isUz() ? "O'chirish" : ru ? 'Отключить' : 'Ажырату')}
               </button>
             </>
           ) : (
             <>
               <span className="text-[11px] text-slate-700 font-semibold">
-                {ru ? 'Отключить Instagram? Посты и видео перестанут публиковаться.' : 'Instagram ажыратылсын ба? Посттар мен бейнелер жарияланбайды.'}
+                {(isUz() ? "Instagram'ni o'chirish kerakmi? Postlar va videolar e'lon qilinmaydi." : ru ? 'Отключить Instagram? Посты и видео перестанут публиковаться.' : 'Instagram ажыратылсын ба? Посттар мен бейнелер жарияланбайды.')}
               </span>
               <button onClick={disconnect} disabled={busyOff}
                 className="px-3 py-1.5 rounded-xl text-[11px] font-bold bg-rose-600 text-white flex items-center gap-1 active:scale-95 disabled:opacity-60">
                 {busyOff && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                {ru ? 'Да, отключить' : 'Иә, ажырату'}
+                {(isUz() ? "Ha, o'chirish" : ru ? 'Да, отключить' : 'Иә, ажырату')}
               </button>
               <button onClick={() => setConfirmOff(false)} disabled={busyOff}
                 className="px-3 py-1.5 rounded-xl text-[11px] font-bold bg-slate-100 text-slate-700 active:scale-95">
-                {ru ? 'Отмена' : 'Болдырмау'}
+                {(isUz() ? "Bekor qilish" : ru ? 'Отмена' : 'Болдырмау')}
               </button>
             </>
           )}
@@ -174,14 +177,14 @@ export const InstagramConnectCard: React.FC<{ businessId?: string | null }> = ({
       )}
       {!connected && status !== null && (
         <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100 p-2.5 text-[11px] leading-snug text-slate-600 space-y-1">
-          <p>{ru ? <>Войдите в аккаунт <b>магазина</b> (Бизнес или Автор) и нажмите «Разрешить».</>
-            : <><b>Дүкен</b> аккаунтына (Бизнес не Автор) кіріп, «Рұқсат беру» басыңыз.</>}</p>
+          <p>{(isUz() ? <>Akkauntga kiring <b>do'konning</b>(Biznes yoki Muallif) va «Ruxsat berish» tugmasini bosing.</> : ru ? <>Войдите в аккаунт <b>магазина</b> (Бизнес или Автор) и нажмите «Разрешить».</>
+            : <><b>Дүкен</b> аккаунтына (Бизнес не Автор) кіріп, «Рұқсат беру» басыңыз.</>)}</p>
         </div>
       )}
       {connected && status?.telegram_url && (
         <div className="mt-3 rounded-xl bg-sky-50 border border-sky-100 p-2.5 text-[11px] leading-snug text-slate-700 space-y-1.5">
           <p className="font-bold text-slate-800">
-            {ru ? 'Ссылка на Telegram для профиля Instagram' : 'Instagram профиліне Telegram сілтемесі'}
+            {(isUz() ? "Instagram profili uchun Telegram havolasi" : ru ? 'Ссылка на Telegram для профиля Instagram' : 'Instagram профиліне Telegram сілтемесі')}
           </p>
           <div className="flex items-center gap-2">
             <code className="flex-1 truncate bg-white border border-sky-100 rounded-lg px-2 py-1">{status.telegram_url}</code>
@@ -197,7 +200,7 @@ export const InstagramConnectCard: React.FC<{ businessId?: string | null }> = ({
               }}
               className="px-2.5 py-1 rounded-lg bg-sky-600 text-white font-bold shrink-0"
             >
-              {copied ? (ru ? 'Скопировано' : 'Көшірілді') : ru ? 'Копировать' : 'Көшіру'}
+              {copied ? ((isUz() ? "Nusxalandi" : ru ? 'Скопировано' : 'Көшірілді')) : (isUz() ? "Nusxalash" : ru ? 'Копировать' : 'Көшіру')}
             </button>
           </div>
         </div>

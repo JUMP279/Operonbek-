@@ -5,11 +5,54 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { api, MarketProduct, MarketState, MarketWatch, MarketIgAccount } from '../lib/api';
+import { formatMoney } from '../lib/format';
 
 // Biznes-tahlil (2026-11-09): raqobatchilar (Kaspi / WB / Uzum / Instagram / Telegram) va o'z biznes
 // sog'lig'i. Ma'lumot backend'da har 3 kunda yangilanadi (services/market_intel.py).
 const T = {
-  ru: {
+  uz: {
+    title: "Biznes tahlili", refresh: "Hozir yangilash", running: "Raqobatchilar tahlil qilinmoqda… bu 1–3 daqiqa",
+    updated: "Yangilandi", next: "Keyingi yangilanish", auto: "Har 3 kunda avtomatik yangilanadi",
+    empty: "Tahlil hali yo'q. Quyida raqobatchilarni qo'shing (yoki shunchaki «Yangilash» tugmasini bosing — Kaspini sizning tovarlaringiz bo'yicha tahlil qilamiz).",
+    error: "Ma'lumotlarni yuklab bo'lmadi", runError: "Oldingi tahlil xato bilan yakunlandi — yangilashga harakat qiling.",
+    health: "Biznesingiz holati (3 kun)", good: "Yaxshi", ok: "O'rtacha", bad: "Yomon",
+    changes: "Nima o'zgardi", problems: "Muammolar", advice: "3 kunlik maslahatlar",
+    summary: "Raqobatchilar bo'yicha yakun", actions: "Nima qilish kerak", why: "Nega", expected: "Effekt",
+    competitors: "Raqobatchilarning kuchli va zaif tomonlari", strengths: "Kuchli", weaknesses: "Zaif", opps: "Siz uchun imkoniyatlar",
+    kaspi: 'Kaspi', wb: 'Wildberries', uzum: 'Uzum', ig: 'Instagram', tg: 'Telegram',
+    leaders: "Sotuv yetakchilari", tactics: "Qanday targ'ib qiladi", price: "Narx", reviews: "Sharhlar",
+    week: (n: number, capped?: boolean) => `7 kun ichida kamida ${n}${capped ? '+' : ''} ta sotuv`,
+    growth: (n: number, d: number) => `+${n} ta sharh ${d} kunda`,
+    salesNote: "Marketpleyslar sotuvlarni e'lon qilmaydi. Sharh faqat xariddan keyin qoldirilishi mumkin, shuning uchun «7 kundagi sotuvlar» — sharhlar bo'yicha minimal ko'rsatkich; haqiqiy sotuvlar bundan ko'proq.",
+    complaints: "Xaridorlar shikoyatlari", noWb: "Wildberries'dagi raqobatchilar tovarlariga havolalarni qo'shing — WB qidiruvi avtomatik o'qish uchun yopiq.",
+    uzumClosed: "Uzum ochiq ma'lumotlarni yopdi — hozircha avtomatik tahlil imkonsiz.",
+    igNeeds: "Instagram boshqa akkauntlarni faqat Facebook (Meta Business) orqali kirishda ko'rsatadi. Joriy ulanish bilan tahlil mavjud emas.",
+    igNone: "Quyida raqobatchilarning Instagram akkauntlarini qo'shing.", followers: "Obunachilar", perWeek: "post/hafta", reels: 'Reels',
+    er: "ishtirok", topVideos: "Eng yaxshi videolar", patterns: "Videoda nima ishlaydi", tryIt: "Sinab ko'ring",
+    tgNone: "Quyida raqobatchilarning Telegram kanallarini qo'shing.", subs: "Obunachilar", posts30: "30 kundagi postlar", avgViews: "o'rtacha ko'rishlar",
+    discounts: "Chegirmalar va aksiyalar", discountViews: "aksiyalar ko'rishlari", notFound: "topilmadi yoki yopiq",
+    watch: "Kuzatish uchun raqobatchilar", watchHint: "Har bir satrga bittadan. Havolalar yoki @nomalar.",
+    kw: "Kaspi'da qidirish uchun so'zlar (sukut bo'yicha — mahsulotlaringiz)", kaspiL: "Kaspi — raqobatchilar mahsulotlariga havolalar",
+    wbL: "Wildberries — mahsulotlarga havolalar", uzumL: "Uzum — mahsulotlarga havolalar", igL: "Instagram — @akkauntlar", tgL: "Telegram — @kanallar",
+    save: "Saqlash", saved: "Saqlandi", unknown: '—',
+    vsUs: "Raqobatchilardan qanday farq qilasiz", them: "Ularda", us: "Sizda", ourMove: "Sizning qadamingiz",
+    howGrow: "Raqobatchilar sotuvlarni qanday oshirdi", genres: "Raqobatchilar video janrlari", forViews: "ko'rishlar uchun", forSales: "sotuvlar uchun", forBoth: "ko'rishlar va sotuvlar",
+    salesVideos: "Video orqali qanday sotishadi", notWorking: "Nima ishlamaydi", ideas: "Siz uchun video g'oyalar", basedOn: "Asos",
+    views: "ko'rishlar", avgReel: "o'rtacha Reels ko'rishlari", viewsHidden: "ko'rishlar yashirin", reelsWeek: "Reels/hafta",
+    revWeek: (v: string) => `7 kun ichida kamida ${v}`, month: (n: number, capped?: boolean) => `30 kun ichida kamida ${n}${capped ? '+' : ''} sotuv`,
+    priceBox: "Bozordagi narxlar (Kaspi)", median: "mediana", range: "diapazon", yourPrice: "sizning medianangiz",
+    cheaper: "siz bozordan arzonroqsiz", pricier: "siz bozordan qimmatroqsiz", same: "siz bozor narxidasiz", withDisc: "chegirma bilan", withInst: "muddatli to'lov",
+    marketWeek: "7 kunlik yetakchilar: kamida", err: "post qamrovi", discLift: "aksiyalar oddiy postlarga nisbati", tgSales: "Telegramda qanday sotishadi", perWeekTg: "post/hafta",
+    verdictT: "Hozir qayerdasiz", aiFound: "AI topgan kanallar", tasks: "Bu hafta uchun vazifalar", check: "Qanday tekshirish kerak",
+    who: "Raqobatchilaringiz kimlar", gaps: "Qayerda yutqazyapsiz", data: "Batafsil ma'lumotlar", adapt: "O'zingizga oling", adsLink: "Ularning hozirgi reklamasi",
+    lvl: { direct: "to'g'ridan-to'g'ri", near: "yaqin", leader: "misol", channel: "kanal" } as Record<string, string>,
+    pos: { leader: "siz oldindasiz", middle: "teng", behind: "siz orqada qolyapsiz", unknown: "ma'lumot kam" } as Record<string, string>,
+    sales30: (n: number, capped?: boolean) => `≥${n}${capped ? '+' : ''} sotuv/30 kun`,
+    vsYou: (p: number) => (p === 0 ? "sizdagidek" : `${p > 0 ? '+' : ''}${p}% sizning narxingizga nisbatan`),
+    inst: "muddatli to'lov",
+    where: { kaspi: 'Kaspi', wb: 'WB', instagram: 'Instagram', telegram: 'Telegram', card: "Kartochka", price: "Narx", delivery: "Yetkazib berish", reviews: "Sharhlar" } as Record<string, string>,
+    topic: { price: "Narx", reviews: "Sharhlar", delivery: "Yetkazib berish", assortment: "Assortiment", content: "Kontent", channels: "Kanallar", trust: "Ishonch" } as Record<string, string>,
+  }, ru: {
     title: 'Бизнес-анализ', refresh: 'Обновить сейчас', running: 'Идёт анализ конкурентов… это 1–3 минуты',
     updated: 'Обновлено', next: 'Следующее обновление', auto: 'Обновляется автоматически раз в 3 дня',
     empty: 'Анализа ещё нет. Добавьте конкурентов ниже (или просто нажмите «Обновить» — Kaspi проанализируем по вашим товарам).',
@@ -98,12 +141,12 @@ const T = {
 };
 
 const fmt = (n: number | null | undefined, lang: string) =>
-  n === null || n === undefined ? '—' : new Intl.NumberFormat(lang === 'kk' ? 'kk-KZ' : 'ru-RU', { notation: n >= 100000 ? 'compact' : 'standard', maximumFractionDigits: 1 }).format(n);
+  n === null || n === undefined ? '—' : new Intl.NumberFormat((lang === 'uz' ? 'uz-UZ' : lang === 'kk' ? 'kk-KZ' : 'ru-RU'), { notation: n >= 100000 ? 'compact' : 'standard', maximumFractionDigits: 1 }).format(n);
 
 const fmtDate = (iso: string | undefined, lang: string) => {
   if (!iso) return '—';
   try {
-    return new Date(iso).toLocaleString(lang === 'kk' ? 'kk-KZ' : 'ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    return new Date(iso).toLocaleString((lang === 'uz' ? 'uz-UZ' : lang === 'kk' ? 'kk-KZ' : 'ru-RU'), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   } catch { return '—'; }
 };
 
@@ -146,7 +189,7 @@ const lines = (s: string) => s.split('\n').map((x) => x.trim()).filter(Boolean);
 
 export const BusinessAnalyzeView: React.FC<{ onBack: () => void; storeContext?: { businessId?: string } }> = ({ onBack, storeContext }) => {
   const { language } = useLanguage();
-  const lang: 'ru' | 'kk' = language === 'ru' ? 'ru' : 'kk';
+  const lang: 'uz' | 'ru' | 'kk' = language;
   const L = T[lang];
   const businessId = storeContext?.businessId;
   const [state, setState] = useState<MarketState | null>(null);
@@ -258,12 +301,12 @@ export const BusinessAnalyzeView: React.FC<{ onBack: () => void; storeContext?: 
       </div>
       {p.error ? <p className="text-[11px] text-slate-400">{L.notFound}</p> : (
         <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-slate-600">
-          {p.price != null && <span><b>{n(p.price)}</b> {p.currency === 'RUB' ? '₽' : '₸'}{p.old_price ? <s className="text-slate-400 ml-1">{n(p.old_price)}</s> : null}</span>}
+          {p.price != null && <span><b>{formatMoney(p.price, p.currency || (p.source === 'wb' ? 'RUB' : 'KZT'), lang)}</b>{p.old_price ? <s className="text-slate-400 ml-1">{formatMoney(p.old_price, p.currency || (p.source === 'wb' ? 'RUB' : 'KZT'), lang)}</s> : null}</span>}
           {p.rating != null && <span className="flex items-center gap-0.5"><Star className="w-3 h-3 text-amber-500" />{p.rating}</span>}
           {p.reviews_total != null && <span>{L.reviews}: {n(p.reviews_total)}</span>}
           {p.reviews_7d != null && <span className="font-bold text-purple-700">{L.week(p.reviews_7d, p.reviews_7d_capped)}</span>}
           {!!p.reviews_30d && <span className="text-purple-700">{L.month(p.reviews_30d, p.reviews_30d_capped)}</span>}
-          {!!p.min_week_revenue && <span className="font-bold text-emerald-700">{L.revWeek(`${n(p.min_week_revenue)} ${p.currency === 'RUB' ? '₽' : '₸'}`)}</span>}
+          {!!p.min_week_revenue && <span className="font-bold text-emerald-700">{L.revWeek(formatMoney(p.min_week_revenue, p.currency || (p.source === 'wb' ? 'RUB' : 'KZT'), lang))}</span>}
           {p.discount_pct ? <span className="px-1.5 rounded bg-rose-100 text-rose-700 font-bold">−{p.discount_pct}%</span> : null}
           {p.reviews_growth != null && p.growth_days != null && <span className="text-emerald-700">{L.growth(p.reviews_growth, p.growth_days)}</span>}
           {(p.promos || []).map((x) => <span key={x} className="px-1.5 rounded bg-purple-100 text-purple-700 font-bold">{x}</span>)}
@@ -279,6 +322,9 @@ export const BusinessAnalyzeView: React.FC<{ onBack: () => void; storeContext?: 
   );
 
   const ks = intel?.data?.kaspi_summary;
+  const ksUzum = ks?.marketplace === 'uzum';
+  const mcur = ks?.currency || (ksUzum ? 'UZS' : 'KZT');
+  const uzRows = [...(src.uzum?.market_top || []).map((p) => ({ ...p, mk: 'Uzum' })), ...(src.olx?.market_top || []).map((p) => ({ ...p, mk: 'OLX' }))];
   const acts = (rep.actions || []).filter((a) => a.task || a.action).slice(0, 5);
   const comps = (rep.competitors || []).slice(0, 4);
   const gaps = (rep.gaps && rep.gaps.length ? rep.gaps : (rep.vs_us || []).map((d) => ({ topic: d.topic, them: d.them, us: d.us }))).slice(0, 3);
@@ -293,10 +339,10 @@ export const BusinessAnalyzeView: React.FC<{ onBack: () => void; storeContext?: 
         </div>
         <div className="p-4">
           <div className="bg-white border border-slate-200 rounded-2xl p-5 text-center space-y-2">
-            <p className="text-[14px] font-black">{lang === 'kk' ? 'Бизнес талдауы — Growth және Business тарифтерінде' : 'Анализ бизнеса — в тарифах Growth и Business'}</p>
-            <p className="text-[12px] text-slate-600 leading-snug">{lang === 'kk'
+            <p className="text-[14px] font-black">{(lang === 'uz' ? "Biznes tahlili — Growth va Business tariflarida" : lang === 'kk' ? 'Бизнес талдауы — Growth және Business тарифтерінде' : 'Анализ бизнеса — в тарифах Growth и Business')}</p>
+            <p className="text-[12px] text-slate-600 leading-snug">{(lang === 'uz' ? "FindLead Kaspi, WB, Instagram va Telegramdagi raqobatchilarni kuzatib boradi va biznes holatini baholaydi. «Tarif» bo'limida ulang." : lang === 'kk'
               ? 'FindLead Kaspi, WB, Instagram және Telegram-дағы бәсекелестерді бақылап, бизнесіңіздің жағдайын бағалайды. «Тариф» бөлімінен қосыңыз.'
-              : 'FindLead будет следить за конкурентами на Kaspi, WB, в Instagram и Telegram и оценивать состояние бизнеса. Подключите в разделе «Тариф».'}</p>
+              : 'FindLead будет следить за конкурентами на Kaspi, WB, в Instagram и Telegram и оценивать состояние бизнеса. Подключите в разделе «Тариф».')}</p>
           </div>
         </div>
       </div>
@@ -409,7 +455,7 @@ export const BusinessAnalyzeView: React.FC<{ onBack: () => void; storeContext?: 
                       <div className="flex flex-wrap gap-x-2.5 gap-y-0.5 text-[11px] text-slate-600">
                         {c.platform && <span className="uppercase font-bold text-slate-400">{c.platform}</span>}
                         {c.shop && <span className="font-semibold text-slate-700">{c.shop}</span>}
-                        {c.price != null && <span><b>{n(c.price)} ₸</b>{c.price_vs_ours_pct != null && <span className={c.price_vs_ours_pct > 0 ? 'text-rose-600' : 'text-emerald-700'}> ({L.vsYou(c.price_vs_ours_pct)})</span>}</span>}
+                        {c.price != null && <span><b>{formatMoney(c.price, c.platform === 'uzum' || c.platform === 'olx' ? 'UZS' : c.platform === 'wb' ? 'RUB' : 'KZT', lang)}</b>{c.price_vs_ours_pct != null && <span className={c.price_vs_ours_pct > 0 ? 'text-rose-600' : 'text-emerald-700'}> ({L.vsYou(c.price_vs_ours_pct)})</span>}</span>}
                         {c.rating != null && <span className="flex items-center gap-0.5"><Star className="w-3 h-3 text-amber-500" />{c.rating}</span>}
                         {c.reviews_total != null && <span>{L.reviews}: {n(c.reviews_total)}</span>}
                         {!!c.reviews_30d && <span className="font-bold text-purple-700">{L.sales30(c.reviews_30d, c.reviews_30d_capped)}</span>}
@@ -453,10 +499,10 @@ export const BusinessAnalyzeView: React.FC<{ onBack: () => void; storeContext?: 
               <div className="px-3.5 pb-3.5 space-y-2.5">
                 {ks?.market_median_price != null && (
                   <div className="rounded-xl bg-rose-50/60 p-2.5 text-[11.5px] text-slate-700 space-y-0.5">
-                    <p className="text-[11px] font-bold text-slate-500">{L.priceBox}</p>
-                    <p>{L.median}: <b>{n(ks.market_median_price)} ₸</b> · {L.range}: {n(ks.market_min_price)}–{n(ks.market_max_price)} ₸</p>
+                    <p className="text-[11px] font-bold text-slate-500">{ksUzum ? L.priceBox.replace('Kaspi', 'Uzum') : L.priceBox}</p>
+                    <p>{L.median}: <b>{formatMoney(ks.market_median_price, mcur, lang)}</b> · {L.range}: {formatMoney(ks.market_min_price || 0, mcur, lang)} – {formatMoney(ks.market_max_price || 0, mcur, lang)}</p>
                     {ks.our_median_price != null && (
-                      <p>{L.yourPrice}: <b>{n(ks.our_median_price)} ₸</b> — <b className={ks.price_position === 'pricier' ? 'text-rose-600' : 'text-emerald-700'}>
+                      <p>{L.yourPrice}: <b>{formatMoney(ks.our_median_price, mcur, lang)}</b> — <b className={ks.price_position === 'pricier' ? 'text-rose-600' : 'text-emerald-700'}>
                         {ks.price_position === 'cheaper' ? L.cheaper : ks.price_position === 'pricier' ? L.pricier : L.same}
                         {ks.our_vs_market_pct != null ? ` (${ks.our_vs_market_pct > 0 ? '+' : ''}${ks.our_vs_market_pct}%)` : ''}</b></p>
                     )}
@@ -464,6 +510,15 @@ export const BusinessAnalyzeView: React.FC<{ onBack: () => void; storeContext?: 
                 )}
                 {[...(src.kaspi?.tracked || []), ...(src.kaspi?.market_top || [])].map((p) => <ProductRow key={'k' + p.id} p={p} />)}
                 {(src.wb?.tracked || []).map((p) => <ProductRow key={'w' + p.id} p={p} />)}
+                {uzRows.slice(0, 14).map((p, i) => (
+                  <p key={'u' + (p.id || i) + p.mk} className="text-[11.5px] text-slate-600 break-words">
+                    <b className="text-violet-700">{p.mk}</b> · {/^https:\/\/(www\.)?(uzum\.uz|olx\.uz)\//.test(p.url)
+                      ? <a href={p.url} target="_blank" rel="noreferrer" className="underline">{p.name || p.title}</a> : (p.name || p.title)}
+                    {' · '}<b>{typeof p.price === 'number' ? formatMoney(p.price, 'UZS', lang) : (p.price || '—')}</b>
+                    {p.old_price ? <span className="text-slate-400 line-through ml-1">{formatMoney(p.old_price, 'UZS', lang)}</span> : null}
+                    {p.installment ? ' · 💳' : ''}
+                  </p>
+                ))}
                 {igAccounts.filter((a) => !a.error).map((a) => (
                   <p key={a.username} className="text-[11.5px] text-slate-600"><Instagram className="inline w-3 h-3 text-pink-600 mr-1" />
                     <b>@{a.username}</b> · {L.followers}: {n(a.followers)}{a.reels_per_week != null ? ` · ${a.reels_per_week} ${L.reelsWeek}` : ''}{a.avg_reel_views != null ? ` · ${L.avgReel}: ${n(a.avg_reel_views)}` : ''}</p>

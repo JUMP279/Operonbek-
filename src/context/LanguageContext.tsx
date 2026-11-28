@@ -10,15 +10,19 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
+// Joriy til (modul darajasida): eski `ru ? .. : ..` / tr() matnlari uchun `isUz()`.
+let _cur: Language = 'uz';
+export const isUz = () => _cur === 'uz';
+
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<Language>(() => {
     try {
       const saved = localStorage.getItem('operon_language') as Language;
-      if (saved && (saved === 'kk' || saved === 'ru')) {
+      if (saved && (saved === 'uz' || saved === 'kk' || saved === 'ru')) {
         return saved;
       }
     } catch (e) {}
-    return 'kk';
+    return 'uz'; // user qarori: birinchi o'zbek tili
   });
 
   const setLanguage = (lang: Language) => {
@@ -34,7 +38,8 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } catch (e) {}
   }, [language]);
 
-  const currentTranslations = translations[language] || translations.kk;
+  _cur = language;
+  const currentTranslations = translations[language] || translations.uz;
 
   return (
     <LanguageContext.Provider value={{ language, setLanguage, t: currentTranslations }}>

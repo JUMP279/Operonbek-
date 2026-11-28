@@ -41,6 +41,7 @@ export const LanguageSelectorPill: React.FC<{ compact?: boolean }> = ({ compact 
   const { language, setLanguage } = useLanguage();
 
   const languages: { code: Language; label: string; flag: string }[] = [
+    { code: 'uz', label: "O'zbekcha", flag: '🇺🇿' },
     { code: 'kk', label: 'Қазақша', flag: '🇰🇿' },
     { code: 'ru', label: 'Русский', flag: '🇷🇺' }
   ];
@@ -81,8 +82,8 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
   const avatarId = userProfile?.avatarId || 1;
 
   const nextLanguage = () => {
-    if (language === 'kk') setLanguage('ru');
-    else setLanguage('kk');
+    // uz → ru → kk → uz
+    setLanguage(language === 'uz' ? 'ru' : language === 'ru' ? 'kk' : 'uz');
   };
 
   return (
@@ -95,10 +96,10 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
           id="btn-lang-toggle"
           onClick={nextLanguage}
           className="h-9 px-2 rounded-xl border border-slate-200/80 bg-white/90 flex items-center gap-1 text-slate-700 hover:bg-slate-50 active:scale-95 transition-all shadow-xs text-xs font-bold"
-          title={language === 'kk' ? "Тіл: Қазақша (Ауыстыру үшін басыңыз)" : "Язык: Русский (Нажмите для переключения)"}
+          title={language === 'uz' ? "Til: O'zbekcha (almashtirish uchun bosing)" : language === 'kk' ? "Тіл: Қазақша (Ауыстыру үшін басыңыз)" : "Язык: Русский (Нажмите для переключения)"}
         >
           <Globe className="w-3.5 h-3.5 text-blue-600" />
-          <span className="text-[11px] font-bold text-blue-700 uppercase">{language === 'kk' ? 'KZ' : 'RU'}</span>
+          <span className="text-[11px] font-bold text-blue-700 uppercase">{language === 'uz' ? 'UZ' : language === 'kk' ? 'KZ' : 'RU'}</span>
         </button>
 
         {/* Notification Bell Button */}

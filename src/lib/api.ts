@@ -219,7 +219,7 @@ export interface MeResponse {
     stage?: string;
     business_type?: string;
     city?: string;
-    language?: 'kk' | 'ru' | null;
+    language?: 'uz' | 'kk' | 'ru' | null;
   } | null;
 }
 
@@ -335,7 +335,7 @@ export interface DashboardData {
     instagram_connected: boolean;
     telegram_connected: boolean;
   };
-  language: 'kk' | 'ru' | null;
+  language: 'uz' | 'kk' | 'ru' | null;
   currency: string;
   channels: string[];
   range: { days: number; from: string; to: string };
@@ -436,10 +436,12 @@ export const api = {
     request<{ available: boolean }>(`/auth/name-available?name=${encodeURIComponent(name)}`),
 
   // Parol o'rnatilgach Supabase eski sessiyani bekor qiladi — server qaytargan YANGI tokenlarni saqlaymiz.
-  async setupAccount(business_name: string, password: string, mode: OnboardingMode, language: 'kk' | 'ru', consent_version?: string | null) {
+  async setupAccount(business_name: string, password: string, mode: OnboardingMode, language: 'uz' | 'kk' | 'ru', consent_version?: string | null,
+                     owner_name?: string, phone?: string) {
     const r = await request<{ business: { id: string; brand_name: string }; access_token?: string; refresh_token?: string }>(
       '/auth/setup',
-      { method: 'POST', body: JSON.stringify({ business_name, password, mode, language, consent_version: consent_version || null }) },
+      { method: 'POST', body: JSON.stringify({ business_name, password, mode, language, consent_version: consent_version || null,
+        owner_name: owner_name || undefined, phone: phone || undefined }) },
     );
     if (r.access_token) tokens.set(r.access_token, r.refresh_token);
     return r;
@@ -455,7 +457,7 @@ export const api = {
   },
 
   // Savolsiz: "Biznesni qo'shish" / "Biznes yaratish" — biznes darhol yaratiladi.
-  onboardingQuick: (mode: OnboardingMode, language: 'kk' | 'ru') =>
+  onboardingQuick: (mode: OnboardingMode, language: 'uz' | 'kk' | 'ru') =>
     request<{ business: { id: string; brand_name: string } }>('/onboarding/quick', {
       method: 'POST',
       body: JSON.stringify({ mode, language }),
@@ -562,7 +564,7 @@ export const api = {
 
   saveVideoProfile: (
     businessId: string,
-    p: Pick<VideoProfile, 'direction' | 'genre' | 'has_character' | 'character_note' | 'extra' | 'seconds' | 'art_style'>,
+    p: Pick<VideoProfile, 'direction' | 'genre' | 'has_character' | 'character_note' | 'extra' | 'seconds' | 'art_style' | 'lang'>,
   ) =>
     request<{ profile: VideoProfile }>('/videos/profile', {
       method: 'POST',
@@ -656,7 +658,7 @@ export const api = {
     request<{ conversations: Conversation[]; counts?: ConvCounts }>(`/business/${encodeURIComponent(businessId)}/conversations`),
 
   // Instagram profil maslahatlari: nom, BIO, Актуальное, qadab qo'yish (services/profile_tips.py)
-  profileTips: (businessId: string, lang: 'ru' | 'kk', refresh = false) =>
+  profileTips: (businessId: string, lang: 'uz' | 'ru' | 'kk', refresh = false) =>
     request<ProfileTips>(`/growth/${encodeURIComponent(businessId)}/profile-tips?lang=${lang}${refresh ? '&refresh=1' : ''}`),
 
   // FindLead o'z videolarida nimani sinayapti (services/format_stats.summary)
@@ -840,6 +842,11 @@ export const api = {
     request<BusinessUnderstanding>(`/memory/${encodeURIComponent(businessId)}/understanding/corrections`, {
       method: 'POST', body: JSON.stringify({ text }),
     }),
+  // Savol-javob interview: bir nechta javobni birdan ("Mavzu: javob")
+  addUnderstandingAnswers: (businessId: string, answers: string[]) =>
+    request<BusinessUnderstanding>(`/memory/${encodeURIComponent(businessId)}/understanding/answers`, {
+      method: 'POST', body: JSON.stringify({ answers }),
+    }),
   deleteUnderstandingCorrection: (businessId: string, index: number) =>
     request<BusinessUnderstanding>(`/memory/${encodeURIComponent(businessId)}/understanding/corrections/${index}`, {
       method: 'DELETE',
@@ -847,7 +854,7 @@ export const api = {
 
   // Yuridik hujjatlar (services/legal.py) va rozilik (POST /auth/consent)
   legalIndex: () => request<{ version: string; docs: string[] }>('/legal'),
-  legalDoc: (doc: string, lang: 'kk' | 'ru') => request<LegalDoc>(`/legal/${encodeURIComponent(doc)}?lang=${lang}`),
+  legalDoc: (doc: string, lang: 'uz' | 'kk' | 'ru') => request<LegalDoc>(`/legal/${encodeURIComponent(doc)}?lang=${lang}`),
   acceptConsent: (version: string) =>
     request<{ ok: boolean; version: string; at: string }>('/auth/consent', {
       method: 'POST', body: JSON.stringify({ version, cross_border: true }),
@@ -856,7 +863,7 @@ export const api = {
   // Marketplace: sharhlar, kartochka generatori, bog'lanishlar (2026-11-15) — services/mp_reviews.py, mp_cards.py, mp_links.py
   mpReviews: (businessId: string, refresh = false) =>
     request<MpReviews>(`/marketplaces/${encodeURIComponent(businessId)}/reviews${refresh ? '?refresh=true' : ''}`),
-  mpReviewDraft: (businessId: string, r: MpReview, lang: 'ru' | 'kk') =>
+  mpReviewDraft: (businessId: string, r: MpReview, lang: 'uz' | 'ru' | 'kk') =>
     request<{ text: string }>(`/marketplaces/${encodeURIComponent(businessId)}/reviews/draft`, {
       method: 'POST',
       body: JSON.stringify({ id: r.id, source: r.source, rating: r.rating || 0, text: r.text || '', pros: r.pros || '',
@@ -904,7 +911,7 @@ export const api = {
     request<{ ok: boolean; post_id: string; scheduled_at: string; ideas: OwnerIdea[] }>(
       `/ideas/${encodeURIComponent(businessId)}/${encodeURIComponent(id)}/apply`, { method: 'POST' }),
 
-  growth: (businessId: string, lang: 'kk' | 'ru', refresh = false) =>
+  growth: (businessId: string, lang: 'uz' | 'kk' | 'ru', refresh = false) =>
     request<GrowthChecklist>(`/growth/${encodeURIComponent(businessId)}?lang=${lang}${refresh ? '&refresh=1' : ''}`),
   setGrowthDone: (businessId: string, item: string, done: boolean) =>
     request<{ ok: boolean }>(`/growth/${encodeURIComponent(businessId)}/done`, { method: 'POST', body: JSON.stringify({ item, done }) }),
@@ -925,7 +932,7 @@ export interface BusinessUnderstanding {
 
 export interface LegalDoc {
   id: string;
-  lang: 'kk' | 'ru';
+  lang: 'uz' | 'kk' | 'ru';
   version: string;
   updated: string;
   title: string;
@@ -1138,6 +1145,7 @@ export interface VideoProfile {
   extra?: string | null;
   seconds?: 0 | 10 | 15 | 20;  // 0=avto (dastur tanlaydi), yoki maksimum
   art_style?: 'realistic' | 'cartoon' | 'pixel';  // vizual uslub
+  lang?: 'uz' | 'ru' | 'kk' | null;   // 2026-11-24: kontent tili (video ovozi, postlar, AI javoblari)
   character_image_url?: string | null;
   character_desc?: string | null;
   character_json?: Record<string, string | string[]> | null;
@@ -1191,7 +1199,7 @@ export interface VideoOnboarding {
   batch_size: number;
 }
 
-export type ContentLang = 'kk' | 'ru';
+export type ContentLang = 'uz' | 'kk' | 'ru';
 
 export interface BrandStatus {
   niche: string | null;
@@ -1387,6 +1395,11 @@ export interface MarketWatch {
   auto?: { keywords: string[]; instagram: string[]; telegram: string[]; ts?: number; instagram_verified?: boolean };
 }
 
+export interface UzMarketItem {
+  id?: string; name?: string; title?: string; url: string; price?: number | string | null;
+  old_price?: number | null; installment?: string | null; ad?: boolean;
+}
+
 export interface MarketProduct {
   source: 'kaspi' | 'wb';
   id: string;
@@ -1492,11 +1505,13 @@ export interface MarketState {
         our_median_price?: number; our_vs_market_pct?: number; price_position?: string;
         with_discount_pct?: number; with_installment_pct?: number;
         min_week_sales_total?: number; min_week_revenue_total?: number;
+        marketplace?: 'kaspi' | 'uzum'; currency?: string;
       };
       sources: {
         kaspi?: { market_top?: MarketProduct[]; tracked?: MarketProduct[] };
         wb?: { status?: string; tracked?: MarketProduct[] };
-        uzum?: { status?: string; links?: string[] };
+        uzum?: { status?: string; links?: string[]; market_top?: UzMarketItem[] };
+        olx?: { status?: string; market_top?: UzMarketItem[] };
         instagram?: { status?: string; accounts?: (MarketIgAccount | string)[] };
         telegram?: { status?: string; channels?: MarketTgChannel[] };
       };
@@ -1519,9 +1534,14 @@ export interface PlanUsage {
   admin_contact?: string | null;
   /** Sinov yoki to'langan davr tugash sanasi */
   trial_end: string | null;
-  /** trial | paid | expired (expired — video/post yaratish to'xtaydi) */
+  /** trial | paid | expired (expired — FindLead BUTUNLAY to'xtaydi: kontent, AI-javob, analitika) */
   state?: 'trial' | 'paid' | 'expired';
   days_left?: number | null;
+  /** Muddat tugagan bo'lsa: ma'lumotlar qachon o'chadi va necha kun qoldi (7 kunlik grace) */
+  purge_at?: string | null;
+  grace_days_left?: number | null;
+  trial_used_by?: string | null;   // sinov avval qaysi do'kon orqali olingan
+  no_trial?: boolean;            // bepul sinov berilmagan (shu email/qurilma avval olgan) — «tugadi» emas
   /** Tadbirkor so'ragan, admin hali tasdiqlamagan tarif */
   pending_plan?: string | null;
   videos_used: number;
@@ -1618,13 +1638,13 @@ export interface MpCalcResult {
   lines: { commission: number; logistics: number; storage: number; ads: number; tax: number; defect: number; other: number };
   logistics_auto: boolean; payout: number; profit: number; margin_pct: number; roi_pct: number | null; markup_x: number;
   breakeven_price: number | null; price_for_30: number | null; verdict: 'loss' | 'thin' | 'ok' | 'good';
-  warnings: { code: string; ru: string; kk: string }[];
+  warnings: { code: string; uz: string; ru: string; kk: string }[];
   stock: { days_left: number; reorder_now: boolean; reorder_qty: number | null } | null;
 }
 export interface MpWatchItem {
   source: MpPlat; id: string; title: string | null; amount: number | null; currency: string | null; ordered_at: string;
   hours: number; left_h: number | null; stage: string; level: 'info' | 'warn' | 'danger'; deadline_h: number | null;
-  ru: string; kk: string;
+  uz: string; ru: string; kk: string;
 }
 export interface MpOrdersWatch { items: MpWatchItem[]; connected: Record<MpPlat, boolean>; checked_at: string }
 export interface MpLinks {

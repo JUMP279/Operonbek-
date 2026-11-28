@@ -51,6 +51,7 @@ export const AvatarQuickMenuModal: React.FC<AvatarQuickMenuModalProps> = ({
   };
 
   const languageOptions: { code: Language; name: string; native: string; flag: string }[] = [
+    { code: 'uz', name: "O'zbekcha", native: "O'zbekcha", flag: '🇺🇿' },
     { code: 'kk', name: 'Қазақша', native: 'Қазақша', flag: '🇰🇿' },
     { code: 'ru', name: 'Русский', native: 'Русский', flag: '🇷🇺' }
   ];
@@ -129,15 +130,15 @@ export const AvatarQuickMenuModal: React.FC<AvatarQuickMenuModalProps> = ({
                   <Globe className="w-3.5 h-3.5" />
                 </div>
                 <span className="text-xs font-black text-slate-900 tracking-tight">
-                  {t.languageSelect || (language === 'ru' ? 'Выбор языка' : 'Тіл таңдау')}
+                  {t.languageSelect || ((language === 'uz' ? "Til tanlash" : language === 'ru' ? 'Выбор языка' : 'Тіл таңдау'))}
                 </span>
               </div>
               <span className="text-[10.5px] font-bold text-blue-600 uppercase bg-blue-50 px-2 py-0.5 rounded-full">
-                {language === 'kk' ? 'KZ 🇰🇿' : 'RU 🇷🇺'}
+                {language === 'uz' ? 'UZ 🇺🇿' : language === 'kk' ? 'KZ 🇰🇿' : 'RU 🇷🇺'}
               </span>
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-3 gap-2.5">
               {languageOptions.map((opt) => {
                 const isSelected = language === opt.code;
                 return (
@@ -171,7 +172,7 @@ export const AvatarQuickMenuModal: React.FC<AvatarQuickMenuModalProps> = ({
                 <UserPlus className="w-3.5 h-3.5" />
               </div>
               <span className="text-xs font-black text-slate-900 tracking-tight">
-                {language === 'ru' ? 'Регистрация и Вход' : 'Тіркелу және Кіру'}
+                {(language === 'uz' ? "Ro'yxatdan o'tish va Kirish" : language === 'ru' ? 'Регистрация и Вход' : 'Тіркелу және Кіру')}
               </span>
             </div>
 
@@ -246,7 +247,7 @@ export const AvatarQuickMenuModal: React.FC<AvatarQuickMenuModalProps> = ({
                 className="py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
               >
                 <LogOut className="w-3.5 h-3.5" />
-                <span>{t.logout || (language === 'ru' ? 'Выйти' : 'Шығу')}</span>
+                <span>{t.logout || ((language === 'uz' ? "Chiqish" : language === 'ru' ? 'Выйти' : 'Шығу'))}</span>
               </button>
             )}
           </div>

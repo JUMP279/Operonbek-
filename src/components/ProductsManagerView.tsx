@@ -14,7 +14,7 @@ import {
 import { useLanguage } from '../context/LanguageContext';
 import { api, ApiError, Product } from '../lib/api';
 import { catalogText, ImportCatalogSheet } from './CatalogTools';
-import { formatMoney } from '../lib/format';
+import { formatMoney, bizCur, bizCurSymbol } from '../lib/format';
 
 export interface ProductsManagerViewProps {
   onBack: () => void;
@@ -22,7 +22,19 @@ export interface ProductsManagerViewProps {
 }
 
 const T = {
-  ru: {
+  uz: {
+    back: "Orqaga", title: "Mahsulotlar", add: "Mahsulot qo'shish", empty: "Hozircha mahsulotlar yo'q",
+    emptyHint: "Tovarlar yo'q ekan, AI brendingizni targ'ib qiladi — do'kon nomi va yo'nalish.",
+    name: "Nomi *", price: "Narx", desc: "Tavsif", descPh: "Mahsulot haqida qisqacha — AI bundan postlar va videolarda foydalanadi.",
+    stock: "Qoldiq", photo: "Mahsulot fotosi", photoAdd: "Fotoni yuklash", photoHint: "O'z fotongiz reklamani ishonchliroq qiladi.",
+    active: "Sotuvda", inactive: "Yashirin",
+    save: "Saqlash", cancel: "Bekor qilish", edit: "O'zgartirish", del: "O'chirish", delConfirm: "Mahsulotni o'chirish?",
+    newTitle: "Yangi mahsulot", editTitle: "Mahsulotni tahrirlash", noPrice: "Narx ko'rsatilmagan",
+    discount: "Chegirma, %", discountHint: (p: string) => `Chegirma bilan narx: ${p}. AI chegirmani postlarda, videolarda va mijozlarga javoblarda ko'rsatadi.`,
+    discountNotSaved: "Mahsulot saqlandi, lekin chegirma saqlanmadi: ma'lumotlar bazasini yangilash kerak (migratsiya 0016).",
+    discountBad: "Chegirma — 0 dan 90% gacha",
+    errors: { network: "Server bilan aloqa yo'q", generic: "Nimadir noto'g'ri ketdi. Qayta urinib ko'ring.", name: "Nomini kiriting", image: "Fotoni yuklab bo'lmadi (JPG, PNG, WEBP, 8 MB gacha)" },
+  }, ru: {
     back: 'Назад', title: 'Товары', add: 'Добавить товар', empty: 'Товаров пока нет',
     emptyHint: 'Пока товаров нет, AI продвигает ваш бренд — название магазина и направление.',
     name: 'Название *', price: 'Цена', desc: 'Описание', descPh: 'Коротко о товаре — AI использует это в постах и видео.',
@@ -76,10 +88,10 @@ const priceNum = (v: string) => parseInt(v.replace(/\D/g, ''), 10);
 
 export const ProductsManagerView: React.FC<ProductsManagerViewProps> = ({ onBack, storeContext }) => {
   const { language } = useLanguage();
-  const lang: 'ru' | 'kk' = language === 'ru' ? 'ru' : 'kk';
+  const lang: 'uz' | 'ru' | 'kk' = language;
   const L = T[lang];
   const businessId = storeContext?.businessId;
-  const currency = storeContext?.currency || 'KZT';
+  const currency = storeContext?.currency || bizCur();
 
   const [items, setItems] = useState<Product[] | null>(null);
   const [error, setError] = useState('');
@@ -149,7 +161,7 @@ export const ProductsManagerView: React.FC<ProductsManagerViewProps> = ({ onBack
     }
     const bp = form.bargain.trim() ? parseInt(form.bargain, 10) : 0;
     if (Number.isNaN(bp) || bp < 0 || bp > 50) {
-      setError(lang === 'kk' ? 'Саудаласу — 0-ден 50%-ға дейін' : 'Торг — от 0 до 50%');
+      setError((lang === 'uz' ? "Savdolashish — 0 dan 50% gacha" : lang === 'kk' ? 'Саудаласу — 0-ден 50%-ға дейін' : 'Торг — от 0 до 50%'));
       return;
     }
     setSaving(true);
@@ -296,7 +308,7 @@ export const ProductsManagerView: React.FC<ProductsManagerViewProps> = ({ onBack
             </div>
             <div className="flex gap-2">
               <div className="space-y-1 flex-1">
-                <p className="text-[11px] font-bold text-slate-500">{L.price} ({currency === 'KZT' ? '₸' : currency})</p>
+                <p className="text-[11px] font-bold text-slate-500">{L.price} ({bizCurSymbol()})</p>
                 <input value={form.price} inputMode="numeric" onChange={(e) => setForm({ ...form, price: e.target.value })} className={input} />
               </div>
               <div className="space-y-1 w-24">
@@ -320,16 +332,16 @@ export const ProductsManagerView: React.FC<ProductsManagerViewProps> = ({ onBack
               );
             })()}
             <div className="rounded-xl border border-slate-200 p-2.5 space-y-1.5">
-              <p className="text-[11px] font-bold text-slate-500">{lang === 'kk' ? 'Клиентпен саудаласу' : 'Торг с клиентом'}</p>
-              <p className="text-[10.5px] text-slate-400">{lang === 'kk' ? 'AI тек осы тауар бойынша және осы шекте бағаны түсіре алады. 0 — баға тұрақты.' : 'AI может уступить только по этому товару и только в этих пределах. 0 — цена фиксированная.'}</p>
+              <p className="text-[11px] font-bold text-slate-500">{(lang === 'uz' ? "Mijoz bilan savdolashish" : lang === 'kk' ? 'Клиентпен саудаласу' : 'Торг с клиентом')}</p>
+              <p className="text-[10.5px] text-slate-400">{(lang === 'uz' ? "AI faqat shu mahsulot bo'yicha va faqat shu doirada narxni tushirishi mumkin. 0 — narx qat'iy." : lang === 'kk' ? 'AI тек осы тауар бойынша және осы шекте бағаны түсіре алады. 0 — баға тұрақты.' : 'AI может уступить только по этому товару и только в этих пределах. 0 — цена фиксированная.')}</p>
               <div className="flex gap-2">
                 <div className="space-y-1 w-24">
-                  <p className="text-[10.5px] font-bold text-slate-500">{lang === 'kk' ? 'Шегі, %' : 'До, %'}</p>
+                  <p className="text-[10.5px] font-bold text-slate-500">{(lang === 'uz' ? "Gacha, %" : lang === 'kk' ? 'Шегі, %' : 'До, %')}</p>
                   <input value={form.bargain} inputMode="numeric" maxLength={2} placeholder="0"
                     onChange={(e) => setForm({ ...form, bargain: e.target.value.replace(/\D/g, '') })} className={input} />
                 </div>
                 <div className="space-y-1 flex-1">
-                  <p className="text-[10.5px] font-bold text-slate-500">{lang === 'kk' ? 'Кемінде, ₸ (міндетті емес)' : 'Не ниже, ₸ (необязательно)'}</p>
+                  <p className="text-[10.5px] font-bold text-slate-500">{`${lang === 'uz' ? 'Kamida' : lang === 'kk' ? 'Кемінде' : 'Не ниже'}, ${bizCurSymbol()} (${lang === 'uz' ? 'majburiy emas' : lang === 'kk' ? 'міндетті емес' : 'необязательно'})`}</p>
                   <input value={form.floor} inputMode="numeric" maxLength={12} placeholder="—" disabled={!parseInt(form.bargain || '0', 10)}
                     onChange={(e) => setForm({ ...form, floor: e.target.value.replace(/\D/g, '') })} className={`${input} disabled:bg-slate-50`} />
                 </div>
@@ -341,7 +353,7 @@ export const ProductsManagerView: React.FC<ProductsManagerViewProps> = ({ onBack
                 const d = parseInt(form.discount || '0', 10);
                 const sp = d && d <= 90 ? salePrice(base, d) : base;
                 const low = Math.min(sp, Math.max(Math.round((sp * (100 - bp)) / 100 / 10) * 10, parseInt(form.floor || '0', 10)));
-                return <p className="text-[11px] font-semibold text-emerald-700">{lang === 'kk' ? 'Клиентке ең төмен баға' : 'Самая низкая цена для клиента'}: {formatMoney(low, currency, lang)}</p>;
+                return <p className="text-[11px] font-semibold text-emerald-700">{(lang === 'uz' ? "Mijoz uchun eng past narx" : lang === 'kk' ? 'Клиентке ең төмен баға' : 'Самая низкая цена для клиента')}: {formatMoney(low, currency, lang)}</p>;
               })()}
             </div>
             <div className="space-y-1">
@@ -352,7 +364,7 @@ export const ProductsManagerView: React.FC<ProductsManagerViewProps> = ({ onBack
                   <div key={u} className="relative">
                     <img src={u} alt="" className={`w-full aspect-square rounded-xl object-cover ${i === 0 ? 'ring-2 ring-purple-500' : ''}`}
                       onClick={() => i > 0 && setForm({ ...form, images: [u, ...form.images.filter((x) => x !== u)] })} />
-                    {i === 0 && <span className="absolute bottom-1 left-1 text-[9px] font-bold bg-purple-600 text-white rounded px-1">{lang === 'kk' ? 'Негізгі' : 'Главное'}</span>}
+                    {i === 0 && <span className="absolute bottom-1 left-1 text-[9px] font-bold bg-purple-600 text-white rounded px-1">{(lang === 'uz' ? "Asosiy" : lang === 'kk' ? 'Негізгі' : 'Главное')}</span>}
                     <button onClick={() => setForm({ ...form, images: form.images.filter((x) => x !== u) })}
                       className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-white border border-slate-200 flex items-center justify-center">
                       <X className="w-3 h-3" />
@@ -367,9 +379,9 @@ export const ProductsManagerView: React.FC<ProductsManagerViewProps> = ({ onBack
                   </button>
                 )}
               </div>
-              <p className="text-[10.5px] text-slate-400">{lang === 'kk'
+              <p className="text-[10.5px] text-slate-400">{(lang === 'uz' ? "4 tagacha foto. Birinchisi — asosiy (asosiy qilish uchun boshqasini bosing). Bir nechta foto — post karusel ko'rinishida chiqadi." : lang === 'kk'
                 ? '4 суретке дейін. Біріншісі — негізгі (басып ауыстыруға болады). Бірнеше сурет болса, пост карусель болып шығады.'
-                : 'До 4 фото. Первое — главное (нажмите на другое, чтобы сделать главным). Несколько фото — пост выйдет каруселью.'}</p>
+                : 'До 4 фото. Первое — главное (нажмите на другое, чтобы сделать главным). Несколько фото — пост выйдет каруселью.')}</p>
             </div>
             <div className="space-y-1">
               <p className="text-[11px] font-bold text-slate-500">{L.desc}</p>

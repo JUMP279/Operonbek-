@@ -1,31 +1,32 @@
+import { isUz } from '../context/LanguageContext';
 import React, { useEffect, useState } from 'react';
 import { Loader2, Timer } from 'lucide-react';
 import { api, ConvInsights, ConvStatusInfo, ConvStatusKey } from '../lib/api';
 
 // Saytdagi cabinet/ConvInsights.tsx bilan bir xil ma'no (services/conv_insights.py).
-type Lang = 'ru' | 'kk';
+type Lang = 'uz' | 'ru' | 'kk';
 
-const META: Record<ConvStatusKey, { ru: string; kk: string; cls: string }> = {
-  problem: { ru: 'Нужен менеджер', kk: 'Менеджер керек', cls: 'bg-rose-100 text-rose-700' },
-  stuck: { ru: 'Завис без ответа', kk: 'Жауапсыз тұр', cls: 'bg-rose-100 text-rose-700' },
-  waiting: { ru: 'Ждёт ответа', kk: 'Жауап күтуде', cls: 'bg-amber-100 text-amber-800' },
-  hot: { ru: 'Готов купить', kk: 'Сатып алуға дайын', cls: 'bg-orange-100 text-orange-800' },
-  live: { ru: 'Сейчас пишет', kk: 'Қазір жазып жатыр', cls: 'bg-emerald-100 text-emerald-700' },
-  active: { ru: 'Активный', kk: 'Белсенді', cls: 'bg-slate-100 text-slate-600' },
-  sleeping: { ru: 'Уснул', kk: 'Ұйықтап қалды', cls: 'bg-slate-100 text-slate-500' },
+const META: Record<ConvStatusKey, { uz: string; ru: string; kk: string; cls: string }> = {
+  problem: { uz: "Menejer kerak", ru: 'Нужен менеджер', kk: 'Менеджер керек', cls: 'bg-rose-100 text-rose-700' },
+  stuck: { uz: "Javobsiz qoldi", ru: 'Завис без ответа', kk: 'Жауапсыз тұр', cls: 'bg-rose-100 text-rose-700' },
+  waiting: { uz: "Javob kutmoqda", ru: 'Ждёт ответа', kk: 'Жауап күтуде', cls: 'bg-amber-100 text-amber-800' },
+  hot: { uz: "Sotib olishga tayyor", ru: 'Готов купить', kk: 'Сатып алуға дайын', cls: 'bg-orange-100 text-orange-800' },
+  live: { uz: "Hozir yozmoqda", ru: 'Сейчас пишет', kk: 'Қазір жазып жатыр', cls: 'bg-emerald-100 text-emerald-700' },
+  active: { uz: "Faol", ru: 'Активный', kk: 'Белсенді', cls: 'bg-slate-100 text-slate-600' },
+  sleeping: { uz: "Uxlab qoldi", ru: 'Уснул', kk: 'Ұйықтап қалды', cls: 'bg-slate-100 text-slate-500' },
 };
 
 export const NEEDS_ME: ConvStatusKey[] = ['problem', 'stuck', 'waiting'];
 export const needsMe = (s?: ConvStatusInfo) => !!s && s.tags.some((x) => NEEDS_ME.includes(x));
 
 const fmtMin = (m: number, lang: Lang) =>
-  m < 60 ? `${m} мин` : m < 1440 ? `${Math.floor(m / 60)} ${lang === 'kk' ? 'сағ' : 'ч'}` : `${Math.floor(m / 1440)} ${lang === 'kk' ? 'күн' : 'дн'}`;
+  m < 60 ? `${m} ${lang === 'uz' ? 'daq' : 'мин'}` : m < 1440 ? `${Math.floor(m / 60)} ${(lang === 'uz' ? "soat" : lang === 'kk' ? 'сағ' : 'ч')}` : `${Math.floor(m / 1440)} ${(lang === 'uz' ? "kun" : lang === 'kk' ? 'күн' : 'дн')}`;
 
 const fmtSec = (s: number | null, lang: Lang) => {
   if (s == null) return '—';
-  if (s < 60) return `${Math.round(s)} сек`;
-  if (s < 3600) return `${Math.round(s / 60)} мин`;
-  return `${(s / 3600).toFixed(1)} ${lang === 'kk' ? 'сағ' : 'ч'}`;
+  if (s < 60) return `${Math.round(s)} ${lang === 'uz' ? 'sek' : 'сек'}`;
+  if (s < 3600) return `${Math.round(s / 60)} ${lang === 'uz' ? 'daq' : 'мин'}`;
+  return `${(s / 3600).toFixed(1)} ${(lang === 'uz' ? "soat" : lang === 'kk' ? 'сағ' : 'ч')}`;
 };
 
 export const StatusChip: React.FC<{ s?: ConvStatusInfo; lang: Lang }> = ({ s, lang }) => {
@@ -35,9 +36,9 @@ export const StatusChip: React.FC<{ s?: ConvStatusInfo; lang: Lang }> = ({ s, la
   return <span className={`px-1.5 py-[1px] rounded-md text-[10.5px] font-bold ${m.cls}`}>{m[lang]}{wait}</span>;
 };
 
-export const problemText = (lang: Lang) => lang === 'kk'
+export const problemText = (lang: Lang) => (lang === 'uz' ? "AI menejerni chaqirdi: bu savolga sizning javobingiz kerak. Javob bersangiz, status olib tashlanadi." : lang === 'kk'
   ? 'AI менеджерді шақырды: бұл сұраққа сіздің жауабыңыз керек. Жауап бергенде статус алынады.'
-  : 'AI позвал менеджера: на этот вопрос нужен ваш ответ. Статус снимется, когда вы ответите.';
+  : 'AI позвал менеджера: на этот вопрос нужен ваш ответ. Статус снимется, когда вы ответите.');
 
 export const FunnelPanel: React.FC<{ businessId: string; lang: Lang }> = ({ businessId, lang }) => {
   const [days, setDays] = useState<7 | 30 | 90>(30);
@@ -49,16 +50,16 @@ export const FunnelPanel: React.FC<{ businessId: string; lang: Lang }> = ({ busi
     api.conversationInsights(businessId, days).then(setData).catch(() => setFailed(true));
   }, [businessId, days]);
   const k = lang === 'kk';
-  if (failed) return <p className="text-center text-[12px] text-slate-500 py-8">{k ? 'Жүктеу мүмкін болмады' : 'Не удалось загрузить'}</p>;
+  if (failed) return <p className="text-center text-[12px] text-slate-500 py-8">{(isUz() ? "Yuklab bo'lmadi" : k ? 'Жүктеу мүмкін болмады' : 'Не удалось загрузить')}</p>;
   if (!data) return <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 text-purple-600 animate-spin" /></div>;
   const f = data.funnel;
   const steps = [
-    { v: f.started, l: k ? 'Диалог бастады' : 'Начали диалог' },
-    { v: f.interest, l: k ? 'Тауар сұрады' : 'Спросили о товаре' },
-    { v: f.bargain, l: k ? 'Саудаласты' : 'Торговались' },
-    { v: f.ready, l: k ? 'Сатып алуға дайын' : 'Готовы купить' },
-    { v: f.ordered, l: k ? 'Тапсырыс берді' : 'Оформили заказ' },
-    { v: f.won, l: k ? 'Сатылды' : 'Продано' },
+    { v: f.started, l: (isUz() ? "Suhbatni boshladi" : k ? 'Диалог бастады' : 'Начали диалог') },
+    { v: f.interest, l: (isUz() ? "Mahsulot haqida so'radi" : k ? 'Тауар сұрады' : 'Спросили о товаре') },
+    { v: f.bargain, l: (isUz() ? "Savdolashdi" : k ? 'Саудаласты' : 'Торговались') },
+    { v: f.ready, l: (isUz() ? "Sotib olishga tayyorlar" : k ? 'Сатып алуға дайын' : 'Готовы купить') },
+    { v: f.ordered, l: (isUz() ? "Buyurtma berishdi" : k ? 'Тапсырыс берді' : 'Оформили заказ') },
+    { v: f.won, l: (isUz() ? "Sotildi" : k ? 'Сатылды' : 'Продано') },
   ];
   const max = Math.max(1, f.started);
   return (
@@ -66,10 +67,10 @@ export const FunnelPanel: React.FC<{ businessId: string; lang: Lang }> = ({ busi
       <div className="bg-white border border-slate-200/90 rounded-2xl p-3.5 space-y-2.5">
         <div className="flex items-center gap-2">
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-black">{k ? 'Жазысудағы сату воронкасы' : 'Воронка продаж в переписке'}</p>
+            <p className="text-[13px] font-black">{(isUz() ? "Yozishmalardagi savdo voronkasi" : k ? 'Жазысудағы сату воронкасы' : 'Воронка продаж в переписке')}</p>
             <p className="text-[11px] text-slate-500">
-              {data.conversion_pct != null ? (k ? `Диалогтан тапсырысқа: ${data.conversion_pct}%` : `Из диалога в заказ: ${data.conversion_pct}%`)
-                : (k ? 'Кезеңде диалог әлі жоқ' : 'Диалогов за период пока нет')}
+              {data.conversion_pct != null ? ((isUz() ? `Suhbatdan buyurtmaga: ${data.conversion_pct}%` : k ? `Диалогтан тапсырысқа: ${data.conversion_pct}%` : `Из диалога в заказ: ${data.conversion_pct}%`))
+                : ((isUz() ? "Davr uchun suhbatlar hali yo'q" : k ? 'Кезеңде диалог әлі жоқ' : 'Диалогов за период пока нет'))}
             </p>
           </div>
           <div className="flex rounded-xl bg-slate-100 p-0.5 text-[11px] font-bold">
@@ -90,10 +91,10 @@ export const FunnelPanel: React.FC<{ businessId: string; lang: Lang }> = ({ busi
       </div>
       <div className="grid grid-cols-2 gap-2">
         {[
-          { l: k ? 'AI жауабы (медиана)' : 'AI отвечает (медиана)', v: fmtSec(data.response.ai.p50_s, lang) },
-          { l: k ? 'AI, жауаптардың 95%-ы' : 'AI, 95% ответов быстрее', v: fmtSec(data.response.ai.p95_s, lang) },
-          { l: k ? 'Сіздің жауап (медиана)' : 'Вы отвечаете (медиана)', v: fmtSec(data.response.operator.p50_s, lang) },
-          { l: k ? 'Менеджер шақырылды' : 'Звали менеджера', v: String(data.handoffs) },
+          { l: (isUz() ? "AI javob beradi (mediana)" : k ? 'AI жауабы (медиана)' : 'AI отвечает (медиана)'), v: fmtSec(data.response.ai.p50_s, lang) },
+          { l: (isUz() ? "AI, 95% javoblar tezroq" : k ? 'AI, жауаптардың 95%-ы' : 'AI, 95% ответов быстрее'), v: fmtSec(data.response.ai.p95_s, lang) },
+          { l: (isUz() ? "Siz javob berasiz (mediana)" : k ? 'Сіздің жауап (медиана)' : 'Вы отвечаете (медиана)'), v: fmtSec(data.response.operator.p50_s, lang) },
+          { l: (isUz() ? "Menejerni chaqirdi" : k ? 'Менеджер шақырылды' : 'Звали менеджера'), v: String(data.handoffs) },
         ].map((x) => (
           <div key={x.l} className="bg-white border border-slate-200/90 rounded-2xl p-3">
             <p className="text-[10.5px] text-slate-500 flex items-center gap-1"><Timer className="w-3 h-3" />{x.l}</p>

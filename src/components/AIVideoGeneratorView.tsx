@@ -1,3 +1,4 @@
+import { isUz } from '../context/LanguageContext';
 import { OwnerIdeasCard } from './OwnerIdeasCard';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -33,16 +34,60 @@ export interface AIVideoGeneratorViewProps {
 type Tab = 'plan' | 'library';
 
 const DIRECTIONS = {
-  ru: ['Показ товаров', 'Акции и скидки', 'Как мы работаем (закулисье)', 'Отзывы и доверие', 'Полезные советы'],
+  uz: ["Mahsulotlarni ko'rsatish", "Aksiyalar va chegirmalar", "Qanday ishlaymiz (sahna ortida)", "Sharhlar va ishonch", "Foydali maslahatlar"], ru: ['Показ товаров', 'Акции и скидки', 'Как мы работаем (закулисье)', 'Отзывы и доверие', 'Полезные советы'],
   kk: ['Тауарларды көрсету', 'Акциялар мен жеңілдіктер', 'Қалай жұмыс істейміз', 'Пікірлер мен сенім', 'Пайдалы кеңестер'],
 };
 const GENRES = {
-  ru: ['Реклама (динамично)', 'Эстетика / уютно', 'Юмор', 'Новости / факты', 'Эмоциональная история'],
+  uz: ["Reklama (dinamik)", "Estetika / shinam", "Yumor", "Yangiliklar / faktlar", "Emotsional hikoya"], ru: ['Реклама (динамично)', 'Эстетика / уютно', 'Юмор', 'Новости / факты', 'Эмоциональная история'],
   kk: ['Жарнама (серпінді)', 'Эстетика / жайлы', 'Әзіл', 'Жаңалық / факт', 'Эмоциялық әңгіме'],
 };
 
 const T = {
-  ru: {
+  uz: {
+    title: "AI video", back: "Orqaga", plan: "Reja", library: "Mening videolarim",
+    wizTitle: "Videolaringizni sozlaymiz (bir marta)",
+    wizHint: "FindLead har bir videoni shu qoidalar asosida tayyorlaydi.",
+    q1: "Videolar nima haqida bo'lishi kerak?", q2: "Qaysi janrda?", q3: "Video qahramoni kim bo'ladi? Videolar UGC uslubida olinadi — go'yo haqiqiy xaridor telefonga olgandek.",
+    q4: "Video davomiyligi", sec: (n: number) => (n === 0 ? "Avto" : `${n} sek`),
+    q5: "Video uslubi", styleReal: "Realistik", styleCartoon: "Multik", stylePixel: "Pikselli", styleHint: "Qahramon va video qanday ko'rinadi.",
+    secHint: "Avto — FindLead g'oya va formatga qarab uzunlikni o'zi tanlaydi (5-20 soniya), shuning uchun videolar turli uzunlikda chiqadi. Yoki maksimalni qo'lda belgilang.",
+    styleSilent: "So'zsiz · musiqa", styleCloseup: "Yaqin plan", styleWide: "To'liq bo'y",
+    own: "O'z variantingiz…", yes: "O'zim tanlayman", no: "AI tanlasin",
+    photo: "Qahramon rasmi", photoHint: "Rasm yuklang — AI qahramonni tavsiflaydi va uni videoda ko'rsatadi.",
+    note: "Qanday qahramon kerak?", notePh: "Masalan: keksa mehribon barista / quvnoq qiz / kulgili mushuk",
+    oneHero: "Barcha videolarda BIR xil qahramon bo'ladi.",
+    findPin: "Pinterestda topish", pinLink: "Pinterest havolasi", upload: "O'z rasmingiz", noPhoto: "Tavsif bo'yicha yaratish (AI)",
+    aiHint: "FindLead do'koningizga mos qahramonni o'zi tanlaydi va ko'rsatadi. Yoqmasa — «Yana variant» tugmasini bosing.",
+    aiAnother: "Yana variant", aiMaking: "AI qahramonni yaratmoqda (1 daqiqagacha)…",
+    pinLinkPh: "https://pin.it/… yoki pinterest.com/pin/…", usePin: "Olish",
+    searching: "Pinterestda qahramonlarni qidirmoqdamiz…", pickOne: "Qahramonni tanlang:", nothing: "Hech narsa topilmadi — tavsifni aniqlashtiring.",
+    more: "Yana variantlar",
+    analyzing: "AI qahramonni o'rganmoqda (2 daqiqagacha)…", heroReady: "Qahramon saqlandi — u har bir videoda bo'ladi",
+    heroText: "Qahramon tavsif bo'yicha yaratildi", heroFail: "Rasmni o'rganib bo'lmadi — qahramonni so'z bilan tavsiflang va «Tavsif bo'yicha yaratish» tugmasini bosing.",
+    change: "Qahramonni almashtirish",
+    pinErr: { not_pinterest: "Aynan Pinterestdan havola kerak. Boshqa rasm — «O'z rasmingiz» orqali yuklang.", no_image: "Havolada rasm yo'q.", generic: "Rasmni olishning iloji bo'lmadi — qayta urinib ko'ring." },
+    extra: "Yana qoidalar (ixtiyoriy)", extraPh: "Masalan: har doim do'kon tabelasini ko'rsatish",
+    save: "Saqlash", saving: "Saqlayapmiz…",
+    timesTitle: "Qachon nashr qilish?",
+    cadence: (c: VideoPlan['cadence']) =>
+      `Sizning tarifingiz: oyiga ${c.monthly} video — ${c.per_day > 1 ? `${c.per_day} kuniga` : c.every_days === 2 ? 'har 2 kunda' : 'har kuni'}.`,
+    timesHint: "Video oldindan yaratiladi va Instagramda (Reels + Stories) tanlangan vaqtda chiqadi. Eng yaxshi vaqt (mahalliy vaqt bilan): 12:30, 18:30, 21:30. Tungi vaqtni (00:00–07:00) FindLead almashtiradi — tunda Reels deyarli ko'rsatilmaydi.",
+    time: "Vaqt", start: "Planni ishga tushirish", starting: "Plan yaratilmoqda…",
+    upcoming: "Yaqin oradagi videolar", editStyle: "Uslub va sozlamalarni o'zgartirish", stop: "Planni to'xtatish",
+    stopConfirm: "Haqiqatan ham to'xtatasizmi? Kelgusi videolar o'chiriladi.",
+    pendingScript: "Ssenariy avvalgi video chiqqandan keyin paydo bo'ladi",
+    preparing: "AI ssenariy yozmoqda…",
+    ready: "Video tayyor — jadval bo'yicha chiqadi", published: "Nashr etilgan", failed: "Bo'lmadi",
+    scenario: "Ssenariy", other: "Boshqa variant",
+    videoLang: "Video tili (ovoz va subtitrlar)", langKk: "Qozoqcha", langUz: "O'zbekcha", langRu: "Ruscha",
+    askTitle: "Bu videoni qanday tayyorlashim kerak?",
+    askPh: "O'z istagingizni yozing… (bo'sh qoldirishingiz mumkin)",
+    byWish: "O'zimcha qilish", byAi: "O'zingiz o'ylab toping", cancel: "Bekor qilish", writing: "Yangi ssenariy yozilmoqda…",
+    empty: "Hozircha video yo'q.",
+    errors: { network: "Server bilan aloqa yo'q.", generic: "Xato — yana urinib ko'ring.", busy: "Bu video allaqachon tayyorlanmoqda — o'zgartirib bo'lmaydi.", swapLimit: "Almashtirish limiti tugadi: sinov davridagi 2 ta video qoldi." },
+    swapsLeft: (n: number) => n > 0 ? `Yana ${n} marta almashtirish mumkin (14 ta tayyor videodan)` : "Almashtirish limiti tugadi — 2 ta video qoldi",
+    otherVideo: "Boshqa video",
+  }, ru: {
     title: 'AI видео', back: 'Назад', plan: 'План', library: 'Мои видео',
     wizTitle: 'Настроим ваши видео (один раз)',
     wizHint: 'FindLead будет делать каждое видео по этим правилам.',
@@ -70,7 +115,7 @@ const T = {
     timesTitle: 'Когда публиковать?',
     cadence: (c: VideoPlan['cadence']) =>
       `Ваш тариф: ${c.monthly} видео в месяц — ${c.per_day > 1 ? `${c.per_day} в день` : c.every_days === 2 ? 'каждые 2 дня' : 'каждый день'}.`,
-    timesHint: 'Видео создаётся заранее и выходит в Instagram (Reels + Stories) в выбранное время. Лучшее время в Казахстане: 12:30, 18:30, 21:30. Ночное время (00:00–07:00) FindLead заменит — ночью Reels почти не показывают.',
+    timesHint: 'Видео создаётся заранее и выходит в Instagram (Reels + Stories) в выбранное время. Лучшее время (по местному времени): 12:30, 18:30, 21:30. Ночное время (00:00–07:00) FindLead заменит — ночью Reels почти не показывают.',
     time: 'Время', start: 'Запустить план', starting: 'Создаём план…',
     upcoming: 'Ближайшие видео', editStyle: 'Изменить стиль и настройки', stop: 'Остановить план',
     stopConfirm: 'Точно остановить? Будущие видео удалятся.',
@@ -78,7 +123,7 @@ const T = {
     preparing: 'AI пишет сценарий…',
     ready: 'Видео готово — выйдет по расписанию', published: 'Опубликовано', failed: 'Не получилось',
     scenario: 'Сценарий', other: 'Другой вариант',
-    videoLang: 'Язык видео (озвучка и субтитры)', langKk: 'Қазақша', langRu: 'Русский',
+    videoLang: 'Язык видео (озвучка и субтитры)', langKk: 'Қазақша', langUz: 'Узбекский', langRu: 'Русский',
     askTitle: 'Как мне сделать это видео?',
     askPh: 'Напишите своё пожелание… (можно оставить пустым)',
     byWish: 'Сделать по-моему', byAi: 'Придумай сам', cancel: 'Отмена', writing: 'Пишем новый сценарий…',
@@ -115,7 +160,7 @@ const T = {
     timesTitle: 'Қашан жариялау керек?',
     cadence: (c: VideoPlan['cadence']) =>
       `Тарифіңіз: айына ${c.monthly} бейне — ${c.per_day > 1 ? `күніне ${c.per_day}` : c.every_days === 2 ? '2 күнде 1' : 'күн сайын'}.`,
-    timesHint: 'Бейне алдын ала жасалып, таңдалған уақытта Instagram-ға (Reels + Stories) шығады. Қазақстандағы ең жақсы уақыт: 12:30, 18:30, 21:30. Түнгі уақытты (00:00–07:00) FindLead ауыстырады — түнде Reels-ті аз көрсетеді.',
+    timesHint: 'Бейне алдын ала жасалып, таңдалған уақытта Instagram-ға (Reels + Stories) шығады. Ең жақсы уақыт (жергілікті уақыт бойынша): 12:30, 18:30, 21:30. Түнгі уақытты (00:00–07:00) FindLead ауыстырады — түнде Reels-ті аз көрсетеді.',
     time: 'Уақыт', start: 'Жоспарды бастау', starting: 'Жоспар жасалуда…',
     upcoming: 'Жақын бейнелер', editStyle: 'Стиль мен баптауды өзгерту', stop: 'Жоспарды тоқтату',
     stopConfirm: 'Шынымен тоқтатасыз ба? Болашақ бейнелер өшеді.',
@@ -123,7 +168,7 @@ const T = {
     preparing: 'AI сценарий жазуда…',
     ready: 'Бейне дайын — кесте бойынша шығады', published: 'Жарияланды', failed: 'Шықпады',
     scenario: 'Сценарий', other: 'Басқа нұсқа',
-    videoLang: 'Бейне тілі (дыбыс пен субтитр)', langKk: 'Қазақша', langRu: 'Русский',
+    videoLang: 'Бейне тілі (дыбыс пен субтитр)', langKk: 'Қазақша', langUz: 'Өзбекше', langRu: 'Русский',
     askTitle: 'Бұл бейнені қалай жасайын?',
     askPh: 'Тілегіңізді жазыңыз… (бос қалдыруға болады)',
     byWish: 'Менің айтқанымдай', byAi: 'Өзің ойлап тап', cancel: 'Бас тарту', writing: 'Жаңа сценарий жазылуда…',
@@ -152,7 +197,7 @@ function fileToBase64(f: File): Promise<string> {
 
 export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBack, storeContext }) => {
   const { language } = useLanguage();
-  const lang: 'ru' | 'kk' = language === 'ru' ? 'ru' : 'kk';
+  const lang: 'uz' | 'ru' | 'kk' = language;
   const L = T[lang];
   const businessId = storeContext?.businessId;
 
@@ -173,6 +218,7 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
   const [extra, setExtra] = useState('');
   const [seconds, setSeconds] = useState<0 | 10 | 15 | 20>(0);
   const [artStyle, setArtStyle] = useState<'realistic' | 'cartoon' | 'pixel'>('realistic');
+  const [cLang, setCLang] = useState<'uz' | 'ru' | 'kk' | ''>('');
   const [saving, setSaving] = useState(false);
 
   // qahramon (bitta, doimiy): Pinterest qidiruv / havola / o'z rasmi / matn
@@ -228,6 +274,7 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
         setExtra(pr.profile.extra || '');
         setSeconds(([10, 15, 20] as const).includes(pr.profile.seconds as 10) ? (pr.profile.seconds as 0 | 10 | 15 | 20) : 0);
         setArtStyle((['realistic', 'cartoon', 'pixel'] as const).includes(pr.profile.art_style as 'realistic') ? (pr.profile.art_style as 'realistic' | 'cartoon' | 'pixel') : 'realistic');
+        setCLang((pr.profile.lang as 'uz' | 'ru' | 'kk') || '');
       }
       if (pl.settings?.times?.length) setTimes((t) => pl.settings!.times!.concat(t.filter((x) => !pl.settings!.times!.includes(x))).slice(0, 3));
     } catch (e) {
@@ -313,9 +360,9 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
   const uploadHero = async (f: File) => {
     if (!businessId || charBusy || f.size > 5_000_000) return;
     if (!photoOk) {
-      setCharErr(lang === 'kk'
+      setCharErr((lang === 'uz' ? "Avval quyidagi katakchani belgilang: bu sizning suratingiz yoki sizda odamning yozma roziligi bor." : lang === 'kk'
         ? 'Алдымен төмендегі белгіні қойыңыз: бұл сіздің фотоңыз немесе адамның жазбаша келісімі бар.'
-        : 'Сначала отметьте галочку ниже: это ваше фото или у вас есть письменное согласие человека.');
+        : 'Сначала отметьте галочку ниже: это ваше фото или у вас есть письменное согласие человека.'));
       return;
     }
     setCharBusy('pick');
@@ -402,7 +449,7 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
                     </div>
   );
   const canSave =
-    !!direction.trim() && !!genre.trim() && hasChar !== null && (hasChar === false || heroChosen || !!charNote.trim());
+    !!cLang && !!direction.trim() && !!genre.trim() && hasChar !== null && (hasChar === false || heroChosen || !!charNote.trim());
 
   const saveProfile = async () => {
     if (!businessId || !canSave || saving) return;
@@ -411,7 +458,7 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
     try {
       await api.saveVideoProfile(businessId, {
         direction: direction.trim(), genre: genre.trim(), has_character: !!hasChar,
-        character_note: charNote.trim() || null, extra: extra.trim() || null, seconds, art_style: artStyle,
+        character_note: charNote.trim() || null, extra: extra.trim() || null, seconds, art_style: artStyle, lang: cLang || null,
       });
       // Qahramon tanlanmagan, faqat so'z bilan aytilgan — matndan JSON tuzamiz
       if (hasChar && !heroChosen && charNote.trim()) {
@@ -456,7 +503,7 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
   };
 
   // Ssenariy tili: QAZ/RUS — bosilganda ssenariy o'sha tilga o'giriladi, video ham shu tilda bo'ladi
-  const switchLang = async (it: VideoPlanItem, to: 'kk' | 'ru') => {
+  const switchLang = async (it: VideoPlanItem, to: 'uz' | 'kk' | 'ru') => {
     if ((it.lang || 'kk') === to || langBusy) return;
     setLangBusy(it.id);
     setError('');
@@ -562,7 +609,7 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" /><span className="flex-1">{error}</span>
             {!plan && !loading && (
               <button onClick={load} className="shrink-0 px-2.5 py-1 rounded-lg bg-rose-600 text-white text-[11px] font-bold active:scale-95">
-                {lang === 'kk' ? 'Қайталау' : 'Повторить'}
+                {(lang === 'uz' ? "Qayta urinish" : lang === 'kk' ? 'Қайталау' : 'Повторить')}
               </button>
             )}
           </div>
@@ -582,6 +629,16 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
             <div>
               <h2 className="text-sm font-black flex items-center gap-1.5"><Wand2 className="w-4 h-4 text-purple-600" />{L.wizTitle}</h2>
               <p className="text-[11px] text-slate-500 mt-0.5">{L.wizHint}</p>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-xs font-bold">{isUz() ? "Kontent qaysi tilda bo'lsin?" : language === 'kk' ? 'Контент қай тілде болсын?' : 'На каком языке контент?'}</p>
+              <div className="flex flex-wrap gap-1.5">
+                {([['uz', "O'zbekcha"], ['ru', 'Русский'], ['kk', 'Қазақша']] as const).map(([v, lbl]) => (
+                  <button key={v} onClick={() => setCLang(v)} className={chip(cLang === v)}>{lbl}</button>
+                ))}
+              </div>
+              <p className="text-[10.5px] text-slate-500">{isUz() ? "Video ovozi va subtitrlari, postlar hamda mijozlarga AI javoblari shu tilda bo'ladi." : language === 'kk' ? 'Бейне дыбысы мен субтитрі, посттар және клиенттерге AI жауаптары осы тілде болады.' : 'На этом языке будут озвучка и субтитры видео, посты и ответы AI клиентам.'}</p>
             </div>
 
             <div className="space-y-2">
@@ -669,9 +726,9 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
                   </div>
                   <label className="flex items-start gap-2 text-[10.5px] leading-snug text-slate-500">
                     <input type="checkbox" checked={photoOk} onChange={(e) => setPhotoOk(e.target.checked)} className="mt-0.5" />
-                    <span>{lang === 'kk'
+                    <span>{(lang === 'uz' ? "Yuklanayotgan surat — meniki yoki menda bu odamning yozma roziligi bor; bu taniqli shaxs emas va bola emas (Foydalanish qoidalari)." : lang === 'kk'
                       ? 'Жүктейтін фото — менікі немесе адамның жазбаша келісімі бар; бұл белгілі тұлға немесе бала емес (Пайдалану ережелері).'
-                      : 'Загружаемое фото — моё или у меня есть письменное согласие этого человека; это не знаменитость и не ребёнок (Правила использования).'}</span>
+                      : 'Загружаемое фото — моё или у меня есть письменное согласие этого человека; это не знаменитость и не ребёнок (Правила использования).')}</span>
                   </label>
 
                   {charMode === 'link' && (
@@ -794,7 +851,7 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
         {tab === 'plan' && !loading && !needsNiche && !showWizard && plan && planActive && (
           <>
             {businessId && (
-              <OwnerIdeasCard businessId={businessId} kind="video" lang={language === 'kk' ? 'kk' : 'ru'}
+              <OwnerIdeasCard businessId={businessId} kind="video" lang={language}
                 onApplied={async () => { try { setPlan(await api.videoPlan(businessId)); } catch { /* ignore */ } }} />
             )}
             <div className="bg-white border border-slate-200/90 rounded-2xl p-3 flex items-center justify-between gap-2">
@@ -823,9 +880,9 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
 
             {(plan.upcoming_hidden || 0) > 0 && (
               <div className="bg-purple-50 border border-purple-100 rounded-2xl px-3 py-2.5 text-[11.5px] font-semibold text-purple-800">
-                {lang === 'ru'
+                {(lang === 'uz' ? `Yana ${plan.upcoming_hidden} video allaqachon kalendarda — har biri o'z kunida ochiladi.` : lang === 'ru'
                   ? `Ещё ${plan.upcoming_hidden} видео уже в календаре — каждое откроется в свой день.`
-                  : `Тағы ${plan.upcoming_hidden} бейне күнтізбеде — әрқайсысы өз күнінде ашылады.`}
+                  : `Тағы ${plan.upcoming_hidden} бейне күнтізбеде — әрқайсысы өз күнінде ашылады.`)}
               </div>
             )}
 
@@ -843,8 +900,8 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
                         : it.status === 'review' ? 'bg-amber-50 text-amber-700'
                         : it.status === 'failed' ? 'bg-rose-50 text-rose-700' : 'bg-slate-100 text-slate-600'}`}>
                       {it.status === 'published' ? L.published : it.status === 'scheduled' ? L.ready
-                        : it.status === 'review' ? (lang === 'ru' ? 'Ждёт вашего ОК' : 'Келісіміңізді күтеді')
-                        : it.status === 'skipped' ? (lang === 'ru' ? 'Не выйдет' : 'Шықпайды')
+                        : it.status === 'review' ? ((lang === 'uz' ? "Tasdiqlashingizni kutmoqda" : lang === 'ru' ? 'Ждёт вашего ОК' : 'Келісіміңізді күтеді'))
+                        : it.status === 'skipped' ? ((lang === 'uz' ? "Chiqmaydi" : lang === 'ru' ? 'Не выйдет' : 'Шықпайды'))
                         : it.status === 'failed' ? L.failed : it.scenario ? L.scenario : '…'}
                     </span>
                   </div>
@@ -886,7 +943,7 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
                   {it.video_url && (
                     <>
                       <video src={it.video_url} controls playsInline preload="metadata" className="w-full max-w-[220px] mx-auto aspect-[9/16] rounded-xl bg-black" />
-                      <p className="text-[11px] text-slate-500 text-center">{L.videoLang}: <b className="text-slate-700">{(it.lang || 'kk') === 'ru' ? L.langRu : L.langKk}</b></p>
+                      <p className="text-[11px] text-slate-500 text-center">{L.videoLang}: <b className="text-slate-700">{(it.lang || 'kk') === 'uz' ? L.langUz : (it.lang || 'kk') === 'ru' ? L.langRu : L.langKk}</b></p>
                     </>
                   )}
                   {(it.scenario || it.video_url) && (
@@ -896,7 +953,7 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
 
                   {it.status === 'review' && (
                     <ReviewActions lang={lang} past={it.past} busy={itemBusy === it.id}
-                      redoLabel={trial ? L.otherVideo : (lang === 'ru' ? 'Переделать' : 'Қайта жасау')} redoGo={lang === 'ru' ? 'Переснять видео' : 'Бейнені қайта түсіру'}
+                      redoLabel={trial ? L.otherVideo : ((lang === 'uz' ? "Qayta ishlash" : lang === 'ru' ? 'Переделать' : 'Қайта жасау'))} redoGo={(lang === 'uz' ? "Videoni qayta suratga olish" : lang === 'ru' ? 'Переснять видео' : 'Бейнені қайта түсіру')}
                       quickRedo={trial} redoDisabled={swapOff}
                       redoNote={trial && swapsLeft !== null ? L.swapsLeft(swapsLeft) : undefined}
                       onApprove={() => itemAct(it.id, () => api.approveVideoItem(it.id), 'scheduled')}
@@ -906,24 +963,24 @@ export const AIVideoGeneratorView: React.FC<AIVideoGeneratorViewProps> = ({ onBa
                   {it.status === 'skipped' && (
                     <button disabled={itemBusy === it.id} onClick={() => itemAct(it.id, () => api.approveVideoItem(it.id), it.video_url ? 'scheduled' : 'draft')}
                       className="w-full py-2 rounded-xl text-[11.5px] font-bold bg-slate-100 text-slate-700 flex items-center justify-center gap-1.5 disabled:opacity-50">
-                      <RefreshCw className="w-3.5 h-3.5" />{lang === 'ru' ? 'Вернуть в план' : 'Жоспарға қайтару'}
+                      <RefreshCw className="w-3.5 h-3.5" />{(lang === 'uz' ? "Rejaga qaytarish" : lang === 'ru' ? 'Вернуть в план' : 'Жоспарға қайтару')}
                     </button>
                   )}
                   {approval === 'semi' && it.status === 'scheduled' && !it.past && (
                     <button disabled={itemBusy === it.id} onClick={() => itemAct(it.id, () => api.skipVideoItem(it.id), 'skipped')}
                       className="w-full py-2 rounded-xl text-[11.5px] font-bold bg-slate-100 text-slate-600 disabled:opacity-50">
-                      {lang === 'ru' ? 'Отменить выход' : 'Шығуды болдырмау'}
+                      {(lang === 'uz' ? "Chiqishni bekor qilish" : lang === 'ru' ? 'Отменить выход' : 'Шығуды болдырмау')}
                     </button>
                   )}
 
                   {it.status === 'draft' && it.scenario && (
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-[11px] font-semibold text-slate-500">{L.videoLang}:</span>
-                      {(['kk', 'ru'] as const).map((l) => (
+                      {(['uz', 'ru', 'kk'] as const).map((l) => (
                         <button key={l} onClick={() => switchLang(it, l)} disabled={langBusy === it.id}
                           className={`px-3 py-1 rounded-lg text-[11px] font-black border active:scale-95 ${
                             (it.lang || 'kk') === l ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-slate-600 border-slate-200'}`}>
-                          {l === 'kk' ? 'ҚАЗ' : 'РУС'}
+                          {l === 'uz' ? "O'ZB" : l === 'kk' ? 'ҚАЗ' : 'РУС'}
                         </button>
                       ))}
                       {langBusy === it.id && <Loader2 className="w-3.5 h-3.5 text-purple-600 animate-spin" />}

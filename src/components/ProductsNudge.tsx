@@ -7,7 +7,11 @@ import { PackagePlus, ChevronRight } from 'lucide-react';
 export const PRODUCTS_TARGET = 3;
 
 const T = {
-  ru: {
+  uz: {
+    title: (n: number) => (n === 0 ? "Mahsulotlarni qo'shing" : `Yana ${PRODUCTS_TARGET - n} ta mahsulot qo'shing`),
+    body: "Foto va narx bilan AI mahsulotingizni videolarda ko'rsatadi va uni Direct va Telegram orqali mijozlarga o'zi sotadi. Mahsulotlarsiz u do'kon haqida umumiy yozadi.",
+    cta: "Mahsulot qo'shish",
+  }, ru: {
     title: (n: number) => (n === 0 ? 'Добавьте товары' : `Добавьте ещё ${PRODUCTS_TARGET - n} товар(а)`),
     body: 'С фото и ценой AI показывает ваш товар в видео и сам продаёт его клиентам в Direct и Telegram. Без товаров он пишет о магазине в общем.',
     cta: 'Добавить товар',
@@ -19,7 +23,7 @@ const T = {
   },
 };
 
-export const ProductsNudge: React.FC<{ count: number; lang: 'ru' | 'kk'; onAdd: () => void }> = ({ count, lang, onAdd }) => {
+export const ProductsNudge: React.FC<{ count: number; lang: 'uz' | 'ru' | 'kk'; onAdd: () => void }> = ({ count, lang, onAdd }) => {
   if (count >= PRODUCTS_TARGET) return null;
   const L = T[lang];
   return (
@@ -32,7 +36,7 @@ export const ProductsNudge: React.FC<{ count: number; lang: 'ru' | 'kk'; onAdd: 
         <div className="flex items-center justify-between gap-2">
           <p className="text-[14px] font-black text-slate-900">{L.title(count)}</p>
           {/* "1/3" ko'rinishi "ko'pi bilan 3 ta qo'yish mumkin" deb tushunilardi — endi faqat qo'yilgan soni */}
-          {count > 0 && <span className="text-[11px] font-bold text-amber-700 shrink-0">{lang === 'kk' ? `${count} тауар қосылды` : `Добавлено: ${count}`}</span>}
+          {count > 0 && <span className="text-[11px] font-bold text-amber-700 shrink-0">{(lang === 'uz' ? `Qo'shildi: ${count}` : lang === 'kk' ? `${count} тауар қосылды` : `Добавлено: ${count}`)}</span>}
         </div>
         <p className="text-[12px] text-slate-600 mt-0.5 leading-snug">{L.body}</p>
         <span className="mt-2 inline-flex items-center gap-1 text-[12px] font-bold text-amber-700">

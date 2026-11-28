@@ -1,3 +1,4 @@
+import { isUz } from '../context/LanguageContext';
 import React from 'react';
 import { X, Calendar as CalendarIcon, Check } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
@@ -6,9 +7,9 @@ export const RANGE_OPTIONS = [1, 7, 30, 90, 365] as const;
 
 export function rangeLabel(days: number, language: string): string {
   const ru = language !== 'kk';
-  if (days === 1) return ru ? 'Сегодня' : 'Бүгін';
-  if (days === 365) return ru ? 'Последний год' : 'Соңғы жыл';
-  return ru ? `Последние ${days} дней` : `Соңғы ${days} күн`;
+  if (days === 1) return (isUz() ? "Bugun" : ru ? 'Сегодня' : 'Бүгін');
+  if (days === 365) return (isUz() ? "So'nggi yil" : ru ? 'Последний год' : 'Соңғы жыл');
+  return (isUz() ? `So'nggi ${days} kun` : ru ? `Последние ${days} дней` : `Соңғы ${days} күн`);
 }
 
 interface DateRangeModalProps {
@@ -28,7 +29,7 @@ export const DateRangeModal: React.FC<DateRangeModalProps> = ({
 
   if (!isOpen) return null;
 
-  const fmt = (d: Date) => d.toLocaleDateString(language === 'kk' ? 'kk-KZ' : 'ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
+  const fmt = (d: Date) => d.toLocaleDateString((language === 'uz' ? 'uz-UZ' : language === 'kk' ? 'kk-KZ' : 'ru-RU'), { day: 'numeric', month: 'short', year: 'numeric' });
   const presets = RANGE_OPTIONS.map((days) => {
     const from = new Date();
     from.setDate(from.getDate() - (days - 1));

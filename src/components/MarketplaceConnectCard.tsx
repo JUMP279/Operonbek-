@@ -1,3 +1,4 @@
+import { isUz } from '../context/LanguageContext';
 import React, { useEffect, useState } from 'react';
 import { AlertCircle, CheckCircle2, ChevronDown, Loader2, Plug, RefreshCw, Trash2 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
@@ -19,7 +20,11 @@ export const MarketplaceConnectCard: React.FC<{ businessId: string; onSynced?: (
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
 
-  const HINT: Record<Src, string> = ru ? {
+  const HINT: Record<Src, string> = (isUz() ? {
+    kaspi: "Kaspi Do'kon → Sozlamalar → API token (sotuvchi kabineti).",
+    wb: "WB Hamkorlar → Sozlamalar → APIga kirish → «Statistika» ruxsati bilan token yarating.",
+    uzum: "Uzum Seller → Sozlamalar → API → token yarating.",
+  } : ru ? {
     kaspi: 'Kaspi Магазин → Настройки → Токен API (кабинет продавца).',
     wb: 'WB Партнёры → Настройки → Доступ к API → создать токен с доступом «Статистика».',
     uzum: 'Uzum Seller → Настройки → API → создать токен.',
@@ -27,8 +32,13 @@ export const MarketplaceConnectCard: React.FC<{ businessId: string; onSynced?: (
     kaspi: 'Kaspi Дүкен → Баптаулар → API токені (сатушы кабинеті).',
     wb: 'WB Серіктестер → Баптаулар → API қолжетімділігі → «Статистика» рұқсатымен токен жасау.',
     uzum: 'Uzum Seller → Баптаулар → API → токен жасау.',
-  };
-  const ERR: Record<string, string> = ru ? {
+  });
+  const ERR: Record<string, string> = (isUz() ? {
+    bad_token: "Kalit mos kelmadi. To'liq nusxalanganini va bekor qilinmaganini tekshiring.",
+    rate_limited: "Marketpleys so'rovlar chastotasini chekladi — bir necha daqiqadan so'ng qayta urinib ko'ring.",
+    not_migrated: "Baza hali marketpleyslardan buyurtmalar uchun yangilanmagan. FindLead qo'llab-quvvatlash xizmatiga murojaat qiling.",
+    unavailable: "Marketpleys hozir javob bermayapti. Keyinroq urinib ko'ring.",
+  } : ru ? {
     bad_token: 'Ключ не подошёл. Проверьте, что он скопирован полностью и не отозван.',
     rate_limited: 'Маркетплейс ограничил частоту запросов — попробуйте через пару минут.',
     not_migrated: 'База ещё не обновлена для заказов с маркетплейсов. Обратитесь в поддержку FindLead.',
@@ -38,10 +48,10 @@ export const MarketplaceConnectCard: React.FC<{ businessId: string; onSynced?: (
     rate_limited: 'Маркетплейс сұраныс жиілігін шектеді — бірнеше минуттан кейін қайталаңыз.',
     not_migrated: 'База маркетплейс тапсырыстары үшін әлі жаңартылмаған. FindLead қолдауына жазыңыз.',
     unavailable: 'Маркетплейс қазір жауап бермейді. Кейінірек қайталаңыз.',
-  };
+  });
   const errText = (e: unknown) => {
     if (e instanceof ApiError && e.status === 403) {
-      return language === 'kk' ? 'Starter тарифінде 1 маркетплейс қосылады. Үшеуі де — Growth және Business тарифтерінде.' : 'В тарифе Starter можно подключить 1 маркетплейс. Все три — в Growth и Business.';
+      return (language === 'uz' ? "Starter tarifida 1 ta marketpleys ulash mumkin. Uchalasi — Growth va Business tariflarida." : language === 'kk' ? 'Starter тарифінде 1 маркетплейс қосылады. Үшеуі де — Growth және Business тарифтерінде.' : 'В тарифе Starter можно подключить 1 маркетплейс. Все три — в Growth и Business.');
     }
     const code = e instanceof ApiError ? (e.message || '').split(':')[0] : '';
     return ERR[code] || ERR.unavailable;
@@ -75,10 +85,10 @@ export const MarketplaceConnectCard: React.FC<{ businessId: string; onSynced?: (
       <button onClick={() => setOpen((v) => !v)} className="w-full flex items-center gap-2 p-3.5 text-left">
         <Plug className="w-4 h-4 text-purple-600 shrink-0" />
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-black">{ru ? 'Маркетплейсы' : 'Маркетплейстер'}</p>
+          <p className="text-[13px] font-black">{(isUz() ? "Marketpleyslar" : ru ? 'Маркетплейсы' : 'Маркетплейстер')}</p>
           <p className="text-[11px] text-slate-500 truncate">
-            {connected.length ? connected.map((s) => NAMES[s]).join(' · ') + (ru ? ' — подключено' : ' — қосылған')
-              : (ru ? 'Подключите Kaspi, Wildberries, Uzum — заказы появятся здесь' : 'Kaspi, Wildberries, Uzum қосыңыз — тапсырыстар осында шығады')}
+            {connected.length ? connected.map((s) => NAMES[s]).join(' · ') + ((isUz() ? " — ulangan" : ru ? ' — подключено' : ' — қосылған'))
+              : ((isUz() ? "Kaspi, Wildberries, Uzumni ulang — buyurtmalar shu yerda paydo bo'ladi" : ru ? 'Подключите Kaspi, Wildberries, Uzum — заказы появятся здесь' : 'Kaspi, Wildberries, Uzum қосыңыз — тапсырыстар осында шығады'))}
           </p>
         </div>
         <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
@@ -101,7 +111,7 @@ export const MarketplaceConnectCard: React.FC<{ businessId: string; onSynced?: (
                   {c?.connected ? (
                     <>
                       <span className="text-[11px] font-bold text-emerald-700 flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" />{c.token_hint}</span>
-                      <button onClick={() => disconnect(s)} disabled={!!busy} title={ru ? 'Отключить' : 'Ажырату'}
+                      <button onClick={() => disconnect(s)} disabled={!!busy} title={(isUz() ? "O'chirish" : ru ? 'Отключить' : 'Ажырату')}
                         className="w-7 h-7 rounded-lg bg-white text-slate-400 hover:text-rose-600 flex items-center justify-center disabled:opacity-50">
                         {busy === s ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
                       </button>
@@ -109,26 +119,26 @@ export const MarketplaceConnectCard: React.FC<{ businessId: string; onSynced?: (
                   ) : (
                     <button onClick={() => { setEdit(edit === s ? null : s); setToken(''); setError(''); }}
                       className="px-3 py-1.5 rounded-lg bg-purple-600 text-white text-[11.5px] font-bold active:scale-95">
-                      {ru ? 'Подключить' : 'Қосу'}
+                      {(isUz() ? "Bog'lash" : ru ? 'Подключить' : 'Қосу')}
                     </button>
                   )}
                 </div>
                 {c?.connected && (
                   <p className="text-[11px] text-slate-500">
                     {c.last_error ? <span className="text-rose-600">{ERR[c.last_error.split(':')[0]] || ERR.unavailable}</span>
-                      : c.last_sync ? `${ru ? 'Обновлено' : 'Жаңартылды'} ${timeAgo(c.last_sync, language)} · ${c.orders ?? 0} ${ru ? 'заказов' : 'тапсырыс'}`
-                      : (ru ? 'Ожидает первой синхронизации' : 'Алғашқы синхрондауды күтуде')}
+                      : c.last_sync ? `${(isUz() ? "Yangilandi" : ru ? 'Обновлено' : 'Жаңартылды')} ${timeAgo(c.last_sync, language)} · ${c.orders ?? 0} ${(isUz() ? "buyurtmalar" : ru ? 'заказов' : 'тапсырыс')}`
+                      : ((isUz() ? "Birinchi sinxronizatsiyani kutmoqda" : ru ? 'Ожидает первой синхронизации' : 'Алғашқы синхрондауды күтуде'))}
                   </p>
                 )}
                 {edit === s && !c?.connected && (
                   <div className="space-y-1.5">
                     <p className="text-[11px] text-slate-500 leading-snug">{HINT[s]}</p>
                     <input value={token} onChange={(e) => setToken(e.target.value)} type="password" autoComplete="off"
-                      placeholder={ru ? 'Вставьте API-ключ' : 'API кілтін қойыңыз'}
+                      placeholder={(isUz() ? "API kalitini joylang" : ru ? 'Вставьте API-ключ' : 'API кілтін қойыңыз')}
                       className="w-full rounded-lg border border-slate-200 p-2 text-[12px] outline-none focus:border-purple-400 bg-white" />
                     <button onClick={() => connect(s)} disabled={busy === s || token.trim().length < 10}
                       className="w-full py-2 rounded-lg bg-purple-600 text-white text-[12px] font-bold flex items-center justify-center gap-2 disabled:opacity-50">
-                      {busy === s && <Loader2 className="w-3.5 h-3.5 animate-spin" />}{ru ? 'Проверить и подключить' : 'Тексеріп қосу'}
+                      {busy === s && <Loader2 className="w-3.5 h-3.5 animate-spin" />}{(isUz() ? "Tekshirish va ulash" : ru ? 'Проверить и подключить' : 'Тексеріп қосу')}
                     </button>
                   </div>
                 )}
@@ -138,12 +148,12 @@ export const MarketplaceConnectCard: React.FC<{ businessId: string; onSynced?: (
           {connected.length > 0 && (
             <button onClick={sync} disabled={!!busy}
               className="w-full py-2 rounded-xl border border-slate-200 text-slate-700 text-[12px] font-bold flex items-center justify-center gap-2 disabled:opacity-50">
-              <RefreshCw className={`w-3.5 h-3.5 ${busy === 'sync' ? 'animate-spin' : ''}`} />{ru ? 'Обновить заказы сейчас' : 'Тапсырыстарды қазір жаңарту'}
+              <RefreshCw className={`w-3.5 h-3.5 ${busy === 'sync' ? 'animate-spin' : ''}`} />{(isUz() ? "Buyurtmalarni hozir yangilash" : ru ? 'Обновить заказы сейчас' : 'Тапсырыстарды қазір жаңарту')}
             </button>
           )}
           <p className="text-[10.5px] text-slate-400 leading-snug">
-            {ru ? 'Ключ хранится на сервере FindLead и используется только для чтения заказов. Заказы обновляются каждые 30 минут.'
-              : 'Кілт FindLead серверінде сақталады және тек тапсырыстарды оқу үшін қолданылады. Тапсырыстар әр 30 минут сайын жаңарады.'}
+            {(isUz() ? "Kalit FindLead serverida saqlanadi va faqat buyurtmalarni o'qish uchun ishlatiladi. Buyurtmalar har 30 daqiqada yangilanadi." : ru ? 'Ключ хранится на сервере FindLead и используется только для чтения заказов. Заказы обновляются каждые 30 минут.'
+              : 'Кілт FindLead серверінде сақталады және тек тапсырыстарды оқу үшін қолданылады. Тапсырыстар әр 30 минут сайын жаңарады.')}
           </p>
         </div>
       )}

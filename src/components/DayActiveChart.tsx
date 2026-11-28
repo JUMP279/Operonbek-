@@ -1,3 +1,4 @@
+import { isUz } from '../context/LanguageContext';
 import React, { useEffect, useState } from 'react';
 import { Clock, MessageCircle, ShoppingBag } from 'lucide-react';
 import { DayActiveData, Language } from '../types';
@@ -15,7 +16,7 @@ interface DayActiveChartProps {
 
 const SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const FULL: Record<Language, string[]> = {
-  ru: ['понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота', 'воскресенье'],
+  uz: ["dushanba", "seshanba", "chorshanba", "payshanba", "juma", "shanba", "yakshanba"], ru: ['понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота', 'воскресенье'],
   kk: ['дүйсенбі', 'сейсенбі', 'сәрсенбі', 'бейсенбі', 'жұма', 'сенбі', 'жексенбі'],
 };
 
@@ -35,8 +36,8 @@ export const DayActiveChart: React.FC<DayActiveChartProps> = ({ data, detail, cu
 
   const label = (shortDay: string) => {
     const dayMap: Record<string, Record<Language, string>> = {
-      Sun: { kk: 'Жек', ru: 'Вс' }, Mon: { kk: 'Дүй', ru: 'Пн' }, Tue: { kk: 'Сей', ru: 'Вт' },
-      Wed: { kk: 'Сәр', ru: 'Ср' }, Thu: { kk: 'Бей', ru: 'Чт' }, Fri: { kk: 'Жұм', ru: 'Пт' }, Sat: { kk: 'Сен', ru: 'Сб' },
+      Sun: { kk: 'Жек', uz: "Ya", ru: 'Вс' }, Mon: { kk: 'Дүй', uz: "Du", ru: 'Пн' }, Tue: { kk: 'Сей', uz: "Se", ru: 'Вт' },
+      Wed: { kk: 'Сәр', uz: "Ch", ru: 'Ср' }, Thu: { kk: 'Бей', uz: "Pa", ru: 'Чт' }, Fri: { kk: 'Жұм', uz: "Ju", ru: 'Пт' }, Sat: { kk: 'Сен', uz: "Sh", ru: 'Сб' },
     };
     return dayMap[shortDay]?.[language] || shortDay;
   };
@@ -49,12 +50,12 @@ export const DayActiveChart: React.FC<DayActiveChartProps> = ({ data, detail, cu
     <div id="card-most-day-active" className="bg-white rounded-2xl p-4 border border-slate-100/90 shadow-xs">
       <div className="flex items-center justify-between mb-1">
         <span className="text-[14px] font-bold text-slate-900">{t.dayActive}</span>
-        <span className="text-[11px] text-slate-400">{ru ? 'заказы + сообщения' : 'тапсырыс + хабарлама'}</span>
+        <span className="text-[11px] text-slate-400">{(isUz() ? "buyurtmalar + xabarlar" : ru ? 'заказы + сообщения' : 'тапсырыс + хабарлама')}</span>
       </div>
 
       {total === 0 ? (
         <p className="text-[12px] text-slate-400 py-8 text-center leading-snug">
-          {ru ? 'Пока нет заказов и сообщений за этот период.' : 'Бұл кезеңде тапсырыс пен хабарлама әзірге жоқ.'}
+          {(isUz() ? "Hozircha bu davr uchun buyurtmalar va xabarlar yo'q." : ru ? 'Пока нет заказов и сообщений за этот период.' : 'Бұл кезеңде тапсырыс пен хабарлама әзірге жоқ.')}
         </p>
       ) : (
         <>
@@ -83,9 +84,9 @@ export const DayActiveChart: React.FC<DayActiveChartProps> = ({ data, detail, cu
 
           {w && (
             <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11.5px] text-slate-600 bg-slate-50 rounded-xl px-3 py-2">
-              <span className="flex items-center gap-1"><ShoppingBag className="w-3 h-3 text-emerald-600" />{ru ? 'продаж' : 'сатылым'}: <b>{w.orders}</b></span>
-              <span>{ru ? 'запросов' : 'сұрау'}: <b>{w.inquiries}</b></span>
-              <span className="flex items-center gap-1"><MessageCircle className="w-3 h-3 text-blue-600" />{ru ? 'сообщений' : 'хабарлама'}: <b>{w.messages}</b></span>
+              <span className="flex items-center gap-1"><ShoppingBag className="w-3 h-3 text-emerald-600" />{(isUz() ? "sotuvlar" : ru ? 'продаж' : 'сатылым')}: <b>{w.orders}</b></span>
+              <span>{(isUz() ? "so'rovlar" : ru ? 'запросов' : 'сұрау')}: <b>{w.inquiries}</b></span>
+              <span className="flex items-center gap-1"><MessageCircle className="w-3 h-3 text-blue-600" />{(isUz() ? "xabarlar" : ru ? 'сообщений' : 'хабарлама')}: <b>{w.messages}</b></span>
               {w.revenue > 0 && <span><b>{formatMoney(w.revenue, currency, language)}</b></span>}
             </div>
           )}
@@ -107,9 +108,9 @@ export const DayActiveChart: React.FC<DayActiveChartProps> = ({ data, detail, cu
             <p className="mt-2 text-[11.5px] text-slate-600 flex items-start gap-1.5 leading-snug">
               <Clock className="w-3.5 h-3.5 text-blue-600 shrink-0 mt-0.5" />
               <span>
-                {ru ? 'Клиенты активнее всего в ' : 'Клиенттер ең белсенді күн — '}<b>{FULL[language][detail.best_day]}</b>
-                {bh != null ? (ru ? <>, около <b>{bh}:00</b></> : <>, шамамен <b>{bh}:00</b></>) : null}
-                {ru ? '. Публикуйте посты и отвечайте быстрее в это время.' : '. Осы уақытта пост шығарып, тезірек жауап беріңіз.'}
+                {(isUz() ? "Mijozlar eng faol " : ru ? 'Клиенты активнее всего в ' : 'Клиенттер ең белсенді күн — ')}<b>{FULL[language][detail.best_day]}</b>
+                {bh != null ? ((isUz() ? <>, taxminan <b>{bh}:00</b></> : ru ? <>, около <b>{bh}:00</b></> : <>, шамамен <b>{bh}:00</b></>)) : null}
+                {(isUz() ? ". Shu vaqtda postlar e'lon qiling va tezroq javob bering." : ru ? '. Публикуйте посты и отвечайте быстрее в это время.' : '. Осы уақытта пост шығарып, тезірек жауап беріңіз.')}
               </span>
             </p>
           )}

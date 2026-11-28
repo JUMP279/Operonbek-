@@ -72,7 +72,7 @@ export interface UserProfile {
 
 export type OnboardingStep = 'select_catalog' | 'connect_business' | 'create_startup' | 'ai_advice' | 'completed';
 
-export type Language = 'kk' | 'ru';
+export type Language = 'uz' | 'kk' | 'ru'; // 2026-11-24: uz birinchi (sukut)
 
 export type ActiveTab = 'overview' | 'video' | 'analytics' | 'marketplaces' | 'products' | 'profile';
 export type ViewMode = 'single' | 'showcase' | 'full';

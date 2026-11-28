@@ -43,6 +43,9 @@ export const MetricCards: React.FC<MetricCardsProps> = ({ metrics, onSelectMetri
     // and rendered "vs. . өткен кезеңге қарағанда".
     const numMatch = metric.comparisonText?.match(/\d[\d,.]*/);
     const num = numMatch ? numMatch[0] : '';
+    if (language === 'uz') {
+      return num ? `o'tgan davrdagi ${num} ga nisbatan` : "o'tgan davrga nisbatan";
+    }
     if (language === 'ru') {
       return num ? `vs. ${num} за прошлый период` : 'по сравнению с прошлым периодом';
     }

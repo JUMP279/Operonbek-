@@ -1,3 +1,4 @@
+import { isUz } from '../context/LanguageContext';
 import React, { useEffect, useState } from 'react';
 import { Check, ShieldCheck } from 'lucide-react';
 import { API_BASE, api, ApiError } from '../lib/api';
@@ -32,7 +33,7 @@ const A: React.FC<{ to: string; children: React.ReactNode }> = ({ to, children }
   <a href={link(to)} target="_blank" rel="noreferrer" className="font-semibold text-blue-600 underline" onClick={(e) => e.stopPropagation()}>{children}</a>
 );
 
-export const ConsentChecks: React.FC<{ lang: 'kk' | 'ru'; onValid: (ok: boolean) => void }> = ({ lang, onValid }) => {
+export const ConsentChecks: React.FC<{ lang: 'uz' | 'kk' | 'ru'; onValid: (ok: boolean) => void }> = ({ lang, onValid }) => {
   const [a, setA] = useState(false);
   const [b, setB] = useState(false);
   useEffect(() => onValid(a && b), [a, b, onValid]);
@@ -40,19 +41,19 @@ export const ConsentChecks: React.FC<{ lang: 'kk' | 'ru'; onValid: (ok: boolean)
   return (
     <div className="space-y-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
       <Box checked={a} onChange={setA}>
-        {ru ? <>Мне есть 18 лет, я принимаю <A to="/terms">Пользовательское соглашение (оферту)</A>, <A to="/aup">Правила использования</A> и <A to="/privacy">Политику конфиденциальности</A>.</>
-          : <>18 жасқа толдым, <A to="/terms">Пайдаланушы келісімін (офертаны)</A>, <A to="/aup">Пайдалану ережелерін</A> және <A to="/privacy">Құпиялылық саясатын</A> қабылдаймын.</>}
+        {(isUz() ? <>Men 18 yoshdaman, roziman <A to="/terms">Foydalanuvchi shartnomasini (oferta)</A>, <A to="/aup">Foydalanish qoidalari</A>va <A to="/privacy">Maxfiylik siyosatini</A>.</> : ru ? <>Мне есть 18 лет, я принимаю <A to="/terms">Пользовательское соглашение (оферту)</A>, <A to="/aup">Правила использования</A> и <A to="/privacy">Политику конфиденциальности</A>.</>
+          : <>18 жасқа толдым, <A to="/terms">Пайдаланушы келісімін (офертаны)</A>, <A to="/aup">Пайдалану ережелерін</A> және <A to="/privacy">Құпиялылық саясатын</A> қабылдаймын.</>)}
       </Box>
       <Box checked={b} onChange={setB}>
-        {ru ? <>Даю <A to="/consent">согласие на обработку персональных данных</A>, в том числе на их передачу зарубежным сервисам (ИИ, хостинг).</>
-          : <>Дербес деректерімді, оның ішінде шетелдік сервистерге беруге (ЖИ, хостинг) <A to="/consent">өңдеуге келісім</A> беремін.</>}
+        {(isUz() ? <>Roziman <A to="/consent">shaxsiy ma'lumotlarni qayta ishlashga</A>, shu jumladan ularni xorijiy xizmatlarga (AI, hosting) uzatishga.</> : ru ? <>Даю <A to="/consent">согласие на обработку персональных данных</A>, в том числе на их передачу зарубежным сервисам (ИИ, хостинг).</>
+          : <>Дербес деректерімді, оның ішінде шетелдік сервистерге беруге (ЖИ, хостинг) <A to="/consent">өңдеуге келісім</A> беремін.</>)}
       </Box>
     </div>
   );
 };
 
 /** Kirgan, lekin joriy versiyaga rozilik bermagan foydalanuvchi uchun majburiy oyna */
-export const ConsentGate: React.FC<{ lang: 'kk' | 'ru'; version: string; onDone: () => void; onLogout: () => void }> = ({ lang, version, onDone, onLogout }) => {
+export const ConsentGate: React.FC<{ lang: 'uz' | 'kk' | 'ru'; version: string; onDone: () => void; onLogout: () => void }> = ({ lang, version, onDone, onLogout }) => {
   const ru = lang !== 'kk';
   const [ok, setOk] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -65,8 +66,8 @@ export const ConsentGate: React.FC<{ lang: 'kk' | 'ru'; version: string; onDone:
       onDone();
     } catch (e) {
       setErr(e instanceof ApiError && e.status === 409
-        ? (ru ? 'Документы обновились — перезапустите приложение.' : 'Құжаттар жаңартылды — қосымшаны қайта ашыңыз.')
-        : (ru ? 'Не удалось сохранить. Попробуйте ещё раз.' : 'Сақталмады. Қайталап көріңіз.'));
+        ? ((isUz() ? "Hujjatlar yangilandi — ilovani qayta ishga tushiring." : ru ? 'Документы обновились — перезапустите приложение.' : 'Құжаттар жаңартылды — қосымшаны қайта ашыңыз.'))
+        : ((isUz() ? "Saqlab bo'lmadi. Yana urinib ko'ring." : ru ? 'Не удалось сохранить. Попробуйте ещё раз.' : 'Сақталмады. Қайталап көріңіз.')));
     } finally {
       setBusy(false);
     }
@@ -75,17 +76,17 @@ export const ConsentGate: React.FC<{ lang: 'kk' | 'ru'; version: string; onDone:
     <div className="fixed inset-0 z-[80] bg-slate-900/50 flex items-end justify-center">
       <div className="w-full max-w-md bg-white rounded-t-3xl p-5 space-y-3.5 shadow-2xl" role="dialog" aria-modal="true">
         <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center"><ShieldCheck className="w-5 h-5" /></div>
-        <h2 className="text-lg font-extrabold text-slate-900">{ru ? 'Условия использования' : 'Пайдалану шарттары'}</h2>
+        <h2 className="text-lg font-extrabold text-slate-900">{(isUz() ? "Foydalanish shartlari" : ru ? 'Условия использования' : 'Пайдалану шарттары')}</h2>
         <p className="text-xs text-slate-500 leading-relaxed">
-          {ru ? 'Мы обновили документы в соответствии с законодательством Казахстана о персональных данных и об искусственном интеллекте. Чтобы продолжить, подтвердите согласие.'
-            : 'Біз құжаттарды Қазақстанның дербес деректер және жасанды интеллект туралы заңнамасына сәйкес жаңарттық. Жалғастыру үшін келісіміңізді растаңыз.'}
+          {(isUz() ? "Biz hujjatlarni Qozog'istonning shaxsiy ma'lumotlar va sun'iy intellekt to'g'risidagi qonunchiligiga muvofiq yangiladik. Davom etish uchun rozilikni tasdiqlang." : ru ? 'Мы обновили документы в соответствии с законодательством Казахстана о персональных данных и об искусственном интеллекте. Чтобы продолжить, подтвердите согласие.'
+            : 'Біз құжаттарды Қазақстанның дербес деректер және жасанды интеллект туралы заңнамасына сәйкес жаңарттық. Жалғастыру үшін келісіміңізді растаңыз.')}
         </p>
         <ConsentChecks lang={lang} onValid={setOk} />
         {err && <p className="text-xs text-rose-600">{err}</p>}
         <button onClick={submit} disabled={!ok || busy} className="w-full py-3 rounded-2xl bg-blue-600 text-white font-bold text-sm disabled:opacity-40">
-          {busy ? '…' : ru ? 'Принимаю' : 'Қабылдаймын'}
+          {busy ? '…' : (isUz() ? "Qabul qilaman" : ru ? 'Принимаю' : 'Қабылдаймын')}
         </button>
-        <button onClick={onLogout} className="w-full text-xs font-semibold text-slate-400">{ru ? 'Выйти' : 'Шығу'}</button>
+        <button onClick={onLogout} className="w-full text-xs font-semibold text-slate-400">{(isUz() ? "Chiqish" : ru ? 'Выйти' : 'Шығу')}</button>
       </div>
     </div>
   );

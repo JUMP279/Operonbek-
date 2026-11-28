@@ -36,7 +36,7 @@ export const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({
             <div>
               <h3 className="text-base font-bold text-slate-900">{t.customers}</h3>
               <p className="text-xs text-slate-400">
-                {language === 'ru' ? 'Всего' : 'Барлығы'}: {segments.reduce((a, x) => a + x.numericCount, 0)}
+                {(language === 'uz' ? "Jami" : language === 'ru' ? 'Всего' : 'Барлығы')}: {segments.reduce((a, x) => a + x.numericCount, 0)}
               </p>
             </div>
           </div>
@@ -64,7 +64,7 @@ export const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({
                   </div>
                   <div>
                     <h4 className="text-xs font-bold text-slate-900">{getSegmentName(seg)}</h4>
-                    <p className="text-[11px] text-slate-500">{seg.count} {language === 'ru' ? 'клиентов' : 'клиент'}</p>
+                    <p className="text-[11px] text-slate-500">{seg.count} {(language === 'uz' ? "mijozlar" : language === 'ru' ? 'клиентов' : 'клиент')}</p>
                   </div>
                 </div>
                 <span className="text-xs font-bold text-slate-900">{seg.percentage}%</span>

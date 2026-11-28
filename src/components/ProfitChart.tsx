@@ -1,3 +1,4 @@
+import { isUz } from '../context/LanguageContext';
 import React, { useState } from 'react';
 import { ProfitDataPoint } from '../types';
 import { useLanguage } from '../context/LanguageContext';
@@ -66,7 +67,7 @@ export const ProfitChart: React.FC<ProfitChartProps> = ({ data, total, change, c
       className="bg-white rounded-2xl p-4 border border-slate-100/90 shadow-xs hover:shadow-md transition-all cursor-pointer"
     >
       <div className="flex items-center justify-between mb-1">
-        <span className="text-[13px] font-medium text-slate-500">{ru ? 'Выручка' : 'Түсім'}</span>
+        <span className="text-[13px] font-medium text-slate-500">{(isUz() ? "Daromad" : ru ? 'Выручка' : 'Түсім')}</span>
       </div>
 
       <div className="flex items-baseline gap-2.5 mb-3 flex-wrap">
@@ -88,7 +89,7 @@ export const ProfitChart: React.FC<ProfitChartProps> = ({ data, total, change, c
         {empty && (
           <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
             <span className="text-[11px] font-medium text-slate-400 bg-white/90 px-2.5 py-1 rounded-lg">
-              {ru ? 'Подтверждённых продаж пока нет' : 'Расталған сатылым әзірге жоқ'}
+              {(isUz() ? "Tasdiqlangan savdolar hozircha yo'q" : ru ? 'Подтверждённых продаж пока нет' : 'Расталған сатылым әзірге жоқ')}
             </span>
           </div>
         )}
@@ -162,7 +163,7 @@ export const ProfitChart: React.FC<ProfitChartProps> = ({ data, total, change, c
             <span className="font-semibold text-blue-300">{active.displayDate}:</span>
             <span>{formatMoney(active.profit, currency, language)}</span>
             <span className="text-slate-400">
-              ({active.orders} {ru ? 'зак.' : 'тапс.'})
+              ({active.orders} {(isUz() ? "buyurtma" : ru ? 'зак.' : 'тапс.')})
             </span>
           </div>
         )}

@@ -1,3 +1,4 @@
+import { isUz } from './context/LanguageContext';
 import { applyPendingRef } from './lib/referral';
 import React, { lazy, Suspense, useState, useEffect, useRef } from 'react';
 import { Download, Calendar, LayoutGrid } from 'lucide-react';
@@ -5,6 +6,7 @@ import { HeaderNav } from './components/HeaderNav';
 import { BottomNavBar } from './components/BottomNavBar';
 import { MetricCards } from './components/MetricCards';
 import { RevenueCard } from './components/RevenueCard';
+import { ConnectChannelsCard } from './components/ConnectChannelsCard';
 import { CustomerBreakdown } from './components/CustomerBreakdown';
 import { DayActiveChart } from './components/DayActiveChart';
 import { RetentionGauge } from './components/RetentionGauge';
@@ -22,15 +24,33 @@ import { FilterModal } from './components/FilterModal';
 import { ProfileModal } from './components/ProfileModal';
 import type { AuthStep } from './components/AuthFlow';
 // Kirish oynasi va Profil alohida yuklanadi (2026-11-16): kirgan foydalanuvchi AuthFlow kodini yuklamaydi.
-const AuthFlow = lazy(() => import('./components/AuthFlow').then((m) => ({ default: m.AuthFlow })));
-const ProfileTab = lazy(() => import('./components/ProfileTab').then((m) => ({ default: m.ProfileTab })));
+// Qayta-build'dan keyin eski chunk o'chsa (404) ekran qotmasin — bir marta sahifani yangilaymiz (2026-11-22).
+function retryChunk<T>(f: () => Promise<T>): Promise<T> {
+  return f().catch((err) => {
+    try {
+      const key = 'fl_chunk_reload_at';
+      if (Date.now() - Number(sessionStorage.getItem(key) || 0) > 10000) {
+        sessionStorage.setItem(key, String(Date.now()));
+        window.location.reload();
+        return new Promise<T>(() => {});
+      }
+    } catch { /* noop */ }
+    throw err;
+  });
+}
+const AuthFlow = lazy(() => retryChunk(() => import('./components/AuthFlow').then((m) => ({ default: m.AuthFlow }))));
+const ProfileTab = lazy(() => retryChunk(() => import('./components/ProfileTab').then((m) => ({ default: m.ProfileTab }))));
 import { ConsentGate } from './components/LegalConsent';
 import { api, ApiError, tokens, MeResponse, BusinessProfile, consumeOAuthReturn } from './lib/api';
+import type { PlanUsage } from './lib/api';
 
 // Google'dan qaytilgan bo'lsa — tokenlarni URL hash'idan oladi (komponentdan OLDIN, bir marta).
 const OAUTH_RESULT = consumeOAuthReturn();
 import { ToolDemoModal } from './components/ToolDemoModal';
 import { ProductsNudge } from './components/ProductsNudge';
+import { ExpiredScreen } from './components/ExpiredScreen';
+import { PlanCountdown } from './components/PlanCountdown';
+import { InstallApp } from './components/InstallApp';
 import { AvatarQuickMenuModal } from './components/AvatarQuickMenuModal';
 
 // Language Context
@@ -47,6 +67,7 @@ import {
 } from './lib/dashboardView';
 import { rangeLabel } from './components/DateRangeModal';
 import { CustomerSegment, ActiveTab, UserProfile } from './types';
+import { formatMoney, setBizCurrency } from './lib/format';
 
 // Kirmagan holat uchun bo'sh profil (AuthFlow yopilmaguncha dashboard ko'rinmaydi).
 const GUEST_PROFILE: UserProfile = {
@@ -112,6 +133,8 @@ function DashboardApp() {
   const [dashError, setDashError] = useState('');
   const [dashLoading, setDashLoading] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  // Tarif holati: muddat tugagan bo'lsa FindLead to'xtaydi — faqat "Tarif" va "Qo'llab-quvvatlash" ochiq (ExpiredScreen)
+  const [planUsage, setPlanUsage] = useState<PlanUsage | null>(null);
   const [activeWidgetIds, setActiveWidgetIds] = useState<string[]>(['conversion-rate']);
   const [selectedChannel, setSelectedChannel] = useState('All Channels');
   const [currency, setCurrency] = useState('USD');
@@ -233,7 +256,7 @@ function DashboardApp() {
       })
       .catch(() => {
         if (!cancelled)
-          setDashError(language === 'ru' ? 'Не удалось загрузить данные.' : 'Деректерді жүктеу мүмкін болмады.');
+          setDashError((language === 'uz' ? "Ma'lumotlarni yuklab bo'lmadi." : language === 'ru' ? 'Не удалось загрузить данные.' : 'Деректерді жүктеу мүмкін болмады.'));
       })
       .finally(() => {
         if (!cancelled) setDashLoading(false);
@@ -243,6 +266,16 @@ function DashboardApp() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, businessId, days, reloadKey]);
+
+  // Tarif holati — kirgach, va tarif/qo'llab-quvvatlash ekranidan qaytganda (to'lovdan keyin qulf darhol ochilsin)
+  useEffect(() => {
+    if (session !== 'ready' || !businessId || activePhoneTool) return;
+    let cancelled = false;
+    api.planUsage(businessId).then((u) => { if (!cancelled) setPlanUsage(u); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [session, businessId, activePhoneTool, reloadKey]);
+  const planLocked = planUsage?.state === 'expired'
+    && activePhoneTool !== 'subscription' && activePhoneTool !== 'support';
 
   // Biror vositadan (mahsulot qo'shish, buyurtmalar...) yoki boshqa tabdan bosh sahifaga QAYTGANDA
   // ma'lumot yangilanadi — aks holda "3 ta mahsulot qo'shing" kartasi mahsulot qo'shilgandan keyin ham
@@ -259,6 +292,7 @@ function DashboardApp() {
   const dayActiveData = dash ? buildWeekdays(dash, language) : [];
   const notifications = dash ? buildNotifications(dash, language) : [];
   const currencyCode = dash?.currency || 'KZT';
+  setBizCurrency(currencyCode);   // 2026-11-25: summalar shu valyutadan til valyutasiga aylantiriladi
   const dateRange = rangeLabel(days, language);
   const retentionTarget = 40;
   const conversion =
@@ -300,9 +334,9 @@ function DashboardApp() {
         setReloadKey((k) => k + 1);
       } catch (e) {
         const ru = language === 'ru';
-        if (e instanceof ApiError && e.status === 409) return ru ? 'Это название уже занято' : 'Бұл атау бос емес';
-        if (e instanceof ApiError && e.status === 400) return ru ? 'Слишком короткое название' : 'Атау тым қысқа';
-        return ru ? 'Не удалось сохранить' : 'Сақталмады';
+        if (e instanceof ApiError && e.status === 409) return (isUz() ? "Bu nom allaqachon band" : ru ? 'Это название уже занято' : 'Бұл атау бос емес');
+        if (e instanceof ApiError && e.status === 400) return (isUz() ? "Juda qisqa nom" : ru ? 'Слишком короткое название' : 'Атау тым қысқа');
+        return (isUz() ? "Saqlab bo'lmadi" : ru ? 'Не удалось сохранить' : 'Сақталмады');
       }
     }
     setUserProfile(updated);
@@ -370,7 +404,15 @@ function DashboardApp() {
       />
 
       {/* Main Content Area: Tool View or Dashboard Tabs */}
-      {activePhoneTool ? (
+      {planLocked && planUsage ? (
+        <ExpiredScreen
+          usage={planUsage}
+          lang={language}
+          onChoosePlan={() => setActivePhoneTool('subscription')}
+          onSupport={() => setActivePhoneTool('support')}
+          onLogout={handleLogout}
+        />
+      ) : activePhoneTool ? (
         <div className="flex-1 overflow-hidden flex flex-col">
           <ToolDetailView
             toolId={activePhoneTool}
@@ -428,11 +470,19 @@ function DashboardApp() {
                 </button>
               </div>
 
+              {/* Tarif/sinov tugashiga qancha qolgani — doim ko'rinadi (2026-11-22) */}
+              {planUsage && (
+                <PlanCountdown usage={planUsage} lang={language}
+                  onOpen={() => setActivePhoneTool('subscription')} />
+              )}
+              {/* Telefonga o'rnatish (PWA, 2026-11-22) — sayt bilan bir xil */}
+              <InstallApp lang={language} />
+
               {dashError && (
                 <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center justify-between gap-2">
                   <span>{dashError}</span>
                   <button onClick={() => setReloadKey((k) => k + 1)} className="font-bold underline shrink-0">
-                    {language === 'ru' ? 'Повторить' : 'Қайталау'}
+                    {(language === 'uz' ? "Qayta urinish" : language === 'ru' ? 'Повторить' : 'Қайталау')}
                   </button>
                 </div>
               )}
@@ -445,8 +495,12 @@ function DashboardApp() {
 
               {dash && (
                 <div className={`space-y-3.5 transition-opacity ${dashLoading ? 'opacity-60' : ''}`}>
+                  {/* Kanal ulanmagan bo'lsa — ENG YUQORIDA ulash (2026-11-21, ilova+sayt parity) */}
+                  {(!dash.business.instagram_connected || !dash.business.telegram_connected) && (
+                    <ConnectChannelsCard businessId={businessId} lang={language} />
+                  )}
                   {/* Katalog kichik bo'lsa — mahsulot qo'shishga eslatma (AI aniq mahsulotni sotishi uchun) */}
-                  <ProductsNudge count={dash.products.length} lang={language === 'ru' ? 'ru' : 'kk'}
+                  <ProductsNudge count={dash.products.length} lang={language}
                     onAdd={() => setActivePhoneTool('add-product')} />
 
                   {/* 4 ta asosiy ko'rsatkich — Supabase'dan */}
@@ -459,7 +513,7 @@ function DashboardApp() {
                         <div className="text-lg font-bold text-slate-900">{conversion === null ? '—' : `${conversion}%`}</div>
                       </div>
                       <span className="text-[10.5px] text-slate-400 text-right max-w-[150px]">
-                        {language === 'ru' ? 'продажи / (продажи + запросы)' : 'сатылым / (сатылым + сұрау)'}
+                        {(language === 'uz' ? "sotuvlar / (sotuvlar + so'rovlar)" : language === 'ru' ? 'продажи / (продажи + запросы)' : 'сатылым / (сатылым + сұрау)')}
                       </span>
                     </div>
                   )}
@@ -502,14 +556,14 @@ function DashboardApp() {
         </div>
       )}
 
-      {/* Bottom Docked Nav */}
-      <BottomNavBar
+      {/* Bottom Docked Nav — tarif tugaganda yashiriladi (bo'limlar yopiq) */}
+      {!planLocked && <BottomNavBar
         activeTab={activeTab}
         onChangeTab={(tab) => {
           setActiveTab(tab);
           setActivePhoneTool(null);
         }}
-      />
+      />}
       </div>
 
       {/* Dedicated Standalone / Fullscreen Tool Modal for any requested tool */}
@@ -526,7 +580,7 @@ function DashboardApp() {
         onClose={() => setIsExportOpen(false)}
         dateRange={dateRange}
         metrics={metrics}
-        totalProfit={dash ? `${dash.metrics.revenue} ${currencyCode}` : '—'}
+        totalProfit={dash ? formatMoney(dash.metrics.revenue, currencyCode, language) : '—'}
         retention={dash?.retention}
       />
 
@@ -606,26 +660,26 @@ function DashboardApp() {
           <div className="w-9 h-9 rounded-full border-[3px] border-slate-200 border-t-slate-500 animate-spin" />
           <div>
             <p className="text-[15px] font-semibold text-slate-800">
-              {language === 'kk' ? 'Қайта қосылу…' : 'Переподключаемся…'}
+              {(language === 'uz' ? "Qayta ulanamiz…" : language === 'kk' ? 'Қайта қосылу…' : 'Переподключаемся…')}
             </p>
             <p className="mt-1 text-[13px] text-slate-500 leading-snug">
-              {language === 'kk'
+              {(language === 'uz' ? "Aloqani tiklaymiz. Siz tizimdan chiqmadingiz." : language === 'kk'
                 ? 'Байланыс қалпына келтірілуде. Сіз жүйеден шыққан жоқсыз.'
-                : 'Восстанавливаем связь. Вы не вышли из системы.'}
+                : 'Восстанавливаем связь. Вы не вышли из системы.')}
             </p>
           </div>
           <button
             onClick={() => setBootAttempt((n) => n + 1)}
             className="rounded-full bg-slate-900 text-white px-6 py-2.5 text-[14px] font-semibold"
           >
-            {language === 'kk' ? 'Қайталау' : 'Повторить'}
+            {(language === 'uz' ? "Qayta urinish" : language === 'kk' ? 'Қайталау' : 'Повторить')}
           </button>
         </div>
       )}
 
       {session === 'ready' && !authStep && consentVersion && (
         <ConsentGate
-          lang={language === 'kk' ? 'kk' : 'ru'}
+          lang={language}
           version={consentVersion}
           onDone={() => setConsentVersion(null)}
           onLogout={() => { setConsentVersion(null); handleLogout(); }}

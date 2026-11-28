@@ -20,13 +20,46 @@ type PlanId = 'starter' | 'growth' | 'business';
 const PRICES: Record<PlanId, string> = { starter: '20', growth: '49.90', business: '79.99' };
 
 const T = {
-  ru: {
+  uz: {
+    title: "Tarif", current: "Sizning tarifingiz", trial: "Sinov muddati", until: "gacha",
+    usage: "Shu oyda foydalanilgan", videos: "AI-video", posts: "E'lon qilingan postlar",
+    perMonth: "/ oy + QQS", active: "Joriy",
+    soon: "Onlayn to'lov tez orada. Hozir: «Ulash» tugmasini bosing — biz bog'lanamiz, to'lovni qabul qilamiz va tarifni yoqamiz.",
+    connect: "Bog'lash", pending: "Ariza yuborildi", pendingNote: (p: string) => `Tarif uchun so'rov ${p} yuborildi. To'lov uchun siz bilan bog'lanamiz.`,
+    expired: "Muddat tugadi — FindLead to'xtatildi (video, postlar, mijozlarga javoblar, analitika). 7 kun ichida tarif tanlang, aks holda biznes ma'lumotlari o'chiriladi.",
+    daysLeft: (n: number) => `qoldi ${n} kun`, reqError: "So'rovni yuborib bo'lmadi, qaytadan urinib ko'ring",
+    features: (p: PlanId) => ({
+      starter: [
+        "Oyiga 15 AI-video va 15 post",
+        "Kunora: bir kun video, bir kun post",
+        "Instagram va Telegram",
+        "Siz tanlagan 1 marketpleys — Kaspi, Wildberries yoki Uzum",
+        "AI mijozlarga javob beradi, tovarlar va buyurtmalar",
+      ],
+      growth: [
+        "Har kuni: 1 AI-video + 1 post",
+        "Instagram va Telegram birgalikda",
+        "Biznes va raqobatchilar tahlili",
+        "Kaspi, Wildberries, Uzum — barcha 3 ta marketpleys",
+        "FindLead'ning barcha funksiyalari",
+      ],
+      business: [
+        "Har kuni: 3 AI-video + 3 post",
+        "Reels soat 12:30, 18:30 va 21:30 da — eng ko'p ko'riladigan vaqt",
+        "Barcha funksiyalar + barcha 3 ta marketpleys",
+        "FindLead yangiliklari va yangi funksiyalarga erta kirish",
+        "FindLead administratorlari bilan bog'lanish uchun to'g'ridan-to'g'ri aloqa",
+      ],
+    }[p]),
+    adminContact: "FindLead administratorlari bilan aloqa",
+    error: "Tarif ma'lumotlarini yuklab bo'lmadi",
+  }, ru: {
     title: 'Тариф', current: 'Ваш тариф', trial: 'Пробный период', until: 'до',
     usage: 'Использовано в этом месяце', videos: 'AI-видео', posts: 'Опубликованные посты',
     perMonth: '/ мес + НДС', active: 'Текущий',
     soon: 'Онлайн-оплата скоро. Сейчас: нажмите «Подключить» — мы свяжемся, примем оплату и включим тариф.',
     connect: 'Подключить', pending: 'Заявка отправлена', pendingNote: (p: string) => `Заявка на тариф ${p} отправлена. Мы свяжемся с вами для оплаты.`,
-    expired: 'Срок действия закончился — видео и посты не создаются. Выберите тариф.',
+    expired: 'Срок истёк — FindLead остановлен (видео, посты, ответы клиентам, аналитика). Выберите тариф в течение 7 дней, иначе данные бизнеса будут удалены.',
     daysLeft: (n: number) => `осталось ${n} дн.`, reqError: 'Не удалось отправить заявку, попробуйте ещё раз',
     features: (p: PlanId) => ({
       starter: [
@@ -60,7 +93,7 @@ const T = {
     perMonth: '/ ай + ҚҚС', active: 'Ағымдағы',
     soon: 'Онлайн төлем жақында. Қазір: «Қосу» батырмасын басыңыз — біз хабарласып, төлемді қабылдап, тарифті қосамыз.',
     connect: 'Қосу', pending: 'Өтінім жіберілді', pendingNote: (p: string) => `${p} тарифіне өтінім жіберілді. Төлем үшін сізбен хабарласамыз.`,
-    expired: 'Мерзім аяқталды — бейне мен посттар жасалмайды. Тариф таңдаңыз.',
+    expired: 'Мерзім аяқталды — FindLead тоқтатылды (видео, пост, клиенттерге жауап, аналитика). 7 күн ішінде тариф таңдаңыз, әйтпесе бизнес деректері өшіріледі.',
     daysLeft: (n: number) => `${n} күн қалды`, reqError: 'Өтінім жіберілмеді, қайта көріңіз',
     features: (p: PlanId) => ({
       starter: [
@@ -94,7 +127,7 @@ const NAMES: Record<PlanId, string> = { starter: 'Starter', growth: 'Growth', bu
 
 export const SubscriptionPlanView: React.FC<SubscriptionPlanViewProps> = ({ onBack, storeContext }) => {
   const { language } = useLanguage();
-  const lang: 'ru' | 'kk' = language === 'ru' ? 'ru' : 'kk';
+  const lang: 'uz' | 'ru' | 'kk' = language;
   const L = T[lang];
   const businessId = storeContext?.businessId;
   const [usage, setUsage] = useState<PlanUsage | null>(null);
@@ -164,7 +197,7 @@ export const SubscriptionPlanView: React.FC<SubscriptionPlanViewProps> = ({ onBa
                 {currentId ? NAMES[currentId] : L.trial}
                 {usage.trial_end && (
                   <span className="text-[12px] font-semibold text-slate-500">
-                    {' '}· {L.until} {new Date(usage.trial_end).toLocaleDateString(lang === 'kk' ? 'kk-KZ' : 'ru-RU')}
+                    {' '}· {L.until} {new Date(usage.trial_end).toLocaleDateString((lang === 'uz' ? 'uz-UZ' : lang === 'kk' ? 'kk-KZ' : 'ru-RU'))}
                     {!expired && usage.days_left != null && ` (${L.daysLeft(usage.days_left)})`}
                   </span>
                 )}
@@ -193,25 +226,25 @@ export const SubscriptionPlanView: React.FC<SubscriptionPlanViewProps> = ({ onBa
         {usage?.state === 'trial' && (
         <div className={`bg-white rounded-2xl p-3.5 space-y-2 border-2 border-dashed ${usage?.state === 'trial' ? 'border-emerald-500' : 'border-emerald-200'}`}>
           <div className="flex items-center justify-between">
-            <p className="text-[14px] font-black">{lang === 'kk' ? 'Тегін' : 'Бесплатно'}</p>
+            <p className="text-[14px] font-black">{(lang === 'uz' ? "Bepul" : lang === 'kk' ? 'Тегін' : 'Бесплатно')}</p>
             {usage?.state === 'trial'
               ? <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">{L.active}</span>
               : <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">🎁</span>}
           </div>
-          <p className="text-[11px] text-slate-500">{lang === 'kk' ? 'FindLead-ды өз бизнесіңізде байқап көру' : 'Попробовать FindLead на своём бизнесе'}</p>
-          <p className="text-[20px] font-black">$0 <span className="text-[12px] font-semibold text-slate-500">/ {lang === 'kk' ? '14 күн' : '14 дней'}</span></p>
+          <p className="text-[11px] text-slate-500">{(lang === 'uz' ? "FindLead'ni o'z biznesingizda sinab ko'ring" : lang === 'kk' ? 'FindLead-ды өз бизнесіңізде байқап көру' : 'Попробовать FindLead на своём бизнесе')}</p>
+          <p className="text-[20px] font-black">$0 <span className="text-[12px] font-semibold text-slate-500">/ {(lang === 'uz' ? "14 kun" : lang === 'kk' ? '14 күн' : '14 дней')}</span></p>
           <ul className="space-y-1">
-            {(lang === 'kk'
+            {((lang === 'uz' ? ["Har kuni: 1 ta video + 1 ta post", "Instagram va Telegram", "AI-sotuvchi mijozlarga 24/7 javob beradi", "Barcha funksiyalar, cheklovsiz", "Kartasiz va majburiyatlarsiz"] : lang === 'kk'
               ? ['Күн сайын: 1 бейне + 1 пост', 'Instagram және Telegram', '24/7 AI-сатушы клиенттерге жауап береді', 'Барлық мүмкіндік, шектеусіз', 'Картасыз, міндеттемесіз']
-              : ['Каждый день: 1 видео + 1 пост', 'Instagram и Telegram', 'AI-продавец отвечает клиентам 24/7', 'Все функции, без ограничений', 'Без карты и обязательств']
+              : ['Каждый день: 1 видео + 1 пост', 'Instagram и Telegram', 'AI-продавец отвечает клиентам 24/7', 'Все функции, без ограничений', 'Без карты и обязательств'])
             ).map((f) => (
               <li key={f} className="text-[12px] text-slate-600 flex gap-1.5"><Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />{f}</li>
             ))}
           </ul>
           <p className="w-full h-10 rounded-xl text-[12.5px] font-bold flex items-center justify-center bg-emerald-50 text-emerald-700">
             {usage?.state === 'trial'
-              ? (lang === 'kk' ? `Белсенді · ${usage.days_left ?? '—'} күн қалды` : `Активен · осталось ${usage.days_left ?? '—'} дн.`)
-              : (lang === 'kk' ? 'Сынақ мерзімі пайдаланылды' : 'Пробный период использован')}
+              ? ((lang === 'uz' ? `Faol · ${usage.days_left ?? '—'} kun qoldi` : lang === 'kk' ? `Белсенді · ${usage.days_left ?? '—'} күн қалды` : `Активен · осталось ${usage.days_left ?? '—'} дн.`))
+              : ((lang === 'uz' ? "Sinov muddati foydalanilgan" : lang === 'kk' ? 'Сынақ мерзімі пайдаланылды' : 'Пробный период использован'))}
           </p>
         </div>
         )}
@@ -246,7 +279,7 @@ export const SubscriptionPlanView: React.FC<SubscriptionPlanViewProps> = ({ onBa
         {!isAndroidApp() && <p className="text-center text-[11px] text-slate-500">{L.soon}</p>}
 
         {/* 2026-11-19: «Пригласить друзей» — tarif bo'limining eng pastida (sayt ham shunday) */}
-        {usage && <ReferralCard lang={lang === 'kk' ? 'kk' : 'ru'} />}
+        {usage && <ReferralCard lang={lang} />}
       </div>
     </div>
   );

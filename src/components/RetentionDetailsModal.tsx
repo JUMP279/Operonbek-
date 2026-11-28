@@ -1,3 +1,4 @@
+import { isUz } from '../context/LanguageContext';
 import React from 'react';
 import { X, Target, Users, RefreshCw, AlertTriangle, MessageCircle, Phone } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
@@ -44,9 +45,9 @@ export const RetentionDetailsModal: React.FC<RetentionDetailsModalProps> = ({
             <div>
               <h3 className="text-base font-bold text-slate-900">{t.retentionTitle}</h3>
               <p className="text-xs text-slate-400">
-                {basis === 'sales' ? (ru ? 'По покупкам за выбранный период' : 'Таңдалған кезеңдегі сатып алулар бойынша')
-                  : basis === 'chats' ? (ru ? 'Покупок ещё нет — считаем по перепискам' : 'Сатып алу әлі жоқ — хат алмасу бойынша')
-                  : (ru ? 'Данных пока нет' : 'Деректер әзірге жоқ')}
+                {basis === 'sales' ? ((isUz() ? "Tanlangan davrdagi xaridlar bo'yicha" : ru ? 'По покупкам за выбранный период' : 'Таңдалған кезеңдегі сатып алулар бойынша'))
+                  : basis === 'chats' ? ((isUz() ? "Hozircha xaridlar yo'q — yozishmalar bo'yicha hisoblaymiz" : ru ? 'Покупок ещё нет — считаем по перепискам' : 'Сатып алу әлі жоқ — хат алмасу бойынша'))
+                  : ((isUz() ? "Hozircha ma'lumotlar yo'q" : ru ? 'Данных пока нет' : 'Деректер әзірге жоқ'))}
               </p>
             </div>
           </div>
@@ -60,9 +61,9 @@ export const RetentionDetailsModal: React.FC<RetentionDetailsModalProps> = ({
             <div>
               <span className="text-2xl font-bold text-slate-900">{rate}%</span>
               <p className="text-xs text-emerald-700 font-medium mt-0.5">
-                {basis === 'sales' ? (ru ? 'покупателей вернулись' : 'сатып алушы қайта келді')
-                  : basis === 'chats' ? (ru ? 'клиентов написали снова' : 'клиент қайта жазды') : '—'}
-                {diff != null && diff !== 0 ? ` (${diff > 0 ? '+' : ''}${diff} ${ru ? 'п.п. к прошлому периоду' : 'п.т. өткен кезеңге'})` : ''}
+                {basis === 'sales' ? ((isUz() ? "xaridorlar qaytdi" : ru ? 'покупателей вернулись' : 'сатып алушы қайта келді'))
+                  : basis === 'chats' ? ((isUz() ? "mijozlar yana yozishdi" : ru ? 'клиентов написали снова' : 'клиент қайта жазды')) : '—'}
+                {diff != null && diff !== 0 ? ` (${diff > 0 ? '+' : ''}${diff} ${(isUz() ? "foiz punkti o'tgan davrga nisbatan" : ru ? 'п.п. к прошлому периоду' : 'п.т. өткен кезеңге')})` : ''}
               </p>
             </div>
             <div className="text-right">
@@ -73,8 +74,8 @@ export const RetentionDetailsModal: React.FC<RetentionDetailsModalProps> = ({
 
           {basis === 'none' && (
             <p className="text-[12px] text-slate-500 bg-slate-50 rounded-xl p-3 leading-snug">
-              {ru ? 'Показатель появится после первых заказов или переписок с клиентами. Подключите Kaspi / Wildberries в разделе «Заказы» и Instagram / Telegram в профиле.'
-                : 'Көрсеткіш алғашқы тапсырыстар немесе хат алмасудан кейін пайда болады. «Тапсырыстар» бөлімінде Kaspi / Wildberries, профильде Instagram / Telegram қосыңыз.'}
+              {(isUz() ? "Ko'rsatkich birinchi buyurtmalar yoki mijozlar bilan yozishmalardan keyin paydo bo'ladi. «Buyurtmalar» bo'limida Kaspi / Wildberries va profilda Instagram / Telegramni ulang." : ru ? 'Показатель появится после первых заказов или переписок с клиентами. Подключите Kaspi / Wildberries в разделе «Заказы» и Instagram / Telegram в профиле.'
+                : 'Көрсеткіш алғашқы тапсырыстар немесе хат алмасудан кейін пайда болады. «Тапсырыстар» бөлімінде Kaspi / Wildberries, профильде Instagram / Telegram қосыңыз.')}
             </p>
           )}
 
@@ -82,34 +83,34 @@ export const RetentionDetailsModal: React.FC<RetentionDetailsModalProps> = ({
             <div className="space-y-2">
               {basis === 'sales' && (
                 <>
-                  <Row icon={<Users className="w-3.5 h-3.5" />} label={ru ? 'Покупателей за период' : 'Кезеңдегі сатып алушылар'} value={d.buyers} />
-                  <Row icon={<RefreshCw className="w-3.5 h-3.5" />} label={ru ? 'Из них вернулись / новые' : 'Қайта келген / жаңа'} value={`${d.returning_buyers} / ${d.new_buyers}`} />
+                  <Row icon={<Users className="w-3.5 h-3.5" />} label={(isUz() ? "Davrdagi xaridorlar" : ru ? 'Покупателей за период' : 'Кезеңдегі сатып алушылар')} value={d.buyers} />
+                  <Row icon={<RefreshCw className="w-3.5 h-3.5" />} label={(isUz() ? "Ulardan qaytganlar / yangilari" : ru ? 'Из них вернулись / новые' : 'Қайта келген / жаңа')} value={`${d.returning_buyers} / ${d.new_buyers}`} />
                 </>
               )}
               {d.total_buyers > 0 && d.repeat_30d_pct != null && (
-                <Row icon={<RefreshCw className="w-3.5 h-3.5" />} label={ru ? 'Купили повторно в течение 30 дней' : '30 күн ішінде қайта сатып алды'} value={`${d.repeat_30d_pct}%`} />
+                <Row icon={<RefreshCw className="w-3.5 h-3.5" />} label={(isUz() ? "30 kun ichida qayta sotib oldilar" : ru ? 'Купили повторно в течение 30 дней' : '30 күн ішінде қайта сатып алды')} value={`${d.repeat_30d_pct}%`} />
               )}
               {d.avg_days_between != null && (
-                <Row icon={<RefreshCw className="w-3.5 h-3.5" />} label={ru ? 'В среднем между покупками' : 'Сатып алулар арасы орташа'} value={`${d.avg_days_between} ${ru ? 'дн.' : 'күн'}`} />
+                <Row icon={<RefreshCw className="w-3.5 h-3.5" />} label={(isUz() ? "Xaridlar orasida o'rtacha" : ru ? 'В среднем между покупками' : 'Сатып алулар арасы орташа')} value={`${d.avg_days_between} ${(isUz() ? "kun" : ru ? 'дн.' : 'күн')}`} />
               )}
               {(d.at_risk > 0 || d.lost > 0) && (
-                <Row icon={<AlertTriangle className="w-3.5 h-3.5" />} label={ru ? 'Давно не покупали (30–90 дн. / больше 90)' : 'Көптен сатып алмаған (30–90 күн / 90-нан көп)'} value={`${d.at_risk} / ${d.lost}`} />
+                <Row icon={<AlertTriangle className="w-3.5 h-3.5" />} label={(isUz() ? "Uzoq vaqtdan beri xarid qilmagan (30–90 kun / 90 dan ortiq)" : ru ? 'Давно не покупали (30–90 дн. / больше 90)' : 'Көптен сатып алмаған (30–90 күн / 90-нан көп)')} value={`${d.at_risk} / ${d.lost}`} />
               )}
               {d.chat_customers > 0 && (
-                <Row icon={<MessageCircle className="w-3.5 h-3.5" />} label={ru ? 'Писали в чат / написали снова' : 'Чатқа жазған / қайта жазған'} value={`${d.chat_customers} / ${d.chat_returning}`} />
+                <Row icon={<MessageCircle className="w-3.5 h-3.5" />} label={(isUz() ? "Chatda yozganlar / yana yozganlar" : ru ? 'Писали в чат / написали снова' : 'Чатқа жазған / қайта жазған')} value={`${d.chat_customers} / ${d.chat_returning}`} />
               )}
             </div>
           )}
 
           {d && d.win_back.length > 0 && (
             <div>
-              <p className="text-[11px] font-bold text-slate-500 mb-1.5">{ru ? 'Кому стоит написать (давно не покупали)' : 'Кімге жазу керек (көптен сатып алмаған)'}</p>
+              <p className="text-[11px] font-bold text-slate-500 mb-1.5">{(isUz() ? "Kimga yozish kerak (uzoq vaqtdan beri xarid qilmaganlar)" : ru ? 'Кому стоит написать (давно не покупали)' : 'Кімге жазу керек (көптен сатып алмаған)')}</p>
               <div className="space-y-1.5">
                 {d.win_back.map((c) => (
                   <div key={c.customer_id} className="rounded-xl bg-amber-50/70 p-2.5 text-[12px] flex items-center gap-2">
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-slate-900 truncate">{c.name || c.customer_id}</p>
-                      <p className="text-slate-500">{c.orders} {ru ? 'зак.' : 'тапс.'} · {formatMoney(c.total, currency, language)} · {c.days} {ru ? 'дн. назад' : 'күн бұрын'}</p>
+                      <p className="text-slate-500">{c.orders} {(isUz() ? "buyurtma" : ru ? 'зак.' : 'тапс.')} · {formatMoney(c.total, currency, language)} · {c.days} {(isUz() ? "kun oldin" : ru ? 'дн. назад' : 'күн бұрын')}</p>
                     </div>
                     {c.phone && <a href={`tel:${c.phone}`} className="shrink-0 w-8 h-8 rounded-full bg-white text-emerald-600 flex items-center justify-center"><Phone className="w-3.5 h-3.5" /></a>}
                   </div>
@@ -120,7 +121,7 @@ export const RetentionDetailsModal: React.FC<RetentionDetailsModalProps> = ({
 
           {d && d.top.length > 0 && (
             <div>
-              <p className="text-[11px] font-bold text-slate-500 mb-1.5">{ru ? 'Постоянные клиенты' : 'Тұрақты клиенттер'}</p>
+              <p className="text-[11px] font-bold text-slate-500 mb-1.5">{(isUz() ? "Doimiy mijozlar" : ru ? 'Постоянные клиенты' : 'Тұрақты клиенттер')}</p>
               <div className="space-y-1">
                 {d.top.map((c) => (
                   <div key={c.customer_id} className="flex items-center justify-between text-[12px] text-slate-700 bg-slate-50 rounded-lg px-2.5 py-1.5">

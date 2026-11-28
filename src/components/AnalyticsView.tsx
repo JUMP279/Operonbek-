@@ -9,7 +9,26 @@ import { api, Analytics, AnalyticsTopItem } from '../lib/api';
 // Analitika — REAL (2026-11-08). Instagram Graph API + Telegram kanal sahifasi + o'z bazamiz.
 // Avval to'qima raqamli doiraviy grafiklar edi.
 const T = {
-  ru: {
+  uz: {
+    title: "Analitika", d7: "7 kun", d30: "30 kun", d90: "90 kun", refresh: "Yangilash",
+    views: "Ko'rishlar", videoViews: "Video ko'rishlar", postViews: "Post ko'rishlar", profile: "Profilga kirishlar",
+    people: "Dialogdagi mijozlar", newPeople: "yangi", followers: "Obunachilar", reach: "Qamrov",
+    published: "Nashr etilgan", posts: "Postlar", videos: "Video", upcoming: "planda", failed: "chiqmadi",
+    funnel: "Voronka", fViews: "Ko'rishlar", fProfile: "Profilga kirishlar", fChats: "Dialoglar", fLeads: "Arizalar", fOrders: "Buyurtmalar",
+    activity: "Kunlik faollik", mPosts: "Postlar", mVideos: "Video", mChats: "Dialoglar", mOrders: "Buyurtmalar",
+    ig: 'Instagram', tg: 'Telegram', notConnected: "Ulanmagan — profilda ulang.",
+    igBroken: "Instagramga kirish yo'qolgan — profilda Instagramni qayta ulang.",
+    insightsDenied: "Instagram statistikaga (ko'rishlar, qamrov) kirishni bermayapti. Instagramni qayta ulang va statistikaga kirishga ruxsat bering.",
+    reconnect: "Qayta ulash",
+    tgPrivate: "Kanal yopiq — Telegram yopiq kanallarning ko'rishlarini ko'rsatmaydi.",
+    engaged: "Jalb qilingan akkauntlar", interactions: "O'zaro aloqalar", likes: "Layklar", comments: "Izohlar", saves: "Saqlashlar", shares: "Repostlar",
+    avgViews: "O'rtacha ko'rishlar", top: "Eng yaxshi postlar", igLimit: (d: number) => `Instagram akkaunti ma'lumotlari — oxirgi ${d} kun uchun (Meta cheklovi)`,
+    chats: "Mijozlar bilan dialoglar", custMsgs: "Mijozlardan xabarlar", aiReplies: "AI javoblari", yourReplies: "Sizning javoblaringiz",
+    comments2: "Instagram izohlari", direct: 'Instagram Direct', telegram: 'Telegram',
+    sales: "Sotuvlar", orders: "Buyurtmalar", inquiries: "Arizalar", revenue: "Daromad", conversion: "Konversiya so'rov → buyurtma",
+    avgCheck: "O'rtacha chek", buyers: "Xaridorlar", products: "Faol tovarlar",
+    error: "Analitikani yuklab bo'lmadi", empty: '—',
+  }, ru: {
     title: 'Аналитика', d7: '7 дней', d30: '30 дней', d90: '90 дней', refresh: 'Обновить',
     views: 'Просмотры', videoViews: 'Просмотры видео', postViews: 'Просмотры постов', profile: 'Заходы в профиль',
     people: 'Клиентов в диалогах', newPeople: 'новых', followers: 'Подписчики', reach: 'Охват',
@@ -54,7 +73,7 @@ const T = {
 type Metric = 'posts' | 'videos' | 'conversations';
 
 const fmt = (n: number | null | undefined, lang: string) =>
-  n === null || n === undefined ? '—' : new Intl.NumberFormat(lang === 'kk' ? 'kk-KZ' : 'ru-RU', { notation: n >= 100000 ? 'compact' : 'standard', maximumFractionDigits: 1 }).format(n);
+  n === null || n === undefined ? '—' : new Intl.NumberFormat((lang === 'uz' ? 'uz-UZ' : lang === 'kk' ? 'kk-KZ' : 'ru-RU'), { notation: n >= 100000 ? 'compact' : 'standard', maximumFractionDigits: 1 }).format(n);
 
 const Card: React.FC<{ title?: React.ReactNode; children: React.ReactNode }> = ({ title, children }) => (
   <div className="bg-white border border-slate-200/90 rounded-2xl p-3.5 space-y-2.5">
@@ -79,7 +98,7 @@ const Row: React.FC<{ label: string; value: string }> = ({ label, value }) => (
 
 export const AnalyticsView: React.FC<{ onBack: () => void; storeContext?: { businessId?: string; currency?: string } }> = ({ onBack, storeContext }) => {
   const { language } = useLanguage();
-  const lang: 'ru' | 'kk' = language === 'ru' ? 'ru' : 'kk';
+  const lang: 'uz' | 'ru' | 'kk' = language;
   const L = T[lang];
   const businessId = storeContext?.businessId;
   const [days, setDays] = useState(30);
@@ -230,13 +249,13 @@ export const AnalyticsView: React.FC<{ onBack: () => void; storeContext?: { busi
                 ))}
                 {hover !== null && series[hover] && (
                   <div className="absolute -top-1 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[11px] font-bold px-2 py-1 rounded-lg pointer-events-none">
-                    {new Date(series[hover].date).toLocaleDateString(lang === 'kk' ? 'kk-KZ' : 'ru-RU', { day: 'numeric', month: 'short' })}: {series[hover][metric]}
+                    {new Date(series[hover].date).toLocaleDateString((lang === 'uz' ? 'uz-UZ' : lang === 'kk' ? 'kk-KZ' : 'ru-RU'), { day: 'numeric', month: 'short' })}: {series[hover][metric]}
                   </div>
                 )}
               </div>
               <div className="flex justify-between text-[10px] text-slate-400">
-                <span>{series[0] && new Date(series[0].date).toLocaleDateString(lang === 'kk' ? 'kk-KZ' : 'ru-RU', { day: 'numeric', month: 'short' })}</span>
-                <span>{series.length > 0 && new Date(series[series.length - 1].date).toLocaleDateString(lang === 'kk' ? 'kk-KZ' : 'ru-RU', { day: 'numeric', month: 'short' })}</span>
+                <span>{series[0] && new Date(series[0].date).toLocaleDateString((lang === 'uz' ? 'uz-UZ' : lang === 'kk' ? 'kk-KZ' : 'ru-RU'), { day: 'numeric', month: 'short' })}</span>
+                <span>{series.length > 0 && new Date(series[series.length - 1].date).toLocaleDateString((lang === 'uz' ? 'uz-UZ' : lang === 'kk' ? 'kk-KZ' : 'ru-RU'), { day: 'numeric', month: 'short' })}</span>
               </div>
             </Card>
 

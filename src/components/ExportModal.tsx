@@ -219,12 +219,12 @@ th{background:#f1f5f9}
             {exporting ? (
               <span className="flex items-center gap-2">
                 <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                {language === 'ru' ? 'Формирование файла...' : 'Файл жасалуда...'}
+                {(language === 'uz' ? "Fayl yaratilmoqda..." : language === 'ru' ? 'Формирование файла...' : 'Файл жасалуда...')}
               </span>
             ) : (
               <span className="flex items-center gap-2">
                 <Download className="w-4 h-4" />
-                {language === 'ru' ? `Скачать ${format.toUpperCase()}` : `${format.toUpperCase()} жүктеп алу`}
+                {(language === 'uz' ? `Yuklab oling ${format.toUpperCase()}` : language === 'ru' ? `Скачать ${format.toUpperCase()}` : `${format.toUpperCase()} жүктеп алу`)}
               </span>
             )}
           </button>
@@ -235,11 +235,11 @@ th{background:#f1f5f9}
           >
             {copied ? (
               <span className="text-emerald-600 flex items-center gap-1.5 font-semibold">
-                <CheckCircle2 className="w-3.5 h-3.5" /> {language === 'ru' ? 'Скопировано в буфер!' : 'Буферге көшірілді!'}
+                <CheckCircle2 className="w-3.5 h-3.5" /> {(language === 'uz' ? "Buferga nusxalandi!" : language === 'ru' ? 'Скопировано в буфер!' : 'Буферге көшірілді!')}
               </span>
             ) : (
               <span className="flex items-center gap-1.5">
-                <Copy className="w-3.5 h-3.5" /> {language === 'ru' ? 'Копировать отчет' : 'Есепті көшіріп алу'}
+                <Copy className="w-3.5 h-3.5" /> {(language === 'uz' ? "Hisobotni nusxalash" : language === 'ru' ? 'Копировать отчет' : 'Есепті көшіріп алу')}
               </span>
             )}
           </button>

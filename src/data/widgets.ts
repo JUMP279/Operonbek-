@@ -3,7 +3,7 @@ export const availableWidgets: {
   id: string;
   name: string;
   nameKk: string;
-  nameRu: string;
+  nameUz?: string; nameRu: string;
   category: string;
   description: string;
   iconName: string;
@@ -17,7 +17,7 @@ export const availableWidgets: {
     id: 'customer-response',
     name: 'Customer Response',
     nameKk: 'Клиенттерге жауап',
-    nameRu: 'Ответ клиентам',
+    nameUz: "Mijozlarga javob", nameRu: 'Ответ клиентам',
     category: 'Клиенттер & Direct',
     description: 'Instagram, Telegram және TikTok пікірлеріне және Direct хабарламаларына 24/7 автоматты жауап',
     iconName: 'message-square',
@@ -31,7 +31,7 @@ export const availableWidgets: {
     id: 'post-creator',
     name: 'Post Creator',
     nameKk: 'Пост жасау',
-    nameRu: 'Создание постов',
+    nameUz: "Post yaratish", nameRu: 'Создание постов',
     category: 'Маркетинг & SMM',
     description: 'Instagram, Telegram және жарнама арналары үшін сатылым посттары мен мәтіндері',
     iconName: 'edit-3',
@@ -45,7 +45,7 @@ export const availableWidgets: {
     id: 'video-creator',
     name: 'AI Video Generator & Publisher',
     nameKk: 'Видео жасау (AI Жариялаушы)',
-    nameRu: 'AI Генератор видео и публикатор',
+    nameUz: "AI video generatori va publikator", nameRu: 'AI Генератор видео и публикатор',
     category: 'Медиа & Reels',
     description: 'Видео сценарийлерін жоспарлау, AI memory ережелері және автоматты жариялау',
     iconName: 'video',
@@ -59,7 +59,7 @@ export const availableWidgets: {
     id: 'add-product',
     name: 'Add Product',
     nameKk: 'Тауар қосу',
-    nameRu: 'Добавить товар',
+    nameUz: "Mahsulot qo'shish", nameRu: 'Добавить товар',
     category: 'Қойма & Каталог',
     description: 'Штрих-код, фотосурет және бағамен тауарларды каталогқа жылдам жүктеу',
     iconName: 'plus-circle',
@@ -73,7 +73,7 @@ export const availableWidgets: {
     id: 'analytics',
     name: 'Analytics',
     nameKk: 'Аналитика',
-    nameRu: 'Аналитика',
+    nameUz: "Analitika", nameRu: 'Аналитика',
     category: 'KPI & Метрикалар',
     description: 'Тікелей трафик, конверсия воронкасы, сату және орташа чек динамикасы',
     iconName: 'bar-chart-3',
@@ -87,7 +87,7 @@ export const availableWidgets: {
     id: 'business-analyze',
     name: 'Business Analyze',
     nameKk: 'Бизнес талдауы',
-    nameRu: 'Анализ бизнеса',
+    nameUz: "Biznes tahlili", nameRu: 'Анализ бизнеса',
     category: 'Қаржы & Аудит',
     description: 'Рентабельділік, таза маржа, тәуекелдердің алдын алу және өсу стратегиясы',
     iconName: 'pie-chart',
@@ -101,7 +101,7 @@ export const availableWidgets: {
     id: 'orders-manager',
     name: 'Orders',
     nameKk: 'Тапсырыстар',
-    nameRu: 'Заказы',
+    nameUz: "Buyurtmalar", nameRu: 'Заказы',
     category: 'Сату & Жеткізу',
     description: 'Түскен тапсырыстарды өңдеу, курьер және чек шығару орталығы',
     iconName: 'shopping-bag',

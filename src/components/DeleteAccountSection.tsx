@@ -4,7 +4,14 @@ import { api } from '../lib/api';
 
 // Akkauntni o'chirish (2026-11-16, Google Play talabi: ilova ichida). Ikki bosqichli tasdiq — tasodifan bosilmasin.
 const T = {
-  ru: {
+  uz: {
+    btn: "Akkauntni o'chirish",
+    title: "Akkauntni butunlay o'chirishmi?",
+    text: "Barcha do'konlaringiz, mijozlaringiz va yozishmalaringiz, postlaringiz, videolaringiz, mahsulotlaringiz va akkauntingizning o'zi o'chiriladi. Ma'lumotlarni tiklab bo'lmaydi.",
+    confirm: "Ha, abadiy o'chirish",
+    cancel: "Bekor qilish",
+    err: "Akkauntni o'chirib bo'lmadi. Keyinroq urinib ko'ring yoki qo'llab-quvvatlashga yozing.",
+  }, ru: {
     btn: 'Удалить аккаунт',
     title: 'Удалить аккаунт навсегда?',
     text: 'Будут удалены все ваши магазины, клиенты и переписки, посты, видео, товары и сам аккаунт. Восстановить данные будет невозможно.',
@@ -22,7 +29,7 @@ const T = {
   },
 };
 
-export const DeleteAccountSection: React.FC<{ lang: 'ru' | 'kk'; onDeleted: () => void }> = ({ lang, onDeleted }) => {
+export const DeleteAccountSection: React.FC<{ lang: 'uz' | 'ru' | 'kk'; onDeleted: () => void }> = ({ lang, onDeleted }) => {
   const L = T[lang];
   const [step, setStep] = useState<'idle' | 'confirm' | 'busy'>('idle');
   const [error, setError] = useState('');

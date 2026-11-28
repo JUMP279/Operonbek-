@@ -31,7 +31,23 @@ type Tab = 'plan' | 'create' | 'journal';
 type Style = 'reklama' | 'jalb' | 'malumot';
 
 const T = {
-  ru: {
+  uz: {
+    back: "Orqaga", title: "AI post", plan: "Reja", create: "Yaratish", journal: "Rejalashtirilgan",
+    where: "Qayerga joylash",
+    igNot: "Instagram ulanmagan", tgNot: "Telegram-kanal ulanmagan",
+    both: "Ikkalasi",
+    topic: "Post nima haqida?", topicPh: "Masalan: yangi kelgan tovar, dam olish kunlaridagi aksiya… Bo'sh qoldirishingiz mumkin — AI o'zi tanlaydi.",
+    style: "Uslub", styles: { reklama: "Reklama", jalb: "Jalb qilish", malumot: "Foydali" } as Record<Style, string>,
+    generate: "Post yaratish", generating: "AI post yozmoqda…",
+    preview: "Post", text: "Matn", tags: "Heshteglar (probel bilan)",
+    publish: "Nashr etish", publishing: "Nashr qilmoqdamiz…", again: "Boshqa variant", copy: "Nusxalash", copied: "Nusxalandi",
+    published: "Nashr etilgan", failed: "Nashr qilinmagan", draft: "Qoralama", scheduled: "Rejalashtirilgan",
+    openPost: "Postni ochish", openChannel: "Kanalni ochish", openProfile: "Profilni ochish",
+    noImageIg: "Instagram uchun rasm kerak — AI uni yarata olmadi.",
+    resultTitle: "Nashr natijasi", newPost: "Yangi post",
+    empty: "Rejalashtirilgan postlar yo'q", loading: "Yuklanmoqda…",
+    errors: { network: "Server bilan aloqa yo'q", generic: "Nimadir noto'g'ri ketdi. Qayta urinib ko'ring.", limit: "Tarif bo'yicha postlar limiti tugagan" },
+  }, ru: {
     back: 'Назад', title: 'AI пост', plan: 'План', create: 'Создать', journal: 'Запланированные',
     where: 'Куда публиковать',
     igNot: 'Instagram не подключён', tgNot: 'Telegram-канал не подключён',
@@ -70,7 +86,7 @@ const T = {
 function when(iso: string | null | undefined, lang: string): string {
   if (!iso) return '';
   try {
-    return new Date(iso).toLocaleString(lang === 'kk' ? 'kk-KZ' : 'ru-RU', {
+    return new Date(iso).toLocaleString((lang === 'uz' ? 'uz-UZ' : lang === 'kk' ? 'kk-KZ' : 'ru-RU'), {
       day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
     });
   } catch {
@@ -86,7 +102,7 @@ function tgLabel(url: string | null | undefined): string | null {
 
 export const AIPostGeneratorView: React.FC<AIPostGeneratorViewProps> = ({ onBack, storeContext }) => {
   const { language } = useLanguage();
-  const lang: 'ru' | 'kk' = language === 'ru' ? 'ru' : 'kk';
+  const lang: 'uz' | 'ru' | 'kk' = language;
   const L = T[lang];
   const businessId = storeContext?.businessId;
 

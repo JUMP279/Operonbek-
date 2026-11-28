@@ -23,16 +23,16 @@ export const FilterModal: React.FC<FilterModalProps> = ({
   if (!isOpen) return null;
 
   const channels = [
-    { id: 'All Channels', label: language === 'ru' ? 'Все каналы' : 'Барлық арналар' },
-    { id: 'Online Store (Direct)', label: language === 'ru' ? 'Интернет-магазин (Direct)' : 'Интернет-дүкен (Direct)' },
-    { id: 'B2B Wholesale Hub', label: language === 'ru' ? 'B2B Оптовый хаб' : 'B2B Көтерме сауда хабы' },
-    { id: 'Partner Marketplaces', label: language === 'ru' ? 'Маркетплейсы партнеров' : 'Серіктес маркетплейстер' },
-    { id: 'Mobile App', label: language === 'ru' ? 'Мобильное приложение' : 'Мобильді қолданба' }
+    { id: 'All Channels', label: (language === 'uz' ? "Barcha kanallar" : language === 'ru' ? 'Все каналы' : 'Барлық арналар') },
+    { id: 'Online Store (Direct)', label: (language === 'uz' ? "Internet-do'kon (Direct)" : language === 'ru' ? 'Интернет-магазин (Direct)' : 'Интернет-дүкен (Direct)') },
+    { id: 'B2B Wholesale Hub', label: (language === 'uz' ? "B2B Ulgurji hab" : language === 'ru' ? 'B2B Оптовый хаб' : 'B2B Көтерме сауда хабы') },
+    { id: 'Partner Marketplaces', label: (language === 'uz' ? "Hamkorlar marketpleyslari" : language === 'ru' ? 'Маркетплейсы партнеров' : 'Серіктес маркетплейстер') },
+    { id: 'Mobile App', label: (language === 'uz' ? "Mobil ilova" : language === 'ru' ? 'Мобильное приложение' : 'Мобильді қолданба') }
   ];
 
   const currencies = [
-    { code: 'KZT', symbol: '₸', name: language === 'ru' ? 'Казахстанский тенге (₸)' : 'Қазақстан теңгесі (₸)' },
-    { code: 'RUB', symbol: '₽', name: language === 'ru' ? 'Российский рубль (₽)' : 'Ресей рублі (₽)' },
+    { code: 'KZT', symbol: '₸', name: (language === 'uz' ? "Qozog'iston tengesi (₸)" : language === 'ru' ? 'Казахстанский тенге (₸)' : 'Қазақстан теңгесі (₸)') },
+    { code: 'RUB', symbol: '₽', name: (language === 'uz' ? "Rossiya rubli (₽)" : language === 'ru' ? 'Российский рубль (₽)' : 'Ресей рублі (₽)') },
     { code: 'USD', symbol: '$', name: 'US Dollar ($)' }
   ];
 

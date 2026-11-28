@@ -21,6 +21,7 @@ import {
 import { useLanguage } from '../context/LanguageContext';
 import { api, ApiError, Conversation } from '../lib/api';
 import { FunnelPanel, needsMe, problemText, StatusChip } from './ConvInsightsPanel';
+import { formatMoney, bizCur } from '../lib/format';
 
 // Mijozlarga javob — REAL (2026-11-08). Avval 1300 qatorlik soxta demo edi.
 // Ma'lumot: ai_conversations (webhook yozadi): instagram_comment — izohlar, instagram/telegram — xabarlar.
@@ -32,7 +33,26 @@ export interface CustomerResponseViewProps {
 type Tab = 'hot' | 'attention' | 'comments' | 'direct' | 'telegram' | 'funnel' | 'tone';
 
 const T = {
-  ru: {
+  uz: {
+    title: "Mijozlarga javoblar", comments: "Izohlar", direct: 'Direct', telegram: 'Telegram', tone: "AI ohangi",
+    emptyTelegram: "Telegramda hali xabarlar yo'q. Mijoz botingizga yoki shaxsiy Telegram (Business) ga yozsa, dialog shu yerda paydo bo'ladi.",
+    emptyComments: "Hali izohlar yo'q. Mijozlar Instagramdagi postlarga izoh qoldirsa, AI javob beradi va ular shu yerda paydo bo'ladi.",
+    emptyDirect: "Directda hali xabarlar yo'q. Mijoz Instagram Directga yozsa, dialog shu yerda paydo bo'ladi.",
+    customer: "Mijoz", ai: 'AI', operator: "Siz", aiOn: "AI javob beradi", aiOff: "Siz javob berasiz",
+    aiHint: "Mijozga o'zingiz javob berish uchun o'chiring.", placeholder: "Javob yozing…", sent: "Yuborildi",
+    notSent: "Javob saqlandi, lekin yetkazilmadi: Instagram/Telegram ulanishini tekshiring.",
+    toneTitle: "AI mijozlar bilan qanday muloqot qiladi", toneHint: "Masalan: «siz deb muloyim, qisqa, ortiqcha emojilarsiz». Keyingi javoblarga qo'llanadi.",
+    save: "Saqlash", saved: "Saqlandi", back: "Orqaga",
+    hot: "Sotib olishga tayyorlar", attention: "Sizni kutishmoqda", funnel: "Voronka",
+    emptyAttention: "Hech kim javob kutmayapti. Bu yerda AI javob bera olmagan yoki sizni uzoq kutayotgan mijozlar paydo bo'ladi.",
+    emptyHot: "Hozircha sotib olishga tayyor mijozlar yo'q. Mijoz «olaman» deb yozsa, to'lov haqida so'rasa yoki telefon qoldirsa — u shu yerda paydo bo'ladi va AI suhbatni sizga topshiradi.",
+    hotHint: "Bu mijozlar xaridga yaqin. AI to'xtadi — to'lov, oldindan to'lov va shartlarni siz muhokama qilasiz.",
+    stage: { interest: "Qiziqyapti", ready: "Sotib olmoqchi", ordered: "Buyurtma berdi", paid: "To'laganini yozmoqda" },
+    dealTitle: "Bitim — uni o'zingiz yoping.", product: "Tovar", phone: "Telefon", address: "Manzil", sum: "Summa", note: "Tafsilotlar",
+    won: "Sotildi", lost: "Sotib olmadi", backToAi: "AI'ni qaytarish",
+    wonHint: "Buyurtma sotilgan deb belgilandi.", lostHint: "Bitim sotuvsiz yopildi.",
+    errors: { network: "Server bilan aloqa yo'q", generic: "Nimadir noto'g'ri ketdi. Qayta urinib ko'ring." },
+  }, ru: {
     title: 'Ответы клиентам', comments: 'Комментарии', direct: 'Direct', telegram: 'Telegram', tone: 'Тон AI',
     emptyTelegram: 'Сообщений в Telegram пока нет. Когда клиент напишет вашему боту или в личный Telegram (Business), диалог появится здесь.',
     emptyComments: 'Комментариев пока нет. Когда клиенты прокомментируют посты в Instagram, AI ответит и они появятся здесь.',
@@ -79,7 +99,7 @@ function when(iso: string | undefined, lang: string): string {
   try {
     const d = new Date(iso);
     const sameDay = d.toDateString() === new Date().toDateString();
-    return d.toLocaleString(lang === 'kk' ? 'kk-KZ' : 'ru-RU', sameDay
+    return d.toLocaleString((lang === 'uz' ? 'uz-UZ' : lang === 'kk' ? 'kk-KZ' : 'ru-RU'), sameDay
       ? { hour: '2-digit', minute: '2-digit' }
       : { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   } catch {
@@ -97,7 +117,7 @@ const STAGE_CLS: Record<string, string> = {
 
 export const CustomerResponseView: React.FC<CustomerResponseViewProps> = ({ onBack, storeContext }) => {
   const { language } = useLanguage();
-  const lang: 'ru' | 'kk' = language === 'ru' ? 'ru' : 'kk';
+  const lang: 'uz' | 'ru' | 'kk' = language;
   const L = T[lang];
   const [showDeals, setShowDeals] = useState(false);
   const businessId = storeContext?.businessId;
@@ -246,7 +266,7 @@ export const CustomerResponseView: React.FC<CustomerResponseViewProps> = ({ onBa
               {i === 2 && (
                 <button onClick={() => setShowDeals(true)}
                   className="px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 active:scale-95 shrink-0 whitespace-nowrap bg-blue-50 text-blue-700 border border-blue-100">
-                  <Handshake className="w-3.5 h-3.5" /><span>{lang === 'ru' ? 'Сделки' : 'Мәмілелер'}</span>
+                  <Handshake className="w-3.5 h-3.5" /><span>{(lang === 'uz' ? "Bitimlar" : lang === 'ru' ? 'Сделки' : 'Мәмілелер')}</span>
                 </button>
               )}
               <button onClick={() => setTab(t.id)}
@@ -331,7 +351,7 @@ export const CustomerResponseView: React.FC<CustomerResponseViewProps> = ({ onBa
             </div>
             <div className="text-[12px] text-slate-700 space-y-0.5">
               {open.deal.product && <p><b>{L.product}:</b> {open.deal.product}{open.deal.quantity && open.deal.quantity > 1 ? ` × ${open.deal.quantity}` : ''}</p>}
-              {open.deal.amount ? <p><b>{L.sum}:</b> {new Intl.NumberFormat('ru-RU').format(open.deal.amount)} ₸</p> : null}
+              {open.deal.amount ? <p><b>{L.sum}:</b> {formatMoney(Number(open.deal.amount), bizCur(), language)}</p> : null}
               {open.deal.phone && <p className="flex items-center gap-1.5"><b>{L.phone}:</b> <a href={`tel:${open.deal.phone}`} className="text-blue-600 font-semibold inline-flex items-center gap-1"><Phone className="w-3 h-3" />{open.deal.phone}</a></p>}
               {open.deal.address && <p><b>{L.address}:</b> {open.deal.address}</p>}
               {open.deal.note && <p><b>{L.note}:</b> {open.deal.note}</p>}

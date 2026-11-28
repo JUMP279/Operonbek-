@@ -1,3 +1,4 @@
+import { isUz } from '../context/LanguageContext';
 import React, { useEffect, useState } from 'react';
 import { ArrowLeft, Loader2, ShoppingBag } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
@@ -20,7 +21,7 @@ export const OrdersManagerView: React.FC<{ onBack: () => void; storeContext?: { 
     try {
       setDash(await api.dashboard(businessId, 90));
     } catch {
-      setError(ru ? 'Не удалось загрузить заказы' : 'Тапсырыстар жүктелмеді');
+      setError((isUz() ? "Buyurtmalarni yuklab bo'lmadi" : ru ? 'Не удалось загрузить заказы' : 'Тапсырыстар жүктелмеді'));
     }
   };
 
@@ -37,7 +38,7 @@ export const OrdersManagerView: React.FC<{ onBack: () => void; storeContext?: { 
           <ArrowLeft className="w-4 h-4" />
         </button>
         <h1 className="text-sm sm:text-base font-black tracking-tight flex items-center gap-1.5">
-          <ShoppingBag className="w-4 h-4 text-purple-600" />{ru ? 'Заказы' : 'Тапсырыстар'}
+          <ShoppingBag className="w-4 h-4 text-purple-600" />{(isUz() ? "Buyurtmalar" : ru ? 'Заказы' : 'Тапсырыстар')}
         </h1>
       </div>
       <div className="flex-1 overflow-y-auto p-3 sm:p-4 pb-16">
